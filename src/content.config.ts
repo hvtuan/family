@@ -1,7 +1,8 @@
 import { defineCollection, reference, z } from "astro:content";
+import { glob } from "astro/loaders";
 
 const members = defineCollection({
-  type: "content",
+  loader: glob({ pattern: "**/*.md", base: "./src/content/members" }),
   schema: ({ image }) =>
     z.object({
       id: z.string(),
@@ -84,7 +85,7 @@ const members = defineCollection({
 });
 
 const timeline = defineCollection({
-  type: "data",
+  loader: glob({ pattern: "**/*.{yaml,yml,json}", base: "./src/content/timeline" }),
   schema: ({ image }) =>
     z.object({
       year: z.number(),
@@ -103,7 +104,7 @@ const timeline = defineCollection({
 });
 
 const traditions = defineCollection({
-  type: "content",
+  loader: glob({ pattern: "**/*.md", base: "./src/content/traditions" }),
   schema: ({ image }) =>
     z.object({
       name: z.string(),
@@ -119,7 +120,7 @@ const traditions = defineCollection({
 });
 
 const photos = defineCollection({
-  type: "data",
+  loader: glob({ pattern: "**/*.{yaml,yml,json}", base: "./src/content/photos" }),
   schema: ({ image }) =>
     z.object({
       src: image(),
@@ -135,7 +136,7 @@ const photos = defineCollection({
 });
 
 const quotes = defineCollection({
-  type: "data",
+  loader: glob({ pattern: "**/*.{yaml,yml,json}", base: "./src/content/quotes" }),
   schema: z.object({
     text: z.string(),
     textEn: z.string().optional(),
@@ -147,7 +148,7 @@ const quotes = defineCollection({
 });
 
 const dates = defineCollection({
-  type: "data",
+  loader: glob({ pattern: "**/*.{yaml,yml,json}", base: "./src/content/dates" }),
   schema: z.object({
     date: z.string(),
     calendar: z.enum(["lunar", "solar"]).default("solar"),
@@ -169,7 +170,7 @@ const dates = defineCollection({
 });
 
 const locations = defineCollection({
-  type: "data",
+  loader: glob({ pattern: "**/*.{yaml,yml,json}", base: "./src/content/locations" }),
   schema: z.object({
     id: z.string(),
     name: z.string(),
