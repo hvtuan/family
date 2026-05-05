@@ -1,0 +1,196 @@
+/**
+ * Admin theme — port of TailAdmin Free (MIT, https://github.com/TailAdmin/tailadmin-free-tailwind-dashboard-template)
+ *
+ * Kept the bits we actually use:
+ *   - color, font, text, shadow, z-index design tokens
+ *   - menu-* utilities for the sidebar
+ *   - sidebar:hover expand behavior (lg-only, used when the sidebar is collapsed)
+ *   - no-scrollbar / custom-scrollbar utilities
+ *
+ * Dropped: dark-mode styles, apexcharts/flatpickr/jvectormap/swiper third-party glue.
+ *
+ * Imported only from admin layouts/pages — the public site keeps its own
+ * tokens in global.css so the two never compete for CSS custom properties.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap") layer(base);
+@import "tailwindcss";
+
+@theme {
+  --font-*: initial;
+  --font-outfit: "Outfit", "Be Vietnam Pro", system-ui, sans-serif;
+
+  --breakpoint-*: initial;
+  --breakpoint-2xsm: 375px;
+  --breakpoint-xsm: 425px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+  --breakpoint-3xl: 2000px;
+
+  --text-title-2xl: 72px;
+  --text-title-2xl--line-height: 90px;
+  --text-title-xl: 60px;
+  --text-title-xl--line-height: 72px;
+  --text-title-lg: 48px;
+  --text-title-lg--line-height: 60px;
+  --text-title-md: 36px;
+  --text-title-md--line-height: 44px;
+  --text-title-sm: 30px;
+  --text-title-sm--line-height: 38px;
+  --text-theme-xl: 20px;
+  --text-theme-xl--line-height: 30px;
+  --text-theme-sm: 14px;
+  --text-theme-sm--line-height: 20px;
+  --text-theme-xs: 12px;
+  --text-theme-xs--line-height: 18px;
+
+  --color-current: currentColor;
+  --color-transparent: transparent;
+  --color-white: #ffffff;
+  --color-black: #101828;
+
+  --color-brand-25: #f2f7ff;
+  --color-brand-50: #ecf3ff;
+  --color-brand-100: #dde9ff;
+  --color-brand-200: #c2d6ff;
+  --color-brand-300: #9cb9ff;
+  --color-brand-400: #7592ff;
+  --color-brand-500: #465fff;
+  --color-brand-600: #3641f5;
+  --color-brand-700: #2a31d8;
+  --color-brand-800: #252dae;
+  --color-brand-900: #262e89;
+  --color-brand-950: #161950;
+
+  --color-gray-25: #fcfcfd;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f2f4f7;
+  --color-gray-200: #e4e7ec;
+  --color-gray-300: #d0d5dd;
+  --color-gray-400: #98a2b3;
+  --color-gray-500: #667085;
+  --color-gray-600: #475467;
+  --color-gray-700: #344054;
+  --color-gray-800: #1d2939;
+  --color-gray-900: #101828;
+  --color-gray-950: #0c111d;
+
+  --color-success-50: #ecfdf3;
+  --color-success-100: #d1fadf;
+  --color-success-500: #12b76a;
+  --color-success-600: #039855;
+  --color-success-700: #027a48;
+
+  --color-error-50: #fef3f2;
+  --color-error-100: #fee4e2;
+  --color-error-500: #f04438;
+  --color-error-600: #d92d20;
+  --color-error-700: #b42318;
+
+  --color-warning-50: #fffaeb;
+  --color-warning-100: #fef0c7;
+  --color-warning-500: #f79009;
+  --color-warning-600: #dc6803;
+
+  --shadow-theme-xs: 0px 1px 2px 0px rgba(16, 24, 40, 0.05);
+  --shadow-theme-sm: 0px 1px 3px 0px rgba(16, 24, 40, 0.1),
+    0px 1px 2px 0px rgba(16, 24, 40, 0.06);
+  --shadow-theme-md: 0px 4px 8px -2px rgba(16, 24, 40, 0.1),
+    0px 2px 4px -2px rgba(16, 24, 40, 0.06);
+  --shadow-theme-lg: 0px 12px 16px -4px rgba(16, 24, 40, 0.08),
+    0px 4px 6px -2px rgba(16, 24, 40, 0.03);
+  --shadow-theme-xl: 0px 20px 24px -4px rgba(16, 24, 40, 0.08),
+    0px 8px 8px -4px rgba(16, 24, 40, 0.03);
+  --shadow-focus-ring: 0px 0px 0px 4px rgba(70, 95, 255, 0.12);
+
+  --z-index-1: 1;
+  --z-index-9: 9;
+  --z-index-99: 99;
+  --z-index-999: 999;
+  --z-index-9999: 9999;
+  --z-index-99999: 99999;
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  body {
+    @apply font-outfit relative bg-gray-50 text-base font-normal;
+  }
+}
+
+@utility menu-item {
+  @apply text-theme-sm relative flex items-center gap-3 rounded-lg px-3 py-2 font-medium;
+}
+@utility menu-item-active {
+  @apply bg-brand-50 text-brand-500;
+}
+@utility menu-item-inactive {
+  @apply text-gray-700 hover:bg-gray-100 hover:text-gray-700;
+}
+@utility menu-item-icon-active {
+  @apply fill-brand-500;
+}
+@utility menu-item-icon-inactive {
+  @apply fill-gray-500 group-hover:fill-gray-700;
+}
+
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@utility custom-scrollbar {
+  &::-webkit-scrollbar {
+    @apply size-1.5;
+  }
+  &::-webkit-scrollbar-track {
+    @apply rounded-full;
+  }
+  &::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-gray-200;
+  }
+}
+
+/* Sidebar collapse: when [data-collapsed=true], the sidebar shrinks to icon-only.
+   On hover (desktop only) it temporarily expands without flipping the state,
+   matching TailAdmin's "hover-to-peek" UX. The matching content offset is
+   handled in AdminLayout via the same data attribute. */
+.sidebar[data-collapsed="true"] {
+  width: 90px;
+}
+.sidebar[data-collapsed="true"]:hover {
+  width: 290px;
+}
+.sidebar[data-collapsed="true"] .menu-item-text,
+.sidebar[data-collapsed="true"] .menu-group-title {
+  display: none;
+}
+.sidebar[data-collapsed="true"]:hover .menu-item-text,
+.sidebar[data-collapsed="true"]:hover .menu-group-title {
+  display: inline;
+}
+.sidebar[data-collapsed="true"] .menu-group-icon {
+  display: block;
+}
+.sidebar[data-collapsed="true"]:hover .menu-group-icon {
+  display: none;
+}
+.menu-group-icon {
+  display: none;
+}

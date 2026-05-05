@@ -3,10 +3,9 @@ interface Props {
   email: string;
   role: "admin" | "editor" | "branch_editor";
   branch: "noi" | "ngoai" | "both" | null;
-  title?: string;
 }
 
-const { email, role, branch, title } = Astro.props;
+const { email, role, branch } = Astro.props;
 
 const roleLabel: Record<Props["role"], string> = {
   admin: "Quản trị viên",
@@ -16,40 +15,48 @@ const roleLabel: Record<Props["role"], string> = {
 const branchLabel: Record<NonNullable<Props["branch"]>, string> = {
   noi: "Họ Nội",
   ngoai: "Họ Ngoại",
-  both: "Cả nội + ngoại",
+  both: "Nội + Ngoại",
 };
+
+const initial = (email[0] ?? "?").toUpperCase();
 ---
 
-<header class="flex items-center justify-between gap-4 px-4 lg:px-6 py-3 border-b border-line bg-cream/80 backdrop-blur sticky top-0 z-10">
-  <div class="flex items-center gap-3 min-w-0">
-    <button
-      type="button"
-      class="lg:hidden p-2 text-ink-2"
-      aria-label="Mở menu"
-      data-admin-menu-toggle
-    >
-      ☰
-    </button>
-    {title && (
-      <h1 class="font-display text-lg lg:text-xl text-ink truncate">{title}</h1>
-    )}
-  </div>
-
-  <div class="flex items-center gap-3 text-sm">
-    <div class="hidden sm:flex flex-col items-end leading-tight">
-      <span class="font-semibold text-ink truncate max-w-[14rem]">{email}</span>
-      <span class="text-xs text-ink-3">
-        {roleLabel[role]}
-        {branch && ` • ${branchLabel[branch]}`}
-      </span>
-    </div>
-    <form method="post" action="/admin/logout">
+<header class="sticky top-0 z-40 flex w-full border-b border-gray-200 bg-white">
+  <div class="flex grow items-center justify-between gap-4 px-3 py-3 sm:gap-4 lg:px-6 lg:py-4">
+    <div class="flex items-center gap-3">
       <button
-        type="submit"
-        class="px-3 py-1.5 rounded-md border border-line text-ink-2 hover:bg-paper-2 transition-colors"
+        type="button"
+        data-sidebar-toggle
+        class="z-40 flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 lg:h-11 lg:w-11"
+        aria-label="Mở/đóng menu"
       >
-        Đăng xuất
+        <svg class="hidden lg:block fill-current" width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M0.583252 1C0.583252 0.585788 0.919038 0.25 1.33325 0.25H14.6666C15.0808 0.25 15.4166 0.585786 15.4166 1C15.4166 1.41421 15.0808 1.75 14.6666 1.75L1.33325 1.75C0.919038 1.75 0.583252 1.41422 0.583252 1ZM0.583252 11C0.583252 10.5858 0.919038 10.25 1.33325 10.25L14.6666 10.25C15.0808 10.25 15.4166 10.5858 15.4166 11C15.4166 11.4142 15.0808 11.75 14.6666 11.75L1.33325 11.75C0.919038 11.75 0.583252 11.4142 0.583252 11ZM1.33325 5.25C0.919038 5.25 0.583252 5.58579 0.583252 6C0.583252 6.41421 0.919038 6.75 1.33325 6.75L7.99992 6.75C8.41413 6.75 8.74992 6.41421 8.74992 6C8.74992 5.58579 8.41413 5.25 7.99992 5.25L1.33325 5.25Z" fill=""/>
+        </svg>
+        <svg class="lg:hidden fill-current" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M3.25 6C3.25 5.58579 3.58579 5.25 4 5.25L20 5.25C20.4142 5.25 20.75 5.58579 20.75 6C20.75 6.41421 20.4142 6.75 20 6.75L4 6.75C3.58579 6.75 3.25 6.41422 3.25 6ZM3.25 18C3.25 17.5858 3.58579 17.25 4 17.25L20 17.25C20.4142 17.25 20.75 17.5858 20.75 18C20.75 18.4142 20.4142 18.75 20 18.75L4 18.75C3.58579 18.75 3.25 18.4142 3.25 18ZM4 11.25C3.58579 11.25 3.25 11.5858 3.25 12C3.25 12.4142 3.58579 12.75 4 12.75L12 12.75C12.4142 12.75 12.75 12.4142 12.75 12C12.75 11.5858 12.4142 11.25 12 11.25L4 11.25Z" fill=""/>
+        </svg>
       </button>
-    </form>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <div class="hidden sm:flex flex-col items-end leading-tight text-theme-sm">
+        <span class="font-medium text-gray-800 truncate max-w-[14rem]">{email}</span>
+        <span class="text-theme-xs text-gray-500">
+          {roleLabel[role]}{branch && ` • ${branchLabel[branch]}`}
+        </span>
+      </div>
+      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600 font-semibold">
+        {initial}
+      </span>
+      <form method="post" action="/admin/logout">
+        <button
+          type="submit"
+          class="rounded-lg border border-gray-200 px-3 py-2 text-theme-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Đăng xuất
+        </button>
+      </form>
+    </div>
   </div>
 </header>

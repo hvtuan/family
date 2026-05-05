@@ -1,18 +1,19 @@
 ---
-import "@/styles/global.css";
+import "@/styles/admin.css";
 import Sidebar from "@/components/admin/Sidebar.astro";
 import Topbar from "@/components/admin/Topbar.astro";
 
 interface Props {
   title: string;
+  /** Page-level breadcrumb items (after "Tổng quan"). Optional. */
+  crumbs?: { label: string; href?: string }[];
 }
 
-const { title } = Astro.props;
+const { title, crumbs = [] } = Astro.props;
 const user = Astro.locals.user;
 
 if (!user) {
-  // Shouldn't happen — middleware enforces auth before reaching layouts.
-  // Hard-fail loud rather than silently rendering an empty shell.
+  // Middleware should always populate locals.user before this layout renders.
   throw new Error("AdminLayout used outside an authed route");
 }
 
@@ -20,27 +21,113 @@ const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 ---
 
 <!doctype html>
-<html lang="vi" class="bg-paper">
+<html lang="vi">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1"
+    />
     <meta name="robots" content="noindex, nofollow" />
-    <title>{title} — Gia phả họ Nguyễn</title>
+    <title>{title} — Gia phả họ Nguyễn Admin</title>
   </head>
-  <body class="font-body text-ink antialiased min-h-screen">
-    <div class="flex min-h-screen">
+  <body>
+    <div class="flex h-screen overflow-hidden">
       <Sidebar pathname={pathname} role={user.role} />
-      <div class="flex-1 flex flex-col min-w-0">
+
+      <!-- Mobile overlay (shown when sidebar is open on small screens) -->
+      <div
+        id="admin-overlay"
+        class="fixed inset-0 z-40 hidden bg-gray-900/50 lg:hidden"
+      ></div>
+
+      <div class="relative flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
         <Topbar
           email={user.email}
           role={user.role}
           branch={user.branch}
-          title={title}
         />
-        <main class="flex-1 p-4 lg:p-6">
-          <slot />
+        <main>
+          <div class="mx-auto max-w-(--breakpoint-3xl) p-4 md:p-6">
+            <div class="mb-6">
+              <h1 class="text-title-sm font-semibold text-gray-800 sm:text-title-md">
+                {title}
+              </h1>
+              {crumbs.length > 0 && (
+                <nav class="mt-2 flex items-center gap-1.5 text-theme-sm text-gray-500">
+                  <a href="/admin" class="hover:text-brand-500">Tổng quan</a>
+                  {crumbs.map((c, i) => (
+                    <>
+                      <span class="text-gray-400">/</span>
+                      {c.href && i < crumbs.length - 1 ? (
+                        <a href={c.href} class="hover:text-brand-500">{c.label}</a>
+                      ) : (
+                        <span class="text-gray-700">{c.label}</span>
+                      )}
+                    </>
+                  ))}
+                </nav>
+              )}
+            </div>
+            <slot />
+          </div>
         </main>
       </div>
     </div>
+
+    <script>
+      // Sidebar collapse + mobile drawer behavior. Vanilla JS in lieu of Alpine.js.
+      (() => {
+        const sidebar = document.querySelector<HTMLElement>("[data-sidebar]");
+        const overlay = document.getElementById("admin-overlay");
+        const triggers = document.querySelectorAll<HTMLElement>("[data-sidebar-toggle]");
+        if (!sidebar || !overlay) return;
+
+        const STORAGE_KEY = "admin-sidebar-collapsed";
+
+        function isMobile() {
+          return window.matchMedia("(max-width: 1023px)").matches;
+        }
+
+        function setCollapsed(value: boolean) {
+          sidebar!.dataset.collapsed = String(value);
+          if (!isMobile()) localStorage.setItem(STORAGE_KEY, String(value));
+        }
+
+        function setMobileOpen(value: boolean) {
+          if (value) {
+            sidebar!.classList.remove("-translate-x-full");
+            overlay!.classList.remove("hidden");
+          } else {
+            sidebar!.classList.add("-translate-x-full");
+            overlay!.classList.add("hidden");
+          }
+        }
+
+        // Initial state from storage (desktop only — mobile starts closed)
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!isMobile() && stored === "true") sidebar.dataset.collapsed = "true";
+
+        triggers.forEach((btn) =>
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (isMobile()) {
+              setMobileOpen(sidebar.classList.contains("-translate-x-full"));
+            } else {
+              setCollapsed(sidebar.dataset.collapsed !== "true");
+            }
+          }),
+        );
+
+        overlay.addEventListener("click", () => setMobileOpen(false));
+
+        // Reset translate when crossing the breakpoint so we don't leave the
+        // sidebar half-hidden on a resize.
+        window.matchMedia("(min-width: 1024px)").addEventListener("change", (e) => {
+          if (e.matches) sidebar!.classList.remove("-translate-x-full");
+          else sidebar!.classList.add("-translate-x-full");
+        });
+      })();
+    </script>
   </body>
 </html>

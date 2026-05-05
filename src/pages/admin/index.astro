@@ -33,42 +33,56 @@ const isAdmin = Astro.locals.user?.role === "admin";
 
 <AdminLayout title="Tổng quan">
   <div class="space-y-6">
-    <section>
-      <h2 class="text-xs uppercase tracking-wider text-ink-3 mb-3">Nội dung</h2>
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {counts.map((t) => (
-          <a
-            href={t.href}
-            class="block bg-cream border border-line rounded-lg p-4 hover:shadow-paper-1 transition-shadow"
-          >
-            <div class="text-2xl font-display text-vermilion">{t.count}</div>
-            <div class="text-sm text-ink-2 mt-1">{t.label}</div>
-          </a>
-        ))}
-      </div>
-    </section>
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 xl:grid-cols-4">
+      {counts.map((t) => (
+        <a
+          href={t.href}
+          class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs transition-shadow hover:shadow-theme-sm"
+        >
+          <div class="mt-2 flex items-end justify-between">
+            <div>
+              <span class="text-theme-sm text-gray-500">{t.label}</span>
+              <h4 class="mt-1 font-bold text-gray-800 text-title-sm">
+                {t.count}
+              </h4>
+            </div>
+            <span class="rounded-md bg-brand-50 px-2 py-1 text-theme-xs font-medium text-brand-600">
+              Tổng
+            </span>
+          </div>
+        </a>
+      ))}
+    </div>
 
     {isAdmin && (
-      <section>
-        <h2 class="text-xs uppercase tracking-wider text-ink-3 mb-3">Hệ thống</h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <a
-            href="/admin/users"
-            class="block bg-cream border border-line rounded-lg p-4 hover:shadow-paper-1 transition-shadow"
-          >
-            <div class="text-2xl font-display text-vermilion">{pendingCount ?? 0}</div>
-            <div class="text-sm text-ink-2 mt-1">Chờ duyệt</div>
-          </a>
-        </div>
-      </section>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <a
+          href="/admin/users"
+          class="rounded-2xl border border-warning-100 bg-warning-50 p-5 transition-shadow hover:shadow-theme-sm"
+        >
+          <div class="flex items-end justify-between">
+            <div>
+              <span class="text-theme-sm text-warning-600">Người dùng chờ duyệt</span>
+              <h4 class="mt-1 font-bold text-gray-800 text-title-sm">
+                {pendingCount ?? 0}
+              </h4>
+            </div>
+            <span class="rounded-md bg-warning-100 px-2 py-1 text-theme-xs font-medium text-warning-600">
+              Cần xử lý
+            </span>
+          </div>
+        </a>
+      </div>
     )}
 
-    <section class="text-sm text-ink-3 mt-8 p-4 bg-paper-2/50 border border-dashed border-line rounded-lg">
-      <p class="font-semibold text-ink-2 mb-1">P4 đang triển khai.</p>
+    <div class="rounded-2xl border border-dashed border-gray-300 bg-white p-5 text-theme-sm text-gray-500">
+      <p class="font-medium text-gray-700 mb-1">P4 đang chạy.</p>
       <p>
-        CRUD members và 6 collection còn lại sẽ ra mắt ở P5–P6 theo kế hoạch.
-        Hôm nay: đã có login + middleware + layout shell.
+        CRUD cho từng bảng nội dung sẽ ra mắt ở P5–P6 (Members trước, sau đó
+        timeline / traditions / photos / quotes / dates / locations).
+        Trong lúc đó, các liên kết phía trên sẽ trỏ sang trang 404 cho tới khi
+        các route được dựng.
       </p>
-    </section>
+    </div>
   </div>
 </AdminLayout>
