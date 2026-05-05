@@ -28,11 +28,13 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 
 ENV HOST=0.0.0.0
-ENV PORT=3000
+ENV PORT=80
 ENV NODE_ENV=production
 
-EXPOSE 3000
+# Listen on port 80 to match Coolify's auto-generated Traefik label
+# (loadbalancer.server.port=80) without a manual override.
+EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -fsS http://localhost:3000/ >/dev/null || exit 1
+  CMD curl -fsS http://localhost:80/ >/dev/null || exit 1
 
 CMD ["node", "./dist/server/entry.mjs"]
