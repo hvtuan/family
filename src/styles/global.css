@@ -39,6 +39,21 @@
   --breakpoint-tablet: 768px;
   --breakpoint-desktop: 1024px;
   --breakpoint-wide: 1240px;
+
+  /* === Custom animations (used by MemberModal Radix Dialog) === */
+  --animate-mm-fade: mm-fade-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-mm-slide: mm-slide-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes mm-fade-in {
+  from { opacity: 0; }
+}
+
+@keyframes mm-slide-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 12px));
+  }
 }
 
 /* ============================================================

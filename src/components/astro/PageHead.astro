@@ -8,45 +8,33 @@ interface Props {
 }
 
 const { kicker, title, subtitle, subtitleEn, align = "center" } = Astro.props;
+const alignClasses =
+  align === "left"
+    ? "text-left items-start"
+    : "text-center items-center";
 ---
 
-<header class={`page-head ${align === "left" ? "is-left" : ""}`}>
+<header
+  class:list={[
+    "max-w-[1240px] mx-auto px-5 pt-12 pb-6 flex flex-col gap-1.5",
+    alignClasses,
+  ]}
+>
   {kicker && <p class="u-kicker">{kicker}</p>}
-  <h1>{title}</h1>
-  {subtitle && <p class="page-head-sub">{subtitle}</p>}
-  {subtitleEn && <p class="page-head-sub-en" lang="en">{subtitleEn}</p>}
+  <h1 class="text-[clamp(2rem,5vw,3.4rem)] leading-[1.1] text-ink">{title}</h1>
+  {
+    subtitle && (
+      <p class="text-ink-2 text-[1.05rem] max-w-[60ch]">{subtitle}</p>
+    )
+  }
+  {
+    subtitleEn && (
+      <p
+        class="text-ink-3 text-[0.78rem] tracking-[0.18em] uppercase max-w-[70ch]"
+        lang="en"
+      >
+        {subtitleEn}
+      </p>
+    )
+  }
 </header>
-
-<style>
-  .page-head {
-    max-width: 1240px;
-    margin: 0 auto;
-    padding: 3rem 1.25rem 1.5rem;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    align-items: center;
-  }
-  .page-head.is-left {
-    text-align: left;
-    align-items: flex-start;
-  }
-  .page-head h1 {
-    font-size: clamp(2rem, 5vw, 3.4rem);
-    line-height: 1.1;
-    color: var(--color-ink);
-  }
-  .page-head-sub {
-    color: var(--color-ink-2);
-    font-size: 1.05rem;
-    max-width: 60ch;
-  }
-  .page-head-sub-en {
-    color: var(--color-ink-3);
-    font-size: 0.78rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    max-width: 70ch;
-  }
-</style>

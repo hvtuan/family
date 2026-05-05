@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { $modalMember } from "@/stores/ui";
 import type { ClientMember } from "@/lib/members-client";
-import "./FamilyTree.css";
 
 type Props = { members: ClientMember[] };
 
@@ -362,34 +361,64 @@ export default function FamilyTree({ members }: Props) {
   );
 
   return (
-    <div className="ft-wrap">
-      <div className="ft-toolbar" role="toolbar" aria-label="Điều khiển cây gia phả">
-        <button type="button" onClick={() => zoomBy(1.2)} aria-label="Phóng to">
+    <div className="flex flex-col gap-2.5">
+      <div
+        className="flex flex-wrap gap-1.5 items-center px-3 py-2 bg-paper-2 border border-line rounded-xl"
+        role="toolbar"
+        aria-label="Điều khiển cây gia phả"
+      >
+        <button
+          type="button"
+          onClick={() => zoomBy(1.2)}
+          aria-label="Phóng to"
+          className="font-inherit text-[0.85rem] px-3 py-1.5 border border-line-strong bg-cream text-ink rounded-lg cursor-pointer min-w-[38px] hover:bg-paper-3 focus-visible:outline-2 focus-visible:outline-vermilion focus-visible:outline-offset-2"
+        >
           +
         </button>
-        <button type="button" onClick={() => zoomBy(1 / 1.2)} aria-label="Thu nhỏ">
+        <button
+          type="button"
+          onClick={() => zoomBy(1 / 1.2)}
+          aria-label="Thu nhỏ"
+          className="font-inherit text-[0.85rem] px-3 py-1.5 border border-line-strong bg-cream text-ink rounded-lg cursor-pointer min-w-[38px] hover:bg-paper-3 focus-visible:outline-2 focus-visible:outline-vermilion focus-visible:outline-offset-2"
+        >
           −
         </button>
-        <button type="button" onClick={fitToScreen} aria-label="Vừa khung">
+        <button
+          type="button"
+          onClick={fitToScreen}
+          aria-label="Vừa khung"
+          className="font-inherit text-[0.85rem] px-3 py-1.5 border border-line-strong bg-cream text-ink rounded-lg cursor-pointer hover:bg-paper-3 focus-visible:outline-2 focus-visible:outline-vermilion focus-visible:outline-offset-2"
+        >
           Vừa khung
         </button>
-        <button type="button" onClick={reset} aria-label="Đặt lại 1:1">
+        <button
+          type="button"
+          onClick={reset}
+          aria-label="Đặt lại 1:1"
+          className="font-inherit text-[0.85rem] px-3 py-1.5 border border-line-strong bg-cream text-ink rounded-lg cursor-pointer min-w-[38px] hover:bg-paper-3 focus-visible:outline-2 focus-visible:outline-vermilion focus-visible:outline-offset-2"
+        >
           1:1
         </button>
-        <span className="ft-zoom-readout" aria-live="polite">
+        <span
+          className="ml-auto font-mono text-[0.78rem] text-ink-3 [font-feature-settings:'tnum'_1]"
+          aria-live="polite"
+        >
           {zoomAnnouncement}
         </span>
       </div>
 
-      <p className="ft-hint">
+      <p className="text-[0.78rem] text-ink-3 text-center flex flex-col gap-0.5">
         <span>Kéo để di chuyển • Scroll + Ctrl/Cmd để phóng to</span>
-        <span lang="en" className="ft-hint-en">
+        <span
+          lang="en"
+          className="text-[0.65rem] tracking-[0.14em] uppercase italic"
+        >
           Drag to pan · Pinch on touch · Ctrl/Cmd + scroll to zoom
         </span>
       </p>
 
       <div
-        className="ft-stage"
+        className="relative w-full h-[70vh] min-h-[420px] border border-line rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing touch-none focus-visible:outline-2 focus-visible:outline-vermilion focus-visible:outline-offset-2 bg-paper-2 [background:radial-gradient(ellipse_at_center,rgba(201,163,90,0.08),transparent_80%),var(--color-paper-2)]"
         ref={containerRef}
         role="tree"
         aria-label="Cây gia phả họ Nguyễn"
@@ -402,7 +431,7 @@ export default function FamilyTree({ members }: Props) {
         onKeyDown={onKeyDown}
       >
         <div
-          className="ft-world"
+          className="absolute top-0 left-0 origin-top-left [will-change:transform]"
           style={{
             transform: `translate(${tx}px, ${ty}px) scale(${scale})`,
             width: stageWidth,
@@ -410,7 +439,7 @@ export default function FamilyTree({ members }: Props) {
           }}
         >
           <svg
-            className="ft-svg"
+            className="absolute top-0 left-0 pointer-events-none"
             width={stageWidth}
             height={stageHeight}
             viewBox={`0 0 ${stageWidth} ${stageHeight}`}
@@ -458,10 +487,11 @@ export default function FamilyTree({ members }: Props) {
             .map((y, idx) => (
               <div
                 key={`row-${y}`}
-                className="ft-row-label"
+                className="absolute font-display font-bold text-[0.85rem] text-vermilion bg-paper border border-vermilion rounded-lg px-2.5 py-1 pointer-events-none -translate-x-[calc(100%+12px)] z-20 max-mobile:translate-x-0 max-mobile:[top:_var(--ft-mobile-y)!important]"
                 style={{
                   left: padding,
                   top: y + padding + CARD_H / 2 - 18,
+                  ["--ft-mobile-y" as string]: `${y + padding - 28}px`,
                 }}
               >
                 Đời {idx + 1}
@@ -477,7 +507,7 @@ export default function FamilyTree({ members }: Props) {
               <button
                 key={id}
                 type="button"
-                className="ft-card"
+                className="absolute flex items-center gap-2 px-2.5 py-2 border-2 border-line-strong bg-cream rounded-xl shadow-paper-1 cursor-pointer font-inherit text-inherit text-left z-30 transition-all duration-150 hover:border-vermilion hover:shadow-paper-2 hover:-translate-y-px focus-visible:outline-2 focus-visible:outline-vermilion focus-visible:outline-offset-2"
                 role="treeitem"
                 aria-level={m.gen}
                 aria-label={`${m.name}, đời thứ ${m.gen}`}
@@ -489,13 +519,18 @@ export default function FamilyTree({ members }: Props) {
                 }}
                 onClick={(e) => onCardClick(id, e)}
               >
-                <span className="ft-card-mono" aria-hidden="true">
+                <span
+                  className="flex-none w-9 h-9 flex items-center justify-center border-2 border-vermilion rounded-lg bg-vermilion/[0.04] text-vermilion font-display font-bold text-base"
+                  aria-hidden="true"
+                >
                   {m.name.split(" ").slice(-1)[0]?.charAt(0) ?? "?"}
                 </span>
-                <span className="ft-card-text">
-                  <span className="ft-card-name">{m.name}</span>
-                  <span className="ft-card-role">{m.role}</span>
-                  <span className="ft-card-years">
+                <span className="flex flex-col leading-tight min-w-0 flex-1">
+                  <span className="font-display font-bold text-[0.95rem] text-ink truncate">
+                    {m.name}
+                  </span>
+                  <span className="text-[0.72rem] text-ink-2 truncate">{m.role}</span>
+                  <span className="text-[0.7rem] text-ink-3 [font-feature-settings:'tnum'_1]">
                     {yearB ?? ""}
                     {yearD ? ` – ${yearD}` : yearB ? " – nay" : ""}
                   </span>
