@@ -1,0 +1,151 @@
+---
+/**
+ * "Ảnh của thành viên" section on /admin/members/[id]. Three sub-forms,
+ * each posting to /admin/members/[id]/photos:
+ *
+ *   - upload     file + caption + (caption_en, year, id slug). Creates a
+ *                family.photos row and links via photo_members.
+ *   - link       checkbox grid of existing photos this member isn't on yet.
+ *                Multi-select; one POST adds all checked links.
+ *   - unlink     per-card button. Removes the photo_members row only —
+ *                the photo itself stays in /admin/photos so other members
+ *                still link to it.
+ *
+ * Edits to a photo's caption / year / featured live on /admin/photos/[id];
+ * we just link to that page from each thumbnail.
+ */
+
+import type { PhotoRow } from "@/lib/photos-admin";
+
+interface Props {
+  memberId: string;
+  linked: PhotoRow[];
+  others: PhotoRow[];
+}
+const { memberId, linked, others } = Astro.props;
+const action = `/admin/members/${memberId}/photos`;
+const suggestedSlug = `${memberId}-`;
+---
+
+<section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+  <header class="mb-4 flex items-center justify-between">
+    <div>
+      <h2 class="text-theme-sm font-semibold text-gray-800">Ảnh của thành viên</h2>
+      <p class="mt-0.5 text-theme-xs text-gray-500">
+        Ảnh sự kiện, chân dung, tốt nghiệp… Có thể tải mới hoặc liên kết
+        ảnh đã có sẵn ở album chung.
+      </p>
+    </div>
+    <span class="rounded-md bg-brand-50 px-2 py-1 text-theme-xs font-medium text-brand-600">
+      {linked.length}
+    </span>
+  </header>
+
+  {linked.length > 0 ? (
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 mb-6">
+      {linked.map((p) => (
+        <div class="rounded-lg border border-gray-200 bg-white overflow-hidden">
+          <a href={`/admin/photos/${p.id}`} class="block aspect-[4/3] bg-gray-100 relative">
+            <img src={p.src} alt={p.caption} loading="lazy"
+              class="absolute inset-0 h-full w-full object-cover" />
+            {p.featured && (
+              <span class="absolute top-1.5 left-1.5 rounded bg-warning-50 px-1.5 py-0.5 text-theme-xs font-medium text-warning-600 border border-warning-100">★</span>
+            )}
+          </a>
+          <div class="p-2">
+            <div class="text-theme-xs text-gray-700 line-clamp-1" title={p.caption}>{p.caption}</div>
+            <div class="mt-0.5 flex items-center justify-between text-theme-xs text-gray-400">
+              <span>{p.year ?? "—"}</span>
+              <form method="post" action={action} class="inline"
+                onsubmit="return confirm('Bỏ liên kết ảnh này khỏi thành viên? (Ảnh không bị xóa, chỉ gỡ khỏi trang thành viên này)');">
+                <input type="hidden" name="action" value="unlink" />
+                <input type="hidden" name="photo_id" value={p.id} />
+                <button type="submit" class="text-error-500 hover:underline">Bỏ liên kết</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <p class="mb-4 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-theme-sm text-gray-500">
+      Chưa có ảnh nào.
+    </p>
+  )}
+
+  <details class="mb-3 rounded-lg border border-gray-200 bg-gray-50">
+    <summary class="cursor-pointer px-4 py-3 text-theme-sm font-medium text-gray-800 hover:bg-gray-100 rounded-lg">
+      + Tải ảnh mới cho thành viên này
+    </summary>
+    <form method="post" action={action} enctype="multipart/form-data" class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2">
+      <input type="hidden" name="action" value="upload" />
+      <div>
+        <label class="mb-1 block text-theme-xs font-medium text-gray-700">ID ảnh *</label>
+        <input type="text" name="id" required pattern="[a-z0-9][a-z0-9._-]{0,60}"
+          placeholder={`${suggestedSlug}graduation`}
+          class="h-10 w-full rounded-md border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+      <div>
+        <label class="mb-1 block text-theme-xs font-medium text-gray-700">Năm chụp</label>
+        <input type="number" name="year"
+          class="h-10 w-full rounded-md border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+      <div>
+        <label class="mb-1 block text-theme-xs font-medium text-gray-700">Caption (vi) *</label>
+        <input type="text" name="caption" required placeholder="vd: Lễ tốt nghiệp Bách khoa"
+          class="h-10 w-full rounded-md border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+      <div>
+        <label class="mb-1 block text-theme-xs font-medium text-gray-700">Caption (en)</label>
+        <input type="text" name="caption_en" placeholder="vd: Polytechnic graduation"
+          class="h-10 w-full rounded-md border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+      <div class="sm:col-span-2">
+        <label class="mb-1 block text-theme-xs font-medium text-gray-700">File ảnh *</label>
+        <input type="file" name="file" required accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+          class="block w-full text-theme-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-theme-xs file:font-medium file:text-brand-600 hover:file:bg-brand-100 cursor-pointer" />
+      </div>
+      <div class="sm:col-span-2 flex justify-end">
+        <button type="submit" class="rounded-lg bg-brand-500 px-4 py-2 text-theme-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">
+          Tải lên + liên kết
+        </button>
+      </div>
+    </form>
+  </details>
+
+  {others.length > 0 && (
+    <details class="rounded-lg border border-gray-200 bg-gray-50">
+      <summary class="cursor-pointer px-4 py-3 text-theme-sm font-medium text-gray-800 hover:bg-gray-100 rounded-lg">
+        + Liên kết ảnh có sẵn ở album chung ({others.length})
+      </summary>
+      <form method="post" action={action} class="space-y-3 p-4">
+        <input type="hidden" name="action" value="link" />
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          {others.map((p) => (
+            <label class="block rounded-lg border border-gray-200 bg-white overflow-hidden cursor-pointer hover:border-brand-300 transition-colors">
+              <div class="aspect-[4/3] bg-gray-100 relative">
+                <img src={p.src} alt={p.caption} loading="lazy"
+                  class="absolute inset-0 h-full w-full object-cover" />
+              </div>
+              <div class="p-2">
+                <div class="flex items-start gap-2">
+                  <input type="checkbox" name="photo_id" value={p.id}
+                    class="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500/20" />
+                  <div class="min-w-0">
+                    <div class="text-theme-xs text-gray-700 line-clamp-1" title={p.caption}>{p.caption}</div>
+                    <div class="text-theme-xs text-gray-400">{p.year ?? "—"}</div>
+                  </div>
+                </div>
+              </div>
+            </label>
+          ))}
+        </div>
+        <div class="flex justify-end">
+          <button type="submit" class="rounded-lg border border-gray-200 px-4 py-2 text-theme-sm font-medium text-gray-700 hover:bg-gray-50">
+            Liên kết các ảnh đã tích
+          </button>
+        </div>
+      </form>
+    </details>
+  )}
+</section>

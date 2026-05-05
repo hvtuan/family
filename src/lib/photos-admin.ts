@@ -101,6 +101,62 @@ export async function getPhotoMembers(id: string): Promise<string[]> {
   });
 }
 
+/** Photos already linked to this member, newest first. */
+export async function listPhotosForMember(memberId: string): Promise<PhotoRow[]> {
+  const { data: links, error: e1 } = await supabaseAdmin
+    .from("photo_members")
+    .select("photo_id")
+    .eq("member_id", memberId);
+  if (e1) throw new Error(`listPhotosForMember links: ${e1.message}`);
+  const ids = ((links ?? []) as { photo_id: string }[]).map((l) => l.photo_id);
+  if (ids.length === 0) return [];
+  const { data, error } = await supabaseAdmin
+    .from("photos")
+    .select("*")
+    .in("id", ids)
+    .order("featured", { ascending: false })
+    .order("year", { ascending: false });
+  if (error) throw new Error(`listPhotosForMember: ${error.message}`);
+  return (data ?? []) as PhotoRow[];
+}
+
+/** Existing photos that this member is *not* linked to yet, for the
+ *  "link existing" picker. Filtered client-side because the dataset is
+ *  small and `not in (…)` syntax is awkward in supabase-js. */
+export async function listPhotosNotLinkedTo(memberId: string): Promise<PhotoRow[]> {
+  const [all, linked] = await Promise.all([
+    listPhotos(),
+    listPhotosForMember(memberId),
+  ]);
+  const linkedIds = new Set(linked.map((p) => p.id));
+  return all.filter((p) => !linkedIds.has(p.id));
+}
+
+export async function linkPhotoToMember(
+  photoId: string,
+  memberId: string,
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("photo_members")
+    .insert({ photo_id: photoId, member_id: memberId });
+  // Composite-PK race: another concurrent click is fine, swallow.
+  if (error && !error.message.includes("duplicate") && !error.message.includes("23505")) {
+    throw new Error(`linkPhotoToMember: ${error.message}`);
+  }
+}
+
+export async function unlinkPhotoFromMember(
+  photoId: string,
+  memberId: string,
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("photo_members")
+    .delete()
+    .eq("photo_id", photoId)
+    .eq("member_id", memberId);
+  if (error) throw new Error(`unlinkPhotoFromMember: ${error.message}`);
+}
+
 export async function deletePhoto(id: string): Promise<void> {
   const { error } = await supabaseAdmin.from("photos").delete().eq("id", id);
   if (error) throw new Error(`deletePhoto: ${error.message}`);

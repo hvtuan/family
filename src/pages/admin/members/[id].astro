@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import MemberForm from "@/components/admin/MemberForm.astro";
+import MemberPhotos from "@/components/admin/MemberPhotos.astro";
 import {
   getMember,
   listMemberRefs,
@@ -8,6 +9,10 @@ import {
   syncMemberChildren,
 } from "@/lib/members-admin";
 import { parseMemberForm } from "@/lib/members-form";
+import {
+  listPhotosForMember,
+  listPhotosNotLinkedTo,
+} from "@/lib/photos-admin";
 import type { MemberInput, MemberRow } from "@/lib/members-admin";
 
 export const prerender = false;
@@ -22,9 +27,17 @@ if (!existing) {
   return new Response("Không tìm thấy thành viên", { status: 404 });
 }
 
-if (Astro.url.searchParams.get("ok") === "created") {
-  fieldOk = "Đã tạo thành viên.";
+const okParam = Astro.url.searchParams.get("ok");
+const errParam = Astro.url.searchParams.get("err");
+if (okParam) {
+  if (okParam === "created") fieldOk = "Đã tạo thành viên.";
+  else if (okParam === "photo_uploaded") fieldOk = "Đã tải ảnh lên + liên kết với thành viên.";
+  else if (okParam.startsWith("photo_linked_"))
+    fieldOk = `Đã liên kết ${okParam.split("_")[2]} ảnh.`;
+  else if (okParam === "photo_unlinked") fieldOk = "Đã bỏ liên kết ảnh.";
+  else fieldOk = okParam;
 }
+if (errParam) fieldError = errParam;
 
 let values: Partial<MemberRow> = existing;
 
@@ -50,7 +63,11 @@ if (Astro.request.method === "POST") {
   }
 }
 
-const refs = await listMemberRefs();
+const [refs, linkedPhotos, otherPhotos] = await Promise.all([
+  listMemberRefs(),
+  listPhotosForMember(id),
+  listPhotosNotLinkedTo(id),
+]);
 ---
 
 <AdminLayout
@@ -60,11 +77,14 @@ const refs = await listMemberRefs();
     { label: existing?.name ?? id },
   ]}
 >
-  <MemberForm
-    mode="edit"
-    values={values}
-    refs={refs}
-    fieldError={fieldError}
-    fieldOk={fieldOk}
-  />
+  <div class="space-y-6">
+    <MemberForm
+      mode="edit"
+      values={values}
+      refs={refs}
+      fieldError={fieldError}
+      fieldOk={fieldOk}
+    />
+    <MemberPhotos memberId={id} linked={linkedPhotos} others={otherPhotos} />
+  </div>
 </AdminLayout>
