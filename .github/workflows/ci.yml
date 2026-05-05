@@ -38,6 +38,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build (astro check + astro build)
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PUBLIC_SUPABASE_SCHEMA: ${{ secrets.PUBLIC_SUPABASE_SCHEMA }}
         run: pnpm build
 
       - name: Privacy scan (no contact field leaked)
