@@ -1,14 +1,14 @@
 ---
-import type { CollectionEntry } from "astro:content";
-import { render } from "astro:content";
+import type { TraditionEntry } from "@/lib/content";
+import { renderMarkdown } from "@/lib/markdown";
 
 interface Props {
-  tradition: CollectionEntry<"traditions">;
+  tradition: TraditionEntry;
 }
 
 const { tradition } = Astro.props;
 const t = tradition.data;
-const { Content } = await render(tradition);
+const bodyHtml = renderMarkdown(tradition.body);
 
 const iconGlyph: Record<string, string> = {
   bowl: "🍚",
@@ -67,9 +67,7 @@ const cat = categoryLabel[t.category];
     <summary class="cursor-pointer font-semibold text-vermilion list-none py-1.5">
       Xem chi tiết / Read more
     </summary>
-    <div class="tradition-content pt-3 border-t border-dashed border-line text-ink-2 leading-[1.7]">
-      <Content />
-    </div>
+    <div class="tradition-content pt-3 border-t border-dashed border-line text-ink-2 leading-[1.7]" set:html={bodyHtml} />
   </details>
 </li>
 

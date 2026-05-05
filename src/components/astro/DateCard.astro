@@ -1,5 +1,5 @@
 ---
-import type { CollectionEntry } from "astro:content";
+import type { DateData } from "@/lib/content";
 
 interface RelatedMember {
   id: string;
@@ -7,7 +7,7 @@ interface RelatedMember {
 }
 
 interface Props {
-  entry: CollectionEntry<"dates">["data"];
+  entry: DateData;
   member?: RelatedMember;
 }
 

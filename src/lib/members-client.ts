@@ -1,4 +1,4 @@
-import type { CollectionEntry } from "astro:content";
+import type { MemberEntry } from "./content";
 
 export type ClientMemberContact = {
   phone?: string;
@@ -74,10 +74,10 @@ export type ClientPhoto = {
   year?: number;
 };
 
-export function toClientMember(m: CollectionEntry<"members">): ClientMember {
+export function toClientMember(m: MemberEntry): ClientMember {
   const d = m.data;
   const out: ClientMember = {
-    // Use entry id (file stem) — that's what `reference("members")` resolves to.
+    // Use entry id — same as the previous Astro content-collection slug.
     id: m.id,
     name: d.name,
     nameEn: d.nameEn,
@@ -126,9 +126,7 @@ export function toClientMember(m: CollectionEntry<"members">): ClientMember {
     tags: d.tags,
 
     photos: d.photos.map((p) => ({
-      src: typeof p.src === "string" ? p.src : p.src.src,
-      width: typeof p.src === "string" ? undefined : p.src.width,
-      height: typeof p.src === "string" ? undefined : p.src.height,
+      src: p.src,
       caption: p.caption,
       captionEn: p.captionEn,
       year: p.year,

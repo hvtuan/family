@@ -2,14 +2,14 @@
 import Base from "@/layouts/Base.astro";
 import PageHead from "@/components/astro/PageHead.astro";
 import TimelineEvent from "@/components/astro/TimelineEvent.astro";
-import { getCollection } from "astro:content";
+import { getMembers, getTimeline } from "@/lib/content";
 
-const events = (await getCollection("timeline")).sort(
+const events = (await getTimeline()).sort(
   (a, b) =>
     a.data.year - b.data.year || (a.data.date ?? "").localeCompare(b.data.date ?? ""),
 );
 const memberIndex = new Map(
-  (await getCollection("members")).map((m) => [m.id, m]),
+  (await getMembers()).map((m) => [m.id, m]),
 );
 ---
 

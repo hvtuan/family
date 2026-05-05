@@ -2,9 +2,9 @@
 import Base from "@/layouts/Base.astro";
 import PageHead from "@/components/astro/PageHead.astro";
 import PhotoCard from "@/components/astro/PhotoCard.astro";
-import { getCollection } from "astro:content";
+import { getPhotos } from "@/lib/content";
 
-const photos = await getCollection("photos");
+const photos = await getPhotos();
 ---
 
 <Base title="Album" pageKey="album">

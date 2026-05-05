@@ -1,9 +1,8 @@
 ---
-import { Image } from "astro:assets";
-import type { CollectionEntry } from "astro:content";
+import type { PhotoData } from "@/lib/content";
 
 interface Props {
-  photo: CollectionEntry<"photos">["data"];
+  photo: PhotoData;
 }
 
 const { photo: p } = Astro.props;
@@ -12,11 +11,9 @@ const { photo: p } = Astro.props;
 <li class="">
   <figure class="m-0 bg-cream border border-line rounded-xl overflow-hidden shadow-paper-1">
     <div class="aspect-[4/3] bg-paper-3">
-      <Image
+      <img
         src={p.src}
         alt={p.caption}
-        widths={[320, 640, 960]}
-        sizes="(max-width: 640px) 90vw, 32vw"
         class="w-full h-full object-cover block"
         loading="lazy"
         decoding="async"

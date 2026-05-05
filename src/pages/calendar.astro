@@ -2,11 +2,11 @@
 import Base from "@/layouts/Base.astro";
 import PageHead from "@/components/astro/PageHead.astro";
 import DateCard from "@/components/astro/DateCard.astro";
-import { getCollection } from "astro:content";
+import { getDates, getMembers } from "@/lib/content";
 
-const dates = await getCollection("dates");
+const dates = await getDates();
 const memberIndex = new Map(
-  (await getCollection("members")).map((m) => [m.id, m]),
+  (await getMembers()).map((m) => [m.id, m]),
 );
 
 type DType = (typeof dates)[number]["data"]["type"];

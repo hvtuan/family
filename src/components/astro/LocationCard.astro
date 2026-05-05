@@ -1,8 +1,8 @@
 ---
-import type { CollectionEntry } from "astro:content";
+import type { LocationData } from "@/lib/content";
 
 interface Props {
-  location: CollectionEntry<"locations">["data"];
+  location: LocationData;
   memberNames: string[];
 }
 

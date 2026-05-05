@@ -3,13 +3,13 @@ import Base from "@/layouts/Base.astro";
 import PageHead from "@/components/astro/PageHead.astro";
 import VietnamSVG from "@/components/astro/VietnamSVG.astro";
 import LocationCard from "@/components/astro/LocationCard.astro";
-import { getCollection } from "astro:content";
+import { getLocations, getMembers } from "@/lib/content";
 
-const locations = (await getCollection("locations"))
+const locations = (await getLocations())
   .slice()
   .sort((a, b) => Number(b.data.isHometown) - Number(a.data.isHometown));
 const memberIndex = new Map(
-  (await getCollection("members")).map((m) => [m.id, m]),
+  (await getMembers()).map((m) => [m.id, m]),
 );
 
 const mapMarkers = locations.map((loc) => ({

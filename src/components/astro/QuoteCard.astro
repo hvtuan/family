@@ -1,8 +1,8 @@
 ---
-import type { CollectionEntry } from "astro:content";
+import type { QuoteData } from "@/lib/content";
 
 interface Props {
-  quote: CollectionEntry<"quotes">["data"];
+  quote: QuoteData;
   /** Resolved author member (optional). When provided, author name becomes a link. */
   authorHref?: string;
   /** "compact" = inline blockquote (homepage); "card" = full quote card (sayings). */

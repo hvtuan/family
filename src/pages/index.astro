@@ -5,16 +5,13 @@ import Stamp from "@/components/astro/Stamp.astro";
 import MemberCard from "@/components/astro/MemberCard.astro";
 import QuoteCard from "@/components/astro/QuoteCard.astro";
 import { SITE } from "@/data/site";
-import { getCollection } from "astro:content";
+import { getMembers, getQuotes, getTimeline } from "@/lib/content";
 import { toClientMember } from "@/lib/members-client";
 
-const allMembers = await getCollection(
-  "members",
-  ({ data }) => data.status === "published",
-);
+const allMembers = await getMembers((entry) => entry.data.status === "published");
 const clientMembers = allMembers.map(toClientMember);
-const quotes = await getCollection("quotes");
-const timeline = await getCollection("timeline");
+const quotes = await getQuotes();
+const timeline = await getTimeline();
 
 const heroQuote = quotes[0];
 const heroAuthorRef = heroQuote?.data.authorRef

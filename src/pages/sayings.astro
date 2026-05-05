@@ -2,11 +2,11 @@
 import Base from "@/layouts/Base.astro";
 import PageHead from "@/components/astro/PageHead.astro";
 import QuoteCard from "@/components/astro/QuoteCard.astro";
-import { getCollection } from "astro:content";
+import { getMembers, getQuotes } from "@/lib/content";
 
-const quotes = await getCollection("quotes");
+const quotes = await getQuotes();
 const memberIndex = new Map(
-  (await getCollection("members")).map((m) => [m.id, m]),
+  (await getMembers()).map((m) => [m.id, m]),
 );
 ---
 

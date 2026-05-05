@@ -3,9 +3,9 @@ import Base from "@/layouts/Base.astro";
 import PageHead from "@/components/astro/PageHead.astro";
 import TraditionCard from "@/components/astro/TraditionCard.astro";
 import Lotus from "@/components/astro/Lotus.astro";
-import { getCollection } from "astro:content";
+import { getTraditions } from "@/lib/content";
 
-const traditions = await getCollection("traditions");
+const traditions = await getTraditions();
 ---
 
 <Base title="Truyền thống" pageKey="traditions">

@@ -1,7 +1,7 @@
 ---
 import "@/styles/global.css";
 import { SITE, NAV_LINKS } from "@/data/site";
-import { getCollection } from "astro:content";
+import { getMembers } from "@/lib/content";
 import { toClientMember } from "@/lib/members-client";
 import ThemeSwitcher from "@/components/react/ThemeSwitcher";
 import MemberModal from "@/components/react/MemberModal";
@@ -18,10 +18,7 @@ const pageDesc =
   description ?? `${SITE.brand.vi} • ${SITE.hometown} • ${SITE.motto}`;
 const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
 
-const allMembers = await getCollection(
-  "members",
-  ({ data }) => data.status === "published",
-);
+const allMembers = await getMembers((entry) => entry.data.status === "published");
 const clientMembers = allMembers.map(toClientMember);
 ---
 

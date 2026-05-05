@@ -2,13 +2,10 @@
 import Base from "@/layouts/Base.astro";
 import PageHead from "@/components/astro/PageHead.astro";
 import MemberFilter from "@/components/react/MemberFilter";
-import { getCollection } from "astro:content";
+import { getMembers } from "@/lib/content";
 import { toClientMember } from "@/lib/members-client";
 
-const all = await getCollection(
-  "members",
-  ({ data }) => data.status === "published",
-);
+const all = await getMembers((entry) => entry.data.status === "published");
 const clientMembers = all.map(toClientMember);
 const totalGens = new Set(clientMembers.map((m) => m.gen)).size;
 ---
