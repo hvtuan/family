@@ -3,6 +3,13 @@
 > **Status**: Active design (2026-05-05). Supersedes `PHASE-2-ADMIN.md` (Sveltia plan, deprecated).
 > **Owner**: solo dev (user).
 > **Estimate**: ~14 dev-days across 11 phases (P0–P10).
+>
+> **Architecture amendments (2026-05-05, post-brainstorm)**
+> - Supabase is **self-hosted on the same Coolify VPS**, not Supabase Cloud. One shared instance for multiple projects (Pattern 1: schema-per-project). All Phase 2 tables live in the `family` schema; `auth.*` and `storage.*` schemas are shared across projects.
+> - Coolify project: a separate "Shared" project (uuid `lrlwowrtoo5lwjpxkaz97gmn`) holds the Supabase service so it does not appear under "Family" specifically.
+> - FQDN: `https://supabase.huynhvantuan.net` (Cloudflare Tunnel → Coolify Traefik). Studio + API + Auth all share this host.
+> - Storage bucket renamed `family-photos` (prefixed) so other projects can have their own bucket without collision.
+> - Astro Supabase clients explicitly bind to `db.schema = 'family'` (`src/lib/supabase/{client,server,admin}.ts`).
 
 ---
 
@@ -653,7 +660,7 @@ Run: `pnpm migrate:dry` → review → `pnpm migrate:apply` → verify counts �
 | Phase | Scope | Effort | Depends |
 |---|---|---|---|
 | **P0 — Spike** | Astro hybrid + Node adapter on `phase2-spike`. Verify static + SSR coexist. | 0.5d | none |
-| **P1 — Supabase** | Project, schema migrations, RLS, seed `allowed_emails`. Local connect. | 1d | Supabase account |
+| **P1 — Supabase** | Coolify Supabase service deploy, schema migrations (7 files), RLS, seed `allowed_emails`. Local connect verified via smoke test. **DONE 2026-05-05.** | 1d | Coolify API token (deploy scope) |
 | **P2 — Migration script** | `migrate-content-to-db.mjs` dry-run + apply. Backup MD/YAML. Verify counts. | 1d | P1 |
 | **P3 — Public DB queries** | Convert 9 public pages from `getCollection()` → Supabase. Visual regression. | 1.5d | P2 |
 | **P4 — Auth + AdminLayout** | Login, Supabase Auth, callback, session middleware, AdminLayout (Sidebar + Topbar). | 1.5d | P1 |
