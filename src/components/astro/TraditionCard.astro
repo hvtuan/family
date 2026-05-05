@@ -1,0 +1,106 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { render } from "astro:content";
+
+interface Props {
+  tradition: CollectionEntry<"traditions">;
+}
+
+const { tradition } = Astro.props;
+const t = tradition.data;
+const { Content } = await render(tradition);
+
+const iconGlyph: Record<string, string> = {
+  bowl: "🍚",
+  fish: "🐟",
+  leaf: "🍃",
+  shell: "🐚",
+  incense: "🪔",
+  blossom: "❀",
+};
+
+const categoryLabel: Record<string, { vi: string; en: string }> = {
+  food: { vi: "Ẩm thực", en: "Food" },
+  festival: { vi: "Lễ hội", en: "Festival" },
+  ceremony: { vi: "Nghi lễ", en: "Ceremony" },
+  craft: { vi: "Thủ công", en: "Craft" },
+};
+
+const cat = categoryLabel[t.category];
+---
+
+<li class="u-card p-6 flex flex-col gap-2">
+  <header class="flex items-center justify-between gap-4">
+    <span class="text-[2.4rem] leading-none" aria-hidden="true">{iconGlyph[t.icon]}</span>
+    <span class="inline-flex flex-col leading-tight px-3 py-1 bg-jade text-paper rounded-full text-[0.78rem] font-semibold">
+      <span>{cat.vi}</span>
+      <span lang="en" class="text-[0.6rem] tracking-[0.16em] uppercase opacity-85">{cat.en}</span>
+    </span>
+  </header>
+
+  <h2 class="text-[1.4rem] m-0">{t.name}</h2>
+  {
+    t.nameEn?.trim() && (
+      <p lang="en" class="text-[0.78rem] tracking-[0.14em] uppercase text-ink-3 -mt-1 mb-1.5">
+        {t.nameEn}
+      </p>
+    )
+  }
+  <p class="text-ink-2 leading-[1.55]">{t.desc}</p>
+  {
+    t.descEn?.trim() && (
+      <p lang="en" class="text-[0.88rem] text-ink-3 leading-normal italic">
+        {t.descEn}
+      </p>
+    )
+  }
+  {
+    t.origin && (
+      <p class="flex gap-2 text-[0.85rem] text-ink-2 items-baseline mt-2">
+        <span class="text-[0.7rem] tracking-[0.16em] uppercase text-gold-2">Nguồn gốc</span>
+        <span>{t.origin}</span>
+      </p>
+    )
+  }
+
+  <details class="tradition-details mt-2">
+    <summary class="cursor-pointer font-semibold text-vermilion list-none py-1.5">
+      Xem chi tiết / Read more
+    </summary>
+    <div class="tradition-content pt-3 border-t border-dashed border-line text-ink-2 leading-[1.7]">
+      <Content />
+    </div>
+  </details>
+</li>
+
+<style>
+  .tradition-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .tradition-details summary::after {
+    content: " ▾";
+    display: inline-block;
+    transition: transform 160ms ease;
+  }
+  .tradition-details[open] summary::after {
+    transform: rotate(180deg);
+  }
+  .tradition-content :global(h2),
+  .tradition-content :global(h3) {
+    font-size: 1.05rem;
+    margin: 1rem 0 0.5rem;
+    color: var(--color-vermilion);
+  }
+  .tradition-content :global(ul),
+  .tradition-content :global(ol) {
+    padding-left: 1.5rem;
+    margin: 0.5rem 0;
+  }
+  .tradition-content :global(blockquote) {
+    border-left: 3px solid var(--color-vermilion);
+    padding: 0.25rem 0 0.25rem 1rem;
+    margin: 0.75rem 0;
+    font-style: italic;
+    color: var(--color-ink-2);
+  }
+</style>

@@ -1,0 +1,70 @@
+---
+import type { ClientMember } from "@/lib/members-client";
+
+interface Props {
+  member: ClientMember;
+  /** When true (default), render an <a> link to the member modal; otherwise a plain div. */
+  link?: boolean;
+  /** Show tag chips beneath the bio. */
+  showTags?: boolean;
+}
+
+const { member: m, link = true, showTags = false } = Astro.props;
+
+function yearRange(m: ClientMember): string {
+  const b = m.born?.slice(0, 4);
+  const d = m.died?.slice(0, 4);
+  if (!b) return "";
+  return d ? `${b} – ${d}` : `${b} – nay`;
+}
+
+const initial = m.name.split(" ").slice(-1)[0]?.charAt(0) ?? "?";
+const Tag = link ? "a" : "div";
+const tagProps = link ? { href: `/members?member=${m.id}` } : {};
+---
+
+<Tag
+  {...tagProps}
+  class:list={[
+    "u-card flex flex-col overflow-hidden text-ink no-underline transition-transform duration-150",
+    link && "hover:-translate-y-0.5 hover:shadow-paper-2",
+  ]}
+  data-pattern={m.pattern}
+>
+  <div
+    class="h-[180px] flex items-center justify-center border-b border-line bg-paper-3 [background:radial-gradient(circle_at_30%_30%,rgba(201,163,90,0.25),transparent_60%),var(--color-paper-3)]"
+    aria-hidden="true"
+  >
+    <span class="font-display font-bold text-7xl text-vermilion opacity-85">
+      {initial}
+    </span>
+  </div>
+  <div class="p-5 flex flex-col gap-1.5 flex-1">
+    <p class="text-[0.7rem] tracking-[0.18em] uppercase text-gold-2">
+      Đời thứ {m.gen}
+      <span lang="en">· Gen {m.gen}</span>
+    </p>
+    <h3 class="font-display font-bold text-2xl m-0 leading-tight text-ink">{m.name}</h3>
+    <p class="text-[0.95rem] text-ink-2">{m.role}</p>
+    <p class="text-[0.82rem] text-ink-3 [font-feature-settings:'tnum'_1]">{yearRange(m)}</p>
+    <p class="text-[0.92rem] text-ink-2 leading-[1.55] mt-1">{m.bio}</p>
+    {
+      showTags && m.tags.length > 0 && (
+        <ul class="list-none m-0 p-0 flex flex-wrap gap-1 mt-2">
+          {m.tags.map((t) => (
+            <li class="font-mono text-[0.72rem] px-2 py-0.5 bg-paper-2 text-ink-2 rounded-full">
+              #{t}
+            </li>
+          ))}
+        </ul>
+      )
+    }
+    {
+      link && (
+        <span class="mt-auto pt-3 font-semibold text-vermilion text-[0.9rem]">
+          Xem chi tiết →
+        </span>
+      )
+    }
+  </div>
+</Tag>

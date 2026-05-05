@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e6d9b3"/>
+      <stop offset="100%" stop-color="#bfa97a"/>
+    </linearGradient>
+    <filter id="paper">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" seed="5"/>
+      <feColorMatrix values="0 0 0 0 0.6 0 0 0 0 0.45 0 0 0 0 0.25 0 0 0 0.15 0"/>
+      <feComposite operator="in" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+  <rect width="400" height="300" fill="url(#bg)"/>
+  <rect width="400" height="300" filter="url(#paper)" opacity="0.5"/>
+  <g transform="translate(200,150)" fill="#8b2a1f" opacity="0.35">
+    <circle cx="0" cy="-30" r="36"/>
+    <path d="M -60 50 Q 0 -10 60 50 L 60 80 L -60 80 Z"/>
+  </g>
+  <text x="200" y="240" text-anchor="middle" fill="#3a2a1a" font-family="Lora, serif" font-size="14" opacity="0.7">
+    Lễ tốt nghiệp Bách khoa
+  </text>
+  <text x="200" y="260" text-anchor="middle" fill="#5c4a33" font-family="serif" font-size="11" font-style="italic" opacity="0.6">
+    2002
+  </text>
+</svg>

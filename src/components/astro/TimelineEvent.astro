@@ -1,0 +1,101 @@
+---
+import type { CollectionEntry } from "astro:content";
+
+interface RelatedMember {
+  id: string;
+  name: string;
+}
+
+interface Props {
+  event: CollectionEntry<"timeline">["data"];
+  related: RelatedMember[];
+}
+
+const { event: e, related } = Astro.props;
+
+const categoryLabel: Record<string, { vi: string; en: string }> = {
+  founding: { vi: "Lập gia tộc", en: "Founding" },
+  birth: { vi: "Sinh", en: "Birth" },
+  marriage: { vi: "Hôn lễ", en: "Marriage" },
+  death: { vi: "Mất", en: "Passing" },
+  milestone: { vi: "Mốc son", en: "Milestone" },
+  gathering: { vi: "Tụ họp", en: "Gathering" },
+};
+
+const cat = e.category ? categoryLabel[e.category] : undefined;
+---
+
+<li class="grid grid-cols-[112px_1fr] gap-4 items-start pb-8 mobile:grid-cols-[56px_1fr] mobile:gap-3">
+  <div class="flex items-center justify-center w-28 relative pt-2 mobile:w-14" aria-hidden="true">
+    <span
+      class="w-16 h-16 flex items-center justify-center rounded-full bg-paper border-[3px] border-vermilion font-display font-bold text-[1.05rem] text-vermilion shadow-paper-1 z-10 mobile:w-12 mobile:h-12 mobile:text-[0.78rem]"
+    >
+      {e.year}
+    </span>
+  </div>
+
+  <article class="u-card p-5 sm:px-6">
+    <header class="flex flex-wrap gap-3 items-center justify-between mb-2">
+      {
+        cat && (
+          <span class="inline-flex flex-col leading-tight px-3 py-1 bg-vermilion text-paper rounded-full text-[0.78rem] font-semibold">
+            <span>{cat.vi}</span>
+            <span lang="en" class="text-[0.6rem] tracking-[0.16em] uppercase opacity-85">{cat.en}</span>
+          </span>
+        )
+      }
+      {
+        e.date && (
+          <time
+            datetime={e.date}
+            class="text-[0.85rem] text-ink-3 [font-feature-settings:'tnum'_1] inline-flex gap-1.5 items-center"
+          >
+            {e.date}
+            {e.lunar && (
+              <span class="text-[0.65rem] px-1.5 py-px bg-paper-3 rounded-full text-ink-2 tracking-wide">
+                âm lịch
+              </span>
+            )}
+          </time>
+        )
+      }
+    </header>
+
+    <h2 class="text-[1.3rem] m-0">{e.title}</h2>
+    {
+      e.titleEn?.trim() && (
+        <p lang="en" class="text-[0.78rem] tracking-[0.14em] uppercase text-ink-3 mb-2">
+          {e.titleEn}
+        </p>
+      )
+    }
+    <p class="text-ink-2 leading-relaxed">{e.desc}</p>
+    {
+      e.descEn?.trim() && (
+        <p lang="en" class="text-[0.88rem] text-ink-3 leading-normal mt-1 italic">
+          {e.descEn}
+        </p>
+      )
+    }
+
+    {
+      related.length > 0 && (
+        <footer class="mt-3.5 pt-3 border-t border-dashed border-line flex flex-wrap gap-2 items-baseline text-[0.85rem]">
+          <span class="text-ink-3 text-[0.78rem] tracking-wide">Liên quan:</span>
+          <ul class="list-none m-0 p-0 flex flex-wrap gap-1.5">
+            {related.map((m) => (
+              <li>
+                <a
+                  href={`/members?member=${m.id}`}
+                  class="text-vermilion font-semibold"
+                >
+                  {m.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </footer>
+      )
+    }
+  </article>
+</li>

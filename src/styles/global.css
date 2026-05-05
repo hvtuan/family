@@ -251,6 +251,16 @@ a:hover { color: var(--color-vermilion); }
     box-shadow: var(--shadow-paper-1);
   }
 
+  /* Paper background panel (subtle texture) */
+  .u-paper-bg {
+    background:
+      radial-gradient(ellipse at top left, rgba(201, 163, 90, 0.10), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(139, 42, 31, 0.06), transparent 60%),
+      var(--color-paper-2);
+    border: 1px solid var(--color-line);
+    border-radius: 14px;
+  }
+
   /* Animation: gentle reveal */
   .u-reveal {
     animation: u-floatUp 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;

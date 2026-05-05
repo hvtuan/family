@@ -1,0 +1,84 @@
+---
+import type { CollectionEntry } from "astro:content";
+
+interface RelatedMember {
+  id: string;
+  name: string;
+}
+
+interface Props {
+  entry: CollectionEntry<"dates">["data"];
+  member?: RelatedMember;
+}
+
+const { entry: d, member } = Astro.props;
+
+const monthNames = [
+  "Tháng 1",
+  "Tháng 2",
+  "Tháng 3",
+  "Tháng 4",
+  "Tháng 5",
+  "Tháng 6",
+  "Tháng 7",
+  "Tháng 8",
+  "Tháng 9",
+  "Tháng 10",
+  "Tháng 11",
+  "Tháng 12",
+];
+
+function parseDate(raw: string): { month: number; day: number } | null {
+  const m1 = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m1) return { month: Number(m1[2]), day: Number(m1[3]) };
+  const m2 = raw.match(/^(\d{1,2})[-/](\d{1,2})$/);
+  if (m2) return { month: Number(m2[1]), day: Number(m2[2]) };
+  return null;
+}
+
+const parsed = parseDate(d.date);
+const calendarBg = d.calendar === "lunar" ? "bg-vermilion text-paper" : "bg-jade text-paper";
+---
+
+<li class="u-card grid grid-cols-[110px_1fr] gap-4 p-4 px-5 items-center mobile:grid-cols-[90px_1fr] mobile:gap-3">
+  <div class="flex flex-col items-center gap-1 p-2.5 bg-paper-2 rounded-[10px] text-center">
+    <span class="font-display font-bold text-[2rem] text-vermilion leading-none mobile:text-[1.5rem]">
+      {parsed ? String(parsed.day).padStart(2, "0") : "—"}
+    </span>
+    <span class="text-[0.78rem] text-ink-2">
+      {parsed ? monthNames[parsed.month - 1] : d.date}
+    </span>
+    <span class={`text-[0.6rem] tracking-wide uppercase px-2 py-px rounded-full mt-0.5 ${calendarBg}`}>
+      {d.calendar === "lunar" ? "Âm lịch" : "Dương lịch"}
+    </span>
+  </div>
+
+  <div>
+    <h3 class="text-[1.1rem] m-0">{d.name}</h3>
+    {
+      d.nameEn?.trim() && (
+        <p lang="en" class="text-[0.75rem] tracking-[0.14em] uppercase text-ink-3 mb-1.5">
+          {d.nameEn}
+        </p>
+      )
+    }
+    {
+      member && (
+        <p class="text-[0.92rem] text-ink-2">
+          <span class="text-ink-3 text-[0.78rem]">Tưởng nhớ:</span>{" "}
+          <a href={`/members?member=${member.id}`} class="text-vermilion font-semibold">
+            {member.name}
+          </a>
+        </p>
+      )
+    }
+    {d.notes && <p class="mt-2 text-[0.85rem] text-ink-3 leading-[1.55]">{d.notes}</p>}
+    {
+      d.recurring && (
+        <span class="inline-block mt-2 px-2 py-0.5 bg-paper-3 rounded-full text-[0.7rem] text-ink-2">
+          Hằng năm
+        </span>
+      )
+    }
+  </div>
+</li>

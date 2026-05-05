@@ -1,0 +1,71 @@
+---
+/**
+ * Lotus blossom motif — used as a section divider on /traditions
+ * and as a visual flourish on the homepage. Pure SVG, no JS.
+ */
+interface Props {
+  size?: number;
+  color?: string;
+  /** Whether to render the rotating outer ring (decorative only). */
+  ring?: boolean;
+}
+
+const { size = 64, color = "currentColor", ring = false } = Astro.props;
+---
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 100 100"
+  width={size}
+  height={size}
+  aria-hidden="true"
+  class="lotus"
+>
+  {
+    ring && (
+      <circle
+        cx="50"
+        cy="50"
+        r="46"
+        fill="none"
+        stroke={color}
+        stroke-width="0.6"
+        stroke-dasharray="2 4"
+        opacity="0.5"
+      />
+    )
+  }
+
+  {/* 8-petal lotus, alternating outer/inner layers for depth */}
+  <g fill={color} opacity="0.85">
+    {/* Outer petals (rotated each 45°) */}
+    {Array.from({ length: 8 }).map((_, i) => (
+      <path
+        d="M 50 50 Q 56 32 50 14 Q 44 32 50 50 Z"
+        transform={`rotate(${i * 45} 50 50)`}
+        opacity="0.7"
+      />
+    ))}
+  </g>
+
+  <g fill={color} opacity="0.95">
+    {/* Inner petals offset 22.5° */}
+    {Array.from({ length: 8 }).map((_, i) => (
+      <path
+        d="M 50 50 Q 54 38 50 26 Q 46 38 50 50 Z"
+        transform={`rotate(${i * 45 + 22.5} 50 50)`}
+      />
+    ))}
+  </g>
+
+  {/* Centre */}
+  <circle cx="50" cy="50" r="6" fill={color} />
+  <circle cx="50" cy="50" r="3" fill="var(--color-paper, white)" opacity="0.6" />
+</svg>
+
+<style>
+  .lotus {
+    color: var(--color-vermilion);
+    flex: none;
+  }
+</style>

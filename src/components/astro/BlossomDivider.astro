@@ -1,0 +1,12 @@
+---
+interface Props {
+  symbol?: string;
+}
+const { symbol = "❀" } = Astro.props;
+---
+
+<div class="flex justify-center items-center gap-4 py-8 text-vermilion text-xl opacity-70 select-none" aria-hidden="true">
+  <span>{symbol}</span>
+  <span>•</span>
+  <span>{symbol}</span>
+</div>

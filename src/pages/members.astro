@@ -21,15 +21,7 @@ const totalGens = new Set(clientMembers.map((m) => m.gen)).size;
     subtitleEn={`${clientMembers.length} members across ${totalGens} generations`}
   />
 
-  <section class="members-list">
+  <section class="max-w-[1240px] mx-auto px-5 pt-4 pb-16">
     <MemberFilter members={clientMembers} client:visible />
   </section>
-
-  <style>
-    .members-list {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 1rem 1.25rem 4rem;
-    }
-  </style>
 </Base>

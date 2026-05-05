@@ -1,9 +1,10 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useStore } from "@nanostores/react";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Tabs from "@radix-ui/react-tabs";
+import useEmblaCarousel from "embla-carousel-react";
 import { $modalMember } from "@/stores/ui";
-import type { ClientMember } from "@/lib/members-client";
+import type { ClientMember, ClientPhoto } from "@/lib/members-client";
 import "./MemberModal.css";
 
 type Props = { members: ClientMember[] };
@@ -96,11 +97,13 @@ function ModalBody({
   const hasAchievements = m.achievements.length > 0;
   const hasAnecdotes = m.anecdotes.length > 0;
   const hasContact = !!m.contact;
+  const hasPhotos = m.photos.length > 0;
 
   // Build tab list dynamically.
   const tabs: { id: string; vi: string; en: string }[] = [
     { id: "bio", vi: "Tiểu sử", en: "Biography" },
   ];
+  if (hasPhotos) tabs.push({ id: "photos", vi: "Ảnh", en: "Photos" });
   if (hasRelations) tabs.push({ id: "relations", vi: "Quan hệ", en: "Relations" });
   if (hasAchievements)
     tabs.push({ id: "achievements", vi: "Thành tích", en: "Achievements" });
@@ -186,6 +189,12 @@ function ModalBody({
             </blockquote>
           )}
         </Tabs.Content>
+
+        {hasPhotos && (
+          <Tabs.Content value="photos" className="mm-tab-panel">
+            <PhotoCarousel photos={m.photos} memberName={m.name} />
+          </Tabs.Content>
+        )}
 
         {hasRelations && (
           <Tabs.Content value="relations" className="mm-tab-panel">
@@ -310,6 +319,117 @@ function Meta({
         <span>{value}</span>
         {sub && <span className="mm-meta-sub">{sub}</span>}
       </dd>
+    </div>
+  );
+}
+
+function PhotoCarousel({
+  photos,
+  memberName,
+}: {
+  photos: ClientPhoto[];
+  memberName: string;
+}) {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, dragFree: false });
+  const [selectedIdx, setSelectedIdx] = useState(0);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSelect = () => setSelectedIdx(emblaApi.selectedScrollSnap());
+    emblaApi.on("select", onSelect);
+    onSelect();
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi]);
+
+  // Keyboard arrow navigation when carousel area has focus.
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!emblaApi) return;
+      if (e.key === "ArrowLeft") {
+        emblaApi.scrollPrev();
+        e.preventDefault();
+      } else if (e.key === "ArrowRight") {
+        emblaApi.scrollNext();
+        e.preventDefault();
+      }
+    },
+    [emblaApi],
+  );
+
+  const scrollTo = useCallback(
+    (i: number) => emblaApi?.scrollTo(i),
+    [emblaApi],
+  );
+
+  return (
+    <div
+      className="mm-carousel"
+      tabIndex={0}
+      aria-roledescription="carousel"
+      aria-label={`Ảnh của ${memberName}`}
+      onKeyDown={onKeyDown}
+    >
+      <div className="mm-embla" ref={emblaRef}>
+        <div className="mm-embla-track">
+          {photos.map((p, i) => (
+            <figure key={i} className="mm-embla-slide">
+              <div className="mm-embla-img">
+                <img
+                  src={p.src}
+                  width={p.width}
+                  height={p.height}
+                  alt={p.caption}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <figcaption>
+                <p>{p.caption}</p>
+                {p.captionEn?.trim() && (
+                  <p lang="en" className="mm-embla-caption-en">
+                    {p.captionEn}
+                  </p>
+                )}
+                {p.year && <span className="mm-embla-year">{p.year}</span>}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+
+      <div className="mm-embla-controls">
+        <button
+          type="button"
+          className="mm-embla-arrow"
+          onClick={() => emblaApi?.scrollPrev()}
+          aria-label="Ảnh trước"
+        >
+          ←
+        </button>
+        <ol className="mm-embla-dots" aria-label="Chọn ảnh">
+          {photos.map((_, i) => (
+            <li key={i}>
+              <button
+                type="button"
+                className="mm-embla-dot"
+                aria-current={i === selectedIdx ? "true" : undefined}
+                aria-label={`Ảnh ${i + 1} / ${photos.length}`}
+                onClick={() => scrollTo(i)}
+              />
+            </li>
+          ))}
+        </ol>
+        <button
+          type="button"
+          className="mm-embla-arrow"
+          onClick={() => emblaApi?.scrollNext()}
+          aria-label="Ảnh kế"
+        >
+          →
+        </button>
+      </div>
     </div>
   );
 }

@@ -19,14 +19,7 @@ const clientMembers = all.map(toClientMember);
     subtitle="Kéo để di chuyển, dùng nút phóng to/thu nhỏ hoặc hai ngón tay để thu phóng. Bấm vào mỗi người để mở chi tiết."
     subtitleEn="Drag to pan, pinch or +/− to zoom, click to open details"
   />
-  <section class="tree-section">
+  <section class="max-w-[1240px] mx-auto px-5 pt-4 pb-16">
     <FamilyTree members={clientMembers} client:load />
   </section>
-  <style>
-    .tree-section {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 1rem 1.25rem 4rem;
-    }
-  </style>
 </Base>

@@ -61,6 +61,17 @@ export type ClientMember = {
 
   /** Only present if frontmatter `contactPublic === true`. */
   contact?: ClientMemberContact;
+
+  photos: ClientPhoto[];
+};
+
+export type ClientPhoto = {
+  src: string;
+  width?: number;
+  height?: number;
+  caption: string;
+  captionEn: string;
+  year?: number;
 };
 
 export function toClientMember(m: CollectionEntry<"members">): ClientMember {
@@ -113,6 +124,15 @@ export function toClientMember(m: CollectionEntry<"members">): ClientMember {
 
     pattern: d.pattern,
     tags: d.tags,
+
+    photos: d.photos.map((p) => ({
+      src: typeof p.src === "string" ? p.src : p.src.src,
+      width: typeof p.src === "string" ? undefined : p.src.width,
+      height: typeof p.src === "string" ? undefined : p.src.height,
+      caption: p.caption,
+      captionEn: p.captionEn,
+      year: p.year,
+    })),
   };
 
   if (d.contactPublic) {

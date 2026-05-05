@@ -1,0 +1,191 @@
+---
+/**
+ * Stylised Vietnam outline SVG with location markers.
+ * Coordinates are approximate (linear lat/lng → SVG mapping):
+ *   x = (lng - 102) * 30
+ *   y = (24 - lat) * 32
+ * The shape is decorative rather than cartographic.
+ */
+interface LocationLite {
+  id: string;
+  name: string;
+  nameEn: string;
+  isHometown: boolean;
+  lat: number;
+  lng: number;
+  members: number;
+}
+
+interface Props {
+  locations: LocationLite[];
+}
+
+const { locations } = Astro.props;
+
+// Map lat/lng to SVG coordinates within viewBox 0 0 240 600.
+function project(lat: number, lng: number): { x: number; y: number } {
+  const x = (lng - 102) * 30;
+  const y = (24 - lat) * 32;
+  return { x, y };
+}
+---
+
+<figure class="vn-svg">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 240 600"
+    role="img"
+    aria-label="Bản đồ giản lược Việt Nam với các địa điểm gia đình"
+    preserveAspectRatio="xMidYMid meet"
+  >
+    <defs>
+      <linearGradient id="vn-land" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#e6d9b3" stop-opacity="0.55"></stop>
+        <stop offset="100%" stop-color="#c9a35a" stop-opacity="0.35"></stop>
+      </linearGradient>
+      <linearGradient id="vn-sea" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="rgba(70,107,84,0.10)"></stop>
+        <stop offset="100%" stop-color="rgba(47,74,58,0.18)"></stop>
+      </linearGradient>
+    </defs>
+
+    <!-- East Sea backdrop -->
+    <rect width="240" height="600" fill="url(#vn-sea)" />
+
+    <!-- Stylised Vietnam outline (NORTH → S) -->
+    <path
+      d="
+        M 92 32
+        L 138 24
+        Q 168 40 178 78
+        Q 172 110 168 142
+        L 158 200
+        Q 144 250 152 290
+        Q 168 320 176 360
+        Q 192 410 178 460
+        Q 158 510 132 552
+        Q 110 580 92 568
+        Q 78 552 90 528
+        Q 80 502 64 480
+        Q 50 440 60 408
+        Q 70 372 80 348
+        Q 64 308 88 270
+        Q 102 232 96 200
+        Q 80 162 88 122
+        Q 76 80 92 32 Z
+      "
+      fill="url(#vn-land)"
+      stroke="#8b2a1f"
+      stroke-width="1.5"
+      stroke-linejoin="round"
+    />
+
+    <!-- Compass + label -->
+    <g transform="translate(208, 36)" opacity="0.75">
+      <circle r="14" fill="rgba(245, 236, 215, 0.7)" stroke="#a8853f" stroke-width="1"></circle>
+      <text x="0" y="-4" font-family="Lora, serif" font-size="9" text-anchor="middle" fill="#8b2a1f" font-weight="700">B</text>
+      <text x="0" y="11" font-family="Lora, serif" font-size="7" text-anchor="middle" fill="#5c4a33">N</text>
+    </g>
+
+    <!-- Sea label -->
+    <text
+      x="200"
+      y="320"
+      font-family="Lora, serif"
+      font-size="11"
+      font-style="italic"
+      text-anchor="middle"
+      fill="#2f4a3a"
+      opacity="0.6"
+      transform="rotate(85 200 320)"
+    >
+      Biển Đông
+    </text>
+
+    <!-- Location markers -->
+    {
+      locations.map((loc) => {
+        const { x, y } = project(loc.lat, loc.lng);
+        return (
+          <g
+            class={`vn-marker ${loc.isHometown ? "is-hometown" : ""}`}
+            transform={`translate(${x}, ${y})`}
+            data-id={loc.id}
+          >
+            <circle
+              r={loc.isHometown ? 9 : 6}
+              fill={loc.isHometown ? "#8b2a1f" : "#a8853f"}
+              stroke="#f5ecd7"
+              stroke-width="2"
+            />
+            {loc.isHometown && (
+              <circle
+                r="14"
+                fill="none"
+                stroke="#8b2a1f"
+                stroke-width="1.5"
+                stroke-dasharray="2 2"
+                opacity="0.7"
+              >
+                <animate
+                  attributeName="r"
+                  values="14;18;14"
+                  dur="3s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="opacity"
+                  values="0.7;0.2;0.7"
+                  dur="3s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+            )}
+            <text
+              y="-12"
+              font-family="Lora, serif"
+              font-size="11"
+              font-weight="700"
+              text-anchor="middle"
+              fill="#1a120a"
+            >
+              {loc.name}
+            </text>
+            {loc.members > 0 && (
+              <text
+                y="22"
+                font-family="JetBrains Mono, monospace"
+                font-size="9"
+                text-anchor="middle"
+                fill="#5c4a33"
+              >
+                {loc.members} người
+              </text>
+            )}
+          </g>
+        );
+      })
+    }
+  </svg>
+</figure>
+
+<style>
+  .vn-svg {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    padding: 1rem 0;
+  }
+  .vn-svg svg {
+    width: 100%;
+    max-width: 320px;
+    height: auto;
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-paper-1);
+  }
+  .vn-marker {
+    cursor: default;
+  }
+</style>

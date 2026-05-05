@@ -1,18 +1,26 @@
 ---
 import Base from "@/layouts/Base.astro";
 import PageHead from "@/components/astro/PageHead.astro";
+import VietnamSVG from "@/components/astro/VietnamSVG.astro";
+import LocationCard from "@/components/astro/LocationCard.astro";
 import { getCollection } from "astro:content";
 
-const locations = (await getCollection("locations")).slice().sort(
-  (a, b) => Number(b.data.isHometown) - Number(a.data.isHometown),
-);
+const locations = (await getCollection("locations"))
+  .slice()
+  .sort((a, b) => Number(b.data.isHometown) - Number(a.data.isHometown));
 const memberIndex = new Map(
   (await getCollection("members")).map((m) => [m.id, m]),
 );
 
-function osmLink(lat: number, lng: number) {
-  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=12/${lat}/${lng}`;
-}
+const mapMarkers = locations.map((loc) => ({
+  id: loc.data.id,
+  name: loc.data.name,
+  nameEn: loc.data.nameEn,
+  isHometown: loc.data.isHometown,
+  lat: loc.data.coords.lat,
+  lng: loc.data.coords.lng,
+  members: loc.data.members.length,
+}));
 ---
 
 <Base title="Bản đồ" pageKey="map">
@@ -23,180 +31,18 @@ function osmLink(lat: number, lng: number) {
     subtitleEn="Hometown of origin and places the family has called home"
   />
 
-  <section class="map">
-    <p class="map-note">
-      Bản đồ tương tác Việt Nam sẽ có ở bản cập nhật tới.{" "}
-      <span lang="en">Interactive Vietnam SVG map coming next iteration.</span>
-    </p>
+  <section class="max-w-[1240px] mx-auto px-5 pt-4 pb-16">
+    <VietnamSVG locations={mapMarkers} />
 
-    <ul class="location-grid">
+    <ul class="list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-5 mt-8">
       {
         locations.map((loc) => {
-          const memberCount = loc.data.members.length;
           const memberNames = loc.data.members
             .map((r) => memberIndex.get(r.id)?.data.name)
-            .filter(Boolean);
-          return (
-            <li class={`location-card u-card ${loc.data.isHometown ? "is-hometown" : ""}`}>
-              <header>
-                {loc.data.isHometown && (
-                  <span class="hometown-badge">Quê tổ • Hometown</span>
-                )}
-                <h2>{loc.data.name}</h2>
-                <p class="location-name-en" lang="en">
-                  {loc.data.nameEn}
-                </p>
-                <p class="location-province">{loc.data.province}</p>
-              </header>
-              {loc.data.description && (
-                <p class="location-desc">{loc.data.description}</p>
-              )}
-              <dl class="location-meta">
-                <div>
-                  <dt>Tọa độ</dt>
-                  <dd>
-                    <code>
-                      {loc.data.coords.lat.toFixed(4)},{" "}
-                      {loc.data.coords.lng.toFixed(4)}
-                    </code>
-                  </dd>
-                </div>
-                <div>
-                  <dt>Thành viên</dt>
-                  <dd>{memberCount}</dd>
-                </div>
-              </dl>
-              {memberNames.length > 0 && (
-                <p class="location-members">
-                  {memberNames.join(" • ")}
-                </p>
-              )}
-              <a
-                class="location-link"
-                href={osmLink(loc.data.coords.lat, loc.data.coords.lng)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Mở trên OpenStreetMap ↗
-              </a>
-            </li>
-          );
+            .filter((n): n is string => !!n);
+          return <LocationCard location={loc.data} memberNames={memberNames} />;
         })
       }
     </ul>
   </section>
-
-  <style>
-    .map {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 1rem 1.25rem 4rem;
-    }
-    .map-note {
-      max-width: 60ch;
-      margin: 0 auto 2rem;
-      padding: 0.875rem 1.25rem;
-      background: var(--color-paper-2);
-      border: 1px dashed var(--color-line-strong);
-      border-radius: 12px;
-      text-align: center;
-      color: var(--color-ink-2);
-      font-size: 0.92rem;
-    }
-    .map-note span[lang="en"] {
-      display: block;
-      margin-top: 0.25rem;
-      font-size: 0.78rem;
-      letter-spacing: 0.06em;
-      color: var(--color-ink-3);
-      font-style: italic;
-    }
-    .location-grid {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1.25rem;
-    }
-    .location-card {
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-    .location-card.is-hometown {
-      border: 2px solid var(--color-vermilion);
-    }
-    .hometown-badge {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      background: var(--color-vermilion);
-      color: var(--color-paper);
-      border-radius: 999px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      margin-bottom: 0.5rem;
-    }
-    .location-card h2 {
-      font-size: 1.5rem;
-      margin: 0;
-    }
-    .location-name-en {
-      font-size: 0.78rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--color-ink-3);
-    }
-    .location-province {
-      font-size: 0.92rem;
-      color: var(--color-ink-2);
-    }
-    .location-desc {
-      color: var(--color-ink-2);
-      line-height: 1.55;
-    }
-    .location-meta {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-      margin: 0;
-      padding: 0.75rem;
-      background: var(--color-paper-2);
-      border-radius: 8px;
-    }
-    .location-meta div {
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-    }
-    .location-meta dt {
-      font-size: 0.65rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--color-ink-3);
-    }
-    .location-meta dd {
-      margin: 0;
-      font-weight: 600;
-      color: var(--color-ink);
-    }
-    .location-meta code {
-      font-family: var(--font-mono);
-      font-size: 0.82rem;
-      font-weight: 400;
-    }
-    .location-members {
-      font-size: 0.85rem;
-      color: var(--color-ink-2);
-      line-height: 1.5;
-    }
-    .location-link {
-      margin-top: auto;
-      font-weight: 600;
-      color: var(--color-vermilion);
-      font-size: 0.9rem;
-    }
-  </style>
 </Base>

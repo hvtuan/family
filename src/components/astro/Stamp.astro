@@ -1,0 +1,16 @@
+---
+interface Props {
+  text: string;
+  size?: "sm" | "md";
+  rotate?: boolean;
+}
+const { text, size = "md", rotate = true } = Astro.props;
+const sizeClass = size === "sm" ? "u-seal u-seal-sm" : "u-seal";
+---
+
+<span
+  class:list={[sizeClass, rotate ? "" : "[transform:none]!"]}
+  aria-hidden="true"
+>
+  {text}
+</span>

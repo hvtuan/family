@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+  <defs>
+    <linearGradient id="bgr" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#efe4c7"/>
+      <stop offset="100%" stop-color="#a8853f"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="400" fill="url(#bgr)"/>
+  <!-- Stylised group of figures -->
+  <g fill="#3a2a1a" opacity="0.35">
+    <g transform="translate(120,260)">
+      <circle cx="0" cy="-40" r="25"/>
+      <path d="M -35 30 Q 0 -10 35 30 L 35 70 L -35 70 Z"/>
+    </g>
+    <g transform="translate(220,250)">
+      <circle cx="0" cy="-40" r="28"/>
+      <path d="M -38 30 Q 0 -10 38 30 L 38 80 L -38 80 Z"/>
+    </g>
+    <g transform="translate(320,260)">
+      <circle cx="0" cy="-35" r="22"/>
+      <path d="M -32 25 Q 0 -10 32 25 L 32 70 L -32 70 Z"/>
+    </g>
+    <g transform="translate(420,255)">
+      <circle cx="0" cy="-38" r="24"/>
+      <path d="M -34 28 Q 0 -10 34 28 L 34 75 L -34 75 Z"/>
+    </g>
+    <g transform="translate(500,265)">
+      <circle cx="0" cy="-30" r="20"/>
+      <path d="M -28 22 Q 0 -10 28 22 L 28 65 L -28 65 Z"/>
+    </g>
+  </g>
+  <text x="300" y="60" text-anchor="middle" fill="#8b2a1f" font-family="Lora, serif" font-size="20" font-weight="700" opacity="0.85">
+    Họp mặt gia tộc
+  </text>
+  <text x="300" y="380" text-anchor="middle" fill="#5c4a33" font-family="serif" font-size="12" font-style="italic" opacity="0.6">
+    Tịnh Khê, Tết Canh Tý 2020
+  </text>
+</svg>

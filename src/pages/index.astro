@@ -1,21 +1,37 @@
 ---
 import Base from "@/layouts/Base.astro";
+import BlossomDivider from "@/components/astro/BlossomDivider.astro";
+import Stamp from "@/components/astro/Stamp.astro";
+import MemberCard from "@/components/astro/MemberCard.astro";
+import QuoteCard from "@/components/astro/QuoteCard.astro";
 import { SITE } from "@/data/site";
 import { getCollection } from "astro:content";
+import { toClientMember } from "@/lib/members-client";
 
-const members = await getCollection("members", ({ data }) => data.status === "published");
+const allMembers = await getCollection(
+  "members",
+  ({ data }) => data.status === "published",
+);
+const clientMembers = allMembers.map(toClientMember);
 const quotes = await getCollection("quotes");
 const timeline = await getCollection("timeline");
 
 const heroQuote = quotes[0];
-const featuredMembers = members
+const heroAuthorRef = heroQuote?.data.authorRef
+  ? clientMembers.find((m) => m.id === heroQuote.data.authorRef!.id)
+  : undefined;
+
+const featuredMembers = clientMembers
   .slice()
-  .sort((a, b) => a.data.gen - b.data.gen || (a.data.birthOrder ?? 99) - (b.data.birthOrder ?? 99))
+  .sort(
+    (a, b) =>
+      a.gen - b.gen || (a.birthOrder ?? 99) - (b.birthOrder ?? 99),
+  )
   .slice(0, 3);
 
-const generations = new Set(members.map((m) => m.data.gen)).size;
+const generations = new Set(clientMembers.map((m) => m.gen)).size;
 const stats = [
-  { label: "Thành viên", labelEn: "Members", value: members.length },
+  { label: "Thành viên", labelEn: "Members", value: clientMembers.length },
   { label: "Thế hệ", labelEn: "Generations", value: generations },
   { label: "Kỷ niệm", labelEn: "Milestones", value: timeline.length },
   { label: "Năm khởi tổ", labelEn: "Established", value: SITE.established },
@@ -23,24 +39,27 @@ const stats = [
 ---
 
 <Base pageKey="home">
-  <section class="hero">
-    <div class="hero-inner">
+  <section class="max-w-[1240px] mx-auto px-5 pt-16 pb-10">
+    <div class="flex flex-col gap-5 items-center text-center">
       <p class="u-kicker">Gia phả • Genealogy</p>
-      <h1 class="hero-title">
-        <span class="hero-title-vi">{SITE.brand.vi}</span>
-        <span class="hero-title-en">{SITE.brand.en}</span>
+      <h1 class="flex flex-col gap-1">
+        <span class="font-display font-bold text-[clamp(2.4rem,6vw,4.5rem)] leading-[1.05] tracking-[-0.02em] text-ink">
+          {SITE.brand.vi}
+        </span>
+        <span class="text-[0.85rem] tracking-[0.3em] uppercase text-ink-3">
+          {SITE.brand.en}
+        </span>
       </h1>
-      <p class="hero-sub">
+      <p class="text-[1.05rem] text-ink-2">
         {SITE.hometown} • <span lang="en">{SITE.hometownEn}</span>
       </p>
-
-      <div class="hero-meta">
-        <span class="u-seal">
-          {SITE.monogram}
-        </span>
-        <div class="hero-motto">
+      <div class="flex gap-6 items-center mt-4 flex-wrap justify-center">
+        <Stamp text={SITE.monogram} />
+        <div class="flex flex-col gap-1 text-2xl text-left">
           <span class="u-script">{SITE.motto}</span>
-          <span class="hero-motto-en">{SITE.mottoEn}</span>
+          <span class="text-[0.7rem] tracking-[0.2em] uppercase text-ink-3">
+            {SITE.mottoEn}
+          </span>
         </div>
       </div>
     </div>
@@ -48,28 +67,26 @@ const stats = [
 
   {
     heroQuote && (
-      <section class="hero-quote">
-        <blockquote>
-          <p class="quote-text">"{heroQuote.data.text}"</p>
-          {heroQuote.data.textEn && (
-            <p class="quote-text-en" lang="en">
-              "{heroQuote.data.textEn}"
-            </p>
-          )}
-          <footer class="quote-attribution">— {heroQuote.data.author}</footer>
-        </blockquote>
+      <section class="max-w-[720px] mx-auto px-5 py-6">
+        <QuoteCard
+          quote={heroQuote.data}
+          authorHref={heroAuthorRef ? `/members?member=${heroAuthorRef.id}` : undefined}
+          variant="compact"
+        />
       </section>
     )
   }
 
-  <section class="stats">
-    <div class="stats-inner">
+  <section class="max-w-[1240px] mx-auto px-5 py-6">
+    <div class="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3">
       {
         stats.map((s) => (
-          <div class="stat-card">
-            <div class="stat-value">{s.value}</div>
-            <div class="stat-label">{s.label}</div>
-            <div class="stat-label-en" lang="en">
+          <div class="bg-paper-2 border border-line rounded-xl p-5 text-center">
+            <div class="font-display font-bold text-[2.2rem] text-vermilion leading-none">
+              {s.value}
+            </div>
+            <div class="mt-2 text-[0.92rem] text-ink">{s.label}</div>
+            <div lang="en" class="text-[0.65rem] tracking-[0.16em] uppercase text-ink-3">
               {s.labelEn}
             </div>
           </div>
@@ -78,306 +95,40 @@ const stats = [
     </div>
   </section>
 
-  <div class="blossom-divider" aria-hidden="true">
-    <span>❀</span>
-    <span>•</span>
-    <span>❀</span>
-  </div>
+  <BlossomDivider />
 
-  <section class="members-preview">
-    <header class="section-head">
+  <section class="max-w-[1240px] mx-auto px-5 pt-4 pb-16">
+    <header class="text-center mb-8">
       <p class="u-kicker">Thành viên • Members</p>
-      <h2>Những người dựng nên gia đình</h2>
-      <p class="section-sub" lang="en">The people who built our family</p>
+      <h2 class="text-[clamp(1.6rem,3vw,2.4rem)] my-2">
+        Những người dựng nên gia đình
+      </h2>
+      <p class="text-[0.85rem] tracking-[0.16em] uppercase text-ink-3" lang="en">
+        The people who built our family
+      </p>
     </header>
 
-    <ul class="member-grid">
-      {
-        featuredMembers.map((m) => (
-          <li class="member-card u-card" data-pattern={m.data.pattern}>
-            <div class="member-portrait" aria-hidden="true">
-              <span class="portrait-monogram">
-                {m.data.name
-                  .split(" ")
-                  .slice(-1)[0]
-                  .charAt(0)}
-              </span>
-            </div>
-            <div class="member-body">
-              <p class="member-gen">Đời thứ {m.data.gen}</p>
-              <h3 class="member-name">{m.data.name}</h3>
-              <p class="member-role">{m.data.role}</p>
-              <p class="member-bio">{m.data.bio}</p>
-              <a class="member-cta" href={`/members?member=${m.data.id}`}>
-                Xem chi tiết →
-              </a>
-            </div>
-          </li>
-        ))
-      }
+    <ul class="list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-5">
+      {featuredMembers.map((m) => (
+        <li>
+          <MemberCard member={m} />
+        </li>
+      ))}
     </ul>
 
-    <div class="members-cta">
-      <a class="btn-primary" href="/members">Xem tất cả thành viên</a>
-      <a class="btn-secondary" href="/family-tree">Cây gia phả</a>
+    <div class="flex justify-center gap-3 mt-10 flex-wrap">
+      <a
+        href="/members"
+        class="inline-flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-[0.95rem] bg-vermilion text-paper shadow-paper-1 transition-all duration-150 hover:-translate-y-px hover:shadow-paper-2 hover:text-paper"
+      >
+        Xem tất cả thành viên
+      </a>
+      <a
+        href="/family-tree"
+        class="inline-flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-[0.95rem] bg-paper-2 text-ink border border-line-strong hover:bg-paper-3 hover:text-ink"
+      >
+        Cây gia phả
+      </a>
     </div>
   </section>
-
-  <style>
-    .hero {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 4rem 1.25rem 2.5rem;
-    }
-    .hero-inner {
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-      align-items: center;
-      text-align: center;
-    }
-    .hero-title {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-    .hero-title-vi {
-      font-family: var(--font-display);
-      font-size: clamp(2.4rem, 6vw, 4.5rem);
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      line-height: 1.05;
-    }
-    .hero-title-en {
-      font-size: 0.85rem;
-      letter-spacing: 0.3em;
-      text-transform: uppercase;
-      color: var(--color-ink-3);
-    }
-    .hero-sub {
-      font-size: 1.05rem;
-      color: var(--color-ink-2);
-    }
-    .hero-meta {
-      display: flex;
-      gap: 1.5rem;
-      align-items: center;
-      margin-top: 1rem;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .hero-motto {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-      font-size: 1.5rem;
-      text-align: left;
-    }
-    .hero-motto-en {
-      font-size: 0.7rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--color-ink-3);
-    }
-
-    .hero-quote {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 1.5rem 1.25rem;
-    }
-    .hero-quote blockquote {
-      margin: 0;
-      padding: 1.5rem 2rem;
-      border-left: 3px solid var(--color-vermilion);
-      background: var(--color-cream);
-      border-radius: 0 12px 12px 0;
-    }
-    .quote-text {
-      font-family: var(--font-display);
-      font-size: 1.4rem;
-      font-style: italic;
-      color: var(--color-ink);
-      margin-bottom: 0.5rem;
-    }
-    .quote-text-en {
-      font-size: 0.95rem;
-      color: var(--color-ink-3);
-      font-style: italic;
-    }
-    .quote-attribution {
-      margin-top: 0.75rem;
-      font-size: 0.85rem;
-      color: var(--color-ink-2);
-    }
-
-    .stats {
-      max-width: 1240px;
-      margin: 1rem auto;
-      padding: 1.5rem 1.25rem;
-    }
-    .stats-inner {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 0.75rem;
-    }
-    .stat-card {
-      background: var(--color-paper-2);
-      border: 1px solid var(--color-line);
-      border-radius: 12px;
-      padding: 1.25rem 0.75rem;
-      text-align: center;
-    }
-    .stat-value {
-      font-family: var(--font-display);
-      font-size: 2.2rem;
-      font-weight: 700;
-      color: var(--color-vermilion);
-      line-height: 1;
-    }
-    .stat-label {
-      margin-top: 0.5rem;
-      font-size: 0.92rem;
-      color: var(--color-ink);
-    }
-    .stat-label-en {
-      font-size: 0.65rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--color-ink-3);
-    }
-
-    .blossom-divider {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      align-items: center;
-      padding: 2rem 0;
-      color: var(--color-vermilion);
-      font-size: 1.25rem;
-      opacity: 0.7;
-    }
-
-    .members-preview {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 1rem 1.25rem 4rem;
-    }
-    .section-head {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    .section-head h2 {
-      font-size: clamp(1.6rem, 3vw, 2.4rem);
-      margin: 0.5rem 0 0.25rem;
-    }
-    .section-sub {
-      color: var(--color-ink-3);
-      font-size: 0.85rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-    }
-
-    .member-grid {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1.25rem;
-    }
-    .member-card {
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .member-portrait {
-      height: 180px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background:
-        radial-gradient(circle at 30% 30%, rgba(201, 163, 90, 0.25), transparent 60%),
-        var(--color-paper-3);
-      border-bottom: 1px solid var(--color-line);
-    }
-    .portrait-monogram {
-      font-family: var(--font-display);
-      font-size: 4.5rem;
-      font-weight: 700;
-      color: var(--color-vermilion);
-      opacity: 0.85;
-    }
-    .member-body {
-      padding: 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      flex: 1;
-    }
-    .member-gen {
-      font-size: 0.7rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--color-gold-2);
-    }
-    .member-name {
-      font-size: 1.4rem;
-      margin: 0;
-    }
-    .member-role {
-      font-size: 0.95rem;
-      color: var(--color-ink-2);
-    }
-    .member-bio {
-      font-size: 0.92rem;
-      color: var(--color-ink-2);
-      line-height: 1.55;
-      margin-top: 0.25rem;
-    }
-    .member-cta {
-      margin-top: auto;
-      padding-top: 0.75rem;
-      font-weight: 600;
-      color: var(--color-vermilion);
-      font-size: 0.9rem;
-    }
-
-    .members-cta {
-      display: flex;
-      justify-content: center;
-      gap: 0.75rem;
-      margin-top: 2.5rem;
-      flex-wrap: wrap;
-    }
-    .btn-primary,
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.25rem;
-      border-radius: 999px;
-      font-weight: 600;
-      font-size: 0.95rem;
-      transition: transform 120ms ease, box-shadow 120ms ease;
-    }
-    .btn-primary {
-      background: var(--color-vermilion);
-      color: var(--color-paper);
-      box-shadow: var(--shadow-paper-1);
-    }
-    .btn-primary:hover {
-      color: var(--color-paper);
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-paper-2);
-    }
-    .btn-secondary {
-      background: var(--color-paper-2);
-      color: var(--color-ink);
-      border: 1px solid var(--color-line-strong);
-    }
-    .btn-secondary:hover {
-      background: var(--color-paper-3);
-      color: var(--color-ink);
-    }
-  </style>
 </Base>
