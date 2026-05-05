@@ -17,7 +17,7 @@
     "db:smoke": "node --env-file=.env.local scripts/db-smoke.mjs",
     "db:seed:dry": "node --env-file=.env.local scripts/migrate-content-to-db.mjs --dry-run",
     "db:seed": "node --env-file=.env.local scripts/migrate-content-to-db.mjs --apply",
-    "admin:link": "node --env-file=.env.local scripts/admin-magic-link.mjs"
+    "admin:seed": "node --env-file=.env.local scripts/admin-seed.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^10.0.6",
