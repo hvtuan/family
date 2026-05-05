@@ -1,41 +1,7 @@
 ---
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-
 export const prerender = false;
 
-const next = Astro.url.searchParams.get("next") ?? "/admin";
-
-let stage: "form" | "sent" | "error" = "form";
-let email = "";
-let errorMsg = "";
-
-if (Astro.request.method === "POST") {
-  const form = await Astro.request.formData();
-  email = String(form.get("email") ?? "").trim().toLowerCase();
-
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    stage = "error";
-    errorMsg = "Email không hợp lệ. / Invalid email.";
-  } else {
-    const supabase = createSupabaseServerClient(Astro.cookies, Astro.request);
-    const redirectTo = new URL(
-      `/admin/auth/callback?next=${encodeURIComponent(next)}`,
-      Astro.url,
-    ).toString();
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: redirectTo },
-    });
-
-    if (error) {
-      stage = "error";
-      errorMsg = error.message;
-    } else {
-      stage = "sent";
-    }
-  }
-}
+const errParam = Astro.url.searchParams.get("err");
 ---
 
 <!doctype html>
@@ -56,7 +22,7 @@ if (Astro.request.method === "POST") {
         color: #1a120a;
       }
       .card {
-        width: min(28rem, 92vw);
+        width: min(30rem, 92vw);
         background: #faf3e0;
         border: 1px solid rgba(26, 18, 10, 0.12);
         border-radius: 1rem;
@@ -69,45 +35,23 @@ if (Astro.request.method === "POST") {
         font-size: 1.6rem;
         color: #8b2a1f;
       }
-      .sub { color: #5c4a33; margin-bottom: 1.5rem; font-size: 0.95rem; }
-      label { display: block; font-weight: 600; margin-bottom: 0.4rem; }
-      input[type="email"] {
-        width: 100%;
-        padding: 0.7rem 0.9rem;
-        border: 1px solid rgba(26, 18, 10, 0.25);
-        border-radius: 0.5rem;
-        font-size: 1rem;
-        background: #fff;
-        box-sizing: border-box;
-      }
-      button {
-        margin-top: 1rem;
-        width: 100%;
-        padding: 0.75rem 1rem;
-        background: #8b2a1f;
-        color: #faf3e0;
-        border: 0;
-        border-radius: 0.5rem;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-      }
-      button:hover { background: #6b1f17; }
+      p { color: #3a2a1a; line-height: 1.6; }
       .alert {
         padding: 0.75rem 1rem;
         border-radius: 0.5rem;
         margin: 1rem 0;
+        background: #fde7e3;
+        color: #6b1f17;
+        border: 1px solid #f3b8af;
         font-size: 0.95rem;
       }
-      .alert-ok { background: #e6f5e6; color: #1a4d1a; border: 1px solid #b3dab3; }
-      .alert-err { background: #fde7e3; color: #6b1f17; border: 1px solid #f3b8af; }
-      .foot {
+      .info {
         margin-top: 1.5rem;
-        padding-top: 1rem;
-        border-top: 1px dashed rgba(26, 18, 10, 0.2);
-        font-size: 0.85rem;
-        color: #5c4a33;
-        text-align: center;
+        padding: 1rem 1.25rem;
+        background: #f5ecd7;
+        border-left: 3px solid #c9a35a;
+        border-radius: 0.4rem;
+        font-size: 0.95rem;
       }
       a { color: #8b2a1f; }
     </style>
@@ -115,39 +59,33 @@ if (Astro.request.method === "POST") {
   <body>
     <main class="card">
       <h1>Gia phả họ Nguyễn — Quản trị</h1>
-      <p class="sub">
-        Nhập email để nhận liên kết đăng nhập. /
-        Enter your email to receive a sign-in link.
-      </p>
 
-      {stage === "sent" ? (
-        <div class="alert alert-ok">
-          <strong>Đã gửi email.</strong> Kiểm tra hộp thư <code>{email}</code> và
-          bấm vào liên kết để đăng nhập. Liên kết hết hạn sau 1 giờ.
+      {errParam && (
+        <div class="alert">
+          {errParam === "missing_code"
+            ? "Liên kết không hợp lệ. Hãy bấm vào liên kết quản trị viên gửi cho bạn (qua Zalo/Facebook) — không nên truy cập trực tiếp trang này."
+            : errParam}
         </div>
-      ) : (
-        <form method="post">
-          {stage === "error" && (
-            <div class="alert alert-err">{errorMsg}</div>
-          )}
-          <label for="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            required
-            autocomplete="email"
-            value={email}
-            placeholder="ban@example.com"
-          />
-          <button type="submit">Gửi liên kết / Send link</button>
-        </form>
       )}
 
-      <div class="foot">
-        Nếu email của bạn chưa được mời, sẽ được chuyển đến trạng thái
-        <em>chờ duyệt</em> sau khi đăng nhập.
+      <p>
+        Trang quản trị này chỉ dành cho thành viên trong gia đình được mời.
+        Đăng nhập bằng <strong>liên kết một lần</strong> mà quản trị gửi qua
+        Zalo / Facebook — không cần mật khẩu, không cần email.
+      </p>
+
+      <div class="info">
+        <p style="margin:0 0 0.5rem; font-weight:600;">Bạn cần một liên kết?</p>
+        <p style="margin:0;">
+          Liên hệ <em>chú An</em> (<a href="mailto:hvtuan0311@gmail.com">hvtuan0311@gmail.com</a>)
+          để được mời. Sau khi nhận liên kết, bấm vào để vào trang quản trị —
+          phiên đăng nhập có hiệu lực 1 giờ.
+        </p>
       </div>
+
+      <p style="margin-top:1.5rem; font-size:0.85rem; color:#5c4a33;">
+        ← <a href="/">Quay về trang công khai</a>
+      </p>
     </main>
   </body>
 </html>
