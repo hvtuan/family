@@ -29,10 +29,50 @@ const { count: pendingCount } = await supabaseAdmin
   .eq("status", "pending");
 
 const isAdmin = Astro.locals.user?.role === "admin";
+
+const okParam = Astro.url.searchParams.get("ok");
+const errParam = Astro.url.searchParams.get("err");
+
+const banner = okParam
+  ? {
+      kind: "ok" as const,
+      text:
+        okParam === "rebuild_started"
+          ? "Đã kích hoạt build lại trang công khai. Quá trình rebuild mất ~1–2 phút; trang sẽ hiển thị nội dung mới sau khi container mới khởi động."
+          : okParam,
+    }
+  : errParam
+    ? {
+        kind: "err" as const,
+        text:
+          errParam === "rebuild_unconfigured"
+            ? "Chưa cấu hình rebuild webhook. Cần đặt COOLIFY_API_TOKEN/COOLIFY_BASE_URL/COOLIFY_APP_UUID trên Coolify env."
+            : errParam,
+      }
+    : null;
+
+const rebuildConfigured = Boolean(
+  process.env.COOLIFY_API_TOKEN &&
+    process.env.COOLIFY_BASE_URL &&
+    process.env.COOLIFY_APP_UUID,
+);
 ---
 
 <AdminLayout title="Tổng quan">
   <div class="space-y-6">
+    {banner && (
+      <div
+        class:list={[
+          "rounded-lg border px-4 py-3 text-theme-sm",
+          banner.kind === "ok"
+            ? "border-success-100 bg-success-50 text-success-700"
+            : "border-error-100 bg-error-50 text-error-700",
+        ]}
+      >
+        {banner.text}
+      </div>
+    )}
+
     <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 xl:grid-cols-4">
       {counts.map((t) => (
         <a
@@ -42,9 +82,7 @@ const isAdmin = Astro.locals.user?.role === "admin";
           <div class="mt-2 flex items-end justify-between">
             <div>
               <span class="text-theme-sm text-gray-500">{t.label}</span>
-              <h4 class="mt-1 font-bold text-gray-800 text-title-sm">
-                {t.count}
-              </h4>
+              <h4 class="mt-1 font-bold text-gray-800 text-title-sm">{t.count}</h4>
             </div>
             <span class="rounded-md bg-brand-50 px-2 py-1 text-theme-xs font-medium text-brand-600">
               Tổng
@@ -55,7 +93,7 @@ const isAdmin = Astro.locals.user?.role === "admin";
     </div>
 
     {isAdmin && (
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <a
           href="/admin/users"
           class="rounded-2xl border border-warning-100 bg-warning-50 p-5 transition-shadow hover:shadow-theme-sm"
@@ -63,26 +101,34 @@ const isAdmin = Astro.locals.user?.role === "admin";
           <div class="flex items-end justify-between">
             <div>
               <span class="text-theme-sm text-warning-600">Người dùng chờ duyệt</span>
-              <h4 class="mt-1 font-bold text-gray-800 text-title-sm">
-                {pendingCount ?? 0}
-              </h4>
+              <h4 class="mt-1 font-bold text-gray-800 text-title-sm">{pendingCount ?? 0}</h4>
             </div>
             <span class="rounded-md bg-warning-100 px-2 py-1 text-theme-xs font-medium text-warning-600">
               Cần xử lý
             </span>
           </div>
         </a>
+
+        <div class="lg:col-span-2 rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+          <h3 class="text-theme-sm font-semibold text-gray-800">Cập nhật trang công khai</h3>
+          <p class="mt-1 text-theme-xs text-gray-500 leading-relaxed">
+            Trang công khai (<a href="https://family.huynhvantuan.net" class="text-brand-500 hover:text-brand-600">family.huynhvantuan.net</a>)
+            là static — chỉ rebuild khi anh bấm nút bên dưới hoặc khi push code mới.
+            Sau khi sửa xong dữ liệu, bấm <strong>Rebuild</strong> để các thay đổi
+            xuất hiện trên trang công khai.
+          </p>
+          <form method="post" action="/admin/rebuild" class="mt-4">
+            <button
+              type="submit"
+              disabled={!rebuildConfigured}
+              class="rounded-lg bg-brand-500 px-5 py-2.5 text-theme-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+              onclick="return confirm('Build lại trang công khai? Mất ~1–2 phút.');"
+            >
+              {rebuildConfigured ? "Rebuild trang công khai" : "Rebuild (chưa cấu hình)"}
+            </button>
+          </form>
+        </div>
       </div>
     )}
-
-    <div class="rounded-2xl border border-dashed border-gray-300 bg-white p-5 text-theme-sm text-gray-500">
-      <p class="font-medium text-gray-700 mb-1">P4 đang chạy.</p>
-      <p>
-        CRUD cho từng bảng nội dung sẽ ra mắt ở P5–P6 (Members trước, sau đó
-        timeline / traditions / photos / quotes / dates / locations).
-        Trong lúc đó, các liên kết phía trên sẽ trỏ sang trang 404 cho tới khi
-        các route được dựng.
-      </p>
-    </div>
   </div>
 </AdminLayout>

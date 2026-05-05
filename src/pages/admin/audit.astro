@@ -1,0 +1,162 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+export const prerender = false;
+
+const me = Astro.locals.user;
+if (!me || me.role !== "admin") return Astro.redirect("/admin");
+
+type Row = {
+  id: number;
+  actor_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  diff: unknown;
+  at: string;
+};
+
+// Load up to 200 most recent rows. Pagination can land later if it gets noisy.
+const limit = Math.min(
+  Math.max(Number(Astro.url.searchParams.get("limit") ?? "200"), 50),
+  500,
+);
+const entityFilter = Astro.url.searchParams.get("entity") ?? "";
+
+let query = supabaseAdmin
+  .from("audit_log")
+  .select("id, actor_id, action, entity_type, entity_id, diff, at")
+  .order("at", { ascending: false })
+  .limit(limit);
+if (entityFilter) query = query.eq("entity_type", entityFilter);
+
+const { data: rows, error } = await query;
+const events = (rows ?? []) as Row[];
+
+// Resolve actor_id → email for display.
+const actorIds = Array.from(
+  new Set(events.map((r) => r.actor_id).filter((v): v is string => !!v)),
+);
+const { data: users } = actorIds.length
+  ? await supabaseAdmin
+      .from("app_users")
+      .select("id, email")
+      .in("id", actorIds)
+  : { data: [] as { id: string; email: string }[] };
+const actorByEmail = new Map(
+  ((users ?? []) as { id: string; email: string }[]).map((u) => [u.id, u.email]),
+);
+
+const entities = [
+  "members", "timeline", "traditions", "photos", "quotes",
+  "dates", "locations", "app_users", "allowed_emails",
+];
+
+function fmtDate(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleString("vi-VN", {
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
+}
+
+const actionColor: Record<string, string> = {
+  insert: "bg-success-50 text-success-700 border-success-100",
+  create: "bg-success-50 text-success-700 border-success-100",
+  update: "bg-brand-50 text-brand-600 border-brand-100",
+  delete: "bg-error-50 text-error-700 border-error-100",
+  approve: "bg-success-50 text-success-700 border-success-100",
+  revoke: "bg-warning-50 text-warning-600 border-warning-100",
+  login: "bg-gray-100 text-gray-700 border-gray-200",
+  logout: "bg-gray-100 text-gray-700 border-gray-200",
+};
+---
+
+<AdminLayout title="Nhật ký hoạt động" crumbs={[{ label: "Nhật ký" }]}>
+  <div class="space-y-6">
+    {error && (
+      <div class="rounded-lg border border-error-100 bg-error-50 px-4 py-3 text-theme-sm text-error-700">
+        Lỗi tải nhật ký: {error.message}
+      </div>
+    )}
+
+    <section class="rounded-2xl border border-gray-200 bg-white shadow-theme-xs">
+      <header class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
+        <div>
+          <h2 class="text-theme-sm font-semibold text-gray-800">
+            {events.length} sự kiện gần đây
+          </h2>
+          <p class="mt-1 text-theme-xs text-gray-500">
+            Trigger DB tự ghi cho mọi insert/update/delete trên content tables.
+          </p>
+        </div>
+        <form method="get" class="flex items-center gap-2">
+          <select name="entity"
+            class="h-9 rounded-md border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10">
+            <option value="">Tất cả entity</option>
+            {entities.map((e) => (
+              <option value={e} selected={entityFilter === e}>{e}</option>
+            ))}
+          </select>
+          <input type="hidden" name="limit" value={limit} />
+          <button type="submit"
+            class="h-9 rounded-md border border-gray-200 px-3 text-theme-sm font-medium text-gray-700 hover:bg-gray-50">
+            Lọc
+          </button>
+        </form>
+      </header>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-theme-sm">
+          <thead class="bg-gray-50 text-theme-xs uppercase text-gray-500">
+            <tr>
+              <th class="px-5 py-3 font-medium">Lúc</th>
+              <th class="px-5 py-3 font-medium">Người dùng</th>
+              <th class="px-5 py-3 font-medium">Hành động</th>
+              <th class="px-5 py-3 font-medium">Bảng</th>
+              <th class="px-5 py-3 font-medium">ID đối tượng</th>
+              <th class="px-5 py-3 font-medium">Diff</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {events.length === 0 && (
+              <tr><td colspan="6" class="px-5 py-8 text-center text-gray-500">Chưa có sự kiện nào.</td></tr>
+            )}
+            {events.map((e) => {
+              const actor = e.actor_id
+                ? actorByEmail.get(e.actor_id) ?? e.actor_id.slice(0, 8)
+                : "(service-role)";
+              const cls = actionColor[e.action] ?? "bg-gray-100 text-gray-700 border-gray-200";
+              return (
+                <tr class="hover:bg-gray-50">
+                  <td class="px-5 py-3 text-theme-xs text-gray-500 whitespace-nowrap">
+                    {fmtDate(e.at)}
+                  </td>
+                  <td class="px-5 py-3 text-theme-xs text-gray-700">{actor}</td>
+                  <td class="px-5 py-3">
+                    <span class={`inline-flex rounded-md border px-2 py-0.5 text-theme-xs font-medium ${cls}`}>
+                      {e.action}
+                    </span>
+                  </td>
+                  <td class="px-5 py-3 text-gray-700">{e.entity_type}</td>
+                  <td class="px-5 py-3 text-theme-xs font-mono text-gray-600">
+                    {e.entity_id ?? "—"}
+                  </td>
+                  <td class="px-5 py-3 max-w-xs">
+                    {e.diff ? (
+                      <details class="text-theme-xs">
+                        <summary class="cursor-pointer text-brand-500 hover:text-brand-600">xem</summary>
+                        <pre class="mt-2 max-h-64 overflow-auto rounded bg-gray-50 p-2 text-theme-xs text-gray-700 custom-scrollbar">{JSON.stringify(e.diff, null, 2)}</pre>
+                      </details>
+                    ) : "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</AdminLayout>
