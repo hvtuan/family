@@ -1,0 +1,425 @@
+---
+import type { MemberRow } from "@/lib/members-admin";
+import { formatCsv } from "@/lib/members-admin";
+
+interface Props {
+  mode: "create" | "edit";
+  values: Partial<MemberRow>;
+  refs: { id: string; name: string; gen: number }[];
+  fieldError?: string | null;
+  fieldOk?: string | null;
+}
+
+const { mode, values, refs, fieldError, fieldOk } = Astro.props;
+
+const v = values;
+
+// Filter out the current member from ref selectors so a person can't be
+// their own parent/spouse.
+const refOptions = refs.filter((r) => r.id !== v.id);
+
+const submitLabel = mode === "create" ? "Tạo thành viên" : "Lưu thay đổi";
+---
+
+<form method="post" class="space-y-6" autocomplete="off">
+  {fieldError && (
+    <div class="rounded-lg border border-error-100 bg-error-50 px-4 py-3 text-theme-sm text-error-700">
+      {fieldError}
+    </div>
+  )}
+  {fieldOk && (
+    <div class="rounded-lg border border-success-100 bg-success-50 px-4 py-3 text-theme-sm text-success-700">
+      {fieldOk}
+    </div>
+  )}
+
+  <!-- ─── Identity ─────────────────────────────────────────────── -->
+  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <legend class="px-2 text-theme-sm font-semibold text-gray-800">Định danh</legend>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          ID (slug, không đổi sau khi tạo) *
+        </label>
+        <input
+          type="text" name="id" required pattern="[a-z0-9][a-z0-9-]{0,30}"
+          value={v.id ?? ""}
+          readonly={mode === "edit"}
+          placeholder="vd: g3-1"
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 read-only:bg-gray-50 read-only:text-gray-500"
+        />
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Họ tên *
+        </label>
+        <input
+          type="text" name="name" required
+          value={v.name ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Tên tiếng Anh
+        </label>
+        <input
+          type="text" name="name_en"
+          value={v.name_en ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Tên thân mật / nickname
+        </label>
+        <input
+          type="text" name="nickname"
+          value={v.nickname ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Đời (gen) *
+        </label>
+        <input
+          type="number" name="gen" required min="1" max="8"
+          value={v.gen ?? 1}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Vai vế (vd: Ông Tổ, Trưởng nam) *
+        </label>
+        <input
+          type="text" name="role" required
+          value={v.role ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Vai vế (EN)
+        </label>
+        <input
+          type="text" name="role_en"
+          value={v.role_en ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Nhánh *
+        </label>
+        <select
+          name="branch" required
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        >
+          <option value="both" selected={(v.branch ?? "both") === "both"}>Cả nội + ngoại</option>
+          <option value="noi" selected={v.branch === "noi"}>Họ Nội</option>
+          <option value="ngoai" selected={v.branch === "ngoai"}>Họ Ngoại</option>
+        </select>
+      </div>
+
+      <label class="flex items-center gap-2 text-theme-sm text-gray-700 md:col-span-2">
+        <input
+          type="checkbox" name="is_family_head" value="1"
+          checked={!!v.is_family_head}
+          class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500/20"
+        />
+        Là tộc trưởng / family head (tự dòng được đánh dấu)
+      </label>
+    </div>
+  </fieldset>
+
+  <!-- ─── Dates + places ──────────────────────────────────────── -->
+  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <legend class="px-2 text-theme-sm font-semibold text-gray-800">Sinh – mất</legend>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Năm/ngày sinh (YYYY hoặc YYYY-MM-DD) *
+        </label>
+        <input
+          type="text" name="born" required
+          value={v.born ?? ""}
+          placeholder="1905-03-12 hoặc 1905"
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Năm/ngày mất (để trống nếu còn sống)
+        </label>
+        <input
+          type="text" name="died"
+          value={v.died ?? ""}
+          placeholder="1978-09-04"
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Nơi sinh
+        </label>
+        <input
+          type="text" name="birth_place"
+          value={v.birth_place ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Nơi mất
+        </label>
+        <input
+          type="text" name="death_place"
+          value={v.death_place ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+    </div>
+  </fieldset>
+
+  <!-- ─── Relations ───────────────────────────────────────────── -->
+  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <legend class="px-2 text-theme-sm font-semibold text-gray-800">Quan hệ</legend>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Cha</label>
+        <select
+          name="father_id"
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        >
+          <option value="">— không chọn —</option>
+          {refOptions.map((r) => (
+            <option value={r.id} selected={v.father_id === r.id}>
+              {r.name} (đời {r.gen})
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Mẹ</label>
+        <select
+          name="mother_id"
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        >
+          <option value="">— không chọn —</option>
+          {refOptions.map((r) => (
+            <option value={r.id} selected={v.mother_id === r.id}>
+              {r.name} (đời {r.gen})
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Vợ / chồng</label>
+        <select
+          name="spouse_id"
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        >
+          <option value="">— không chọn —</option>
+          {refOptions.map((r) => (
+            <option value={r.id} selected={v.spouse_id === r.id}>
+              {r.name} (đời {r.gen})
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  </fieldset>
+
+  <!-- ─── Bio ─────────────────────────────────────────────────── -->
+  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <legend class="px-2 text-theme-sm font-semibold text-gray-800">Giới thiệu</legend>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Tiểu sử (vi) *
+        </label>
+        <textarea
+          name="bio" required rows="3"
+          class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        >{v.bio ?? ""}</textarea>
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Tiểu sử (en) *
+        </label>
+        <textarea
+          name="bio_en" required rows="3"
+          class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        >{v.bio_en ?? ""}</textarea>
+      </div>
+      <div class="md:col-span-2">
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Nội dung dài (markdown, không bắt buộc)
+        </label>
+        <textarea
+          name="body_md" rows="6"
+          class="w-full rounded-lg border border-gray-300 px-4 py-2.5 font-mono text-theme-xs text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        >{v.body_md ?? ""}</textarea>
+      </div>
+    </div>
+  </fieldset>
+
+  <!-- ─── Other ───────────────────────────────────────────────── -->
+  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <legend class="px-2 text-theme-sm font-semibold text-gray-800">Cá nhân khác</legend>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Nơi ở hiện tại</label>
+        <input
+          type="text" name="location"
+          value={v.location ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Nghề nghiệp (vi)</label>
+        <input
+          type="text" name="job"
+          value={v.job ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Nghề nghiệp (en)</label>
+        <input
+          type="text" name="job_en"
+          value={v.job_en ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Sở thích (cách nhau bằng dấu phẩy)</label>
+        <input
+          type="text" name="hobbies"
+          value={formatCsv(v.hobbies)}
+          placeholder="Đan tre, Thư pháp, Trồng sen"
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Tags (cách nhau bằng dấu phẩy)</label>
+        <input
+          type="text" name="tags"
+          value={formatCsv(v.tags)}
+          placeholder="khai-tổ, phụ-mẫu"
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">URL ảnh đại diện</label>
+        <input
+          type="url" name="photo"
+          value={v.photo ?? ""}
+          placeholder="https://..."
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Pattern (nền vẽ)</label>
+        <select
+          name="pattern"
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        >
+          <option value="">— không —</option>
+          {(["hatch", "dots", "lines", "bamboo", "glow"] as const).map((p) => (
+            <option value={p} selected={v.pattern === p}>{p}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  </fieldset>
+
+  <!-- ─── Contact ─────────────────────────────────────────────── -->
+  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <legend class="px-2 text-theme-sm font-semibold text-gray-800">Liên hệ</legend>
+    <p class="mb-4 text-theme-xs text-gray-500">
+      Phone / email / address chỉ hiển thị công khai nếu bật <em>Cho phép hiển thị</em>.
+      Privacy scan tự động kiểm tra build không leak.
+    </p>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <label class="flex items-center gap-2 text-theme-sm text-gray-700 md:col-span-2">
+        <input
+          type="checkbox" name="contact_public" value="1"
+          checked={!!v.contact_public}
+          class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500/20"
+        />
+        Cho phép hiển thị thông tin liên hệ trên trang công khai
+      </label>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Điện thoại</label>
+        <input
+          type="text" name="phone"
+          value={v.phone ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Email</label>
+        <input
+          type="email" name="email"
+          value={v.email ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+      <div class="md:col-span-2">
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Địa chỉ</label>
+        <input
+          type="text" name="address"
+          value={v.address ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+        />
+      </div>
+    </div>
+  </fieldset>
+
+  <!-- ─── Status ──────────────────────────────────────────────── -->
+  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <legend class="px-2 text-theme-sm font-semibold text-gray-800">Trạng thái</legend>
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
+      <label class="flex items-center gap-2 text-theme-sm text-gray-700">
+        <input type="radio" name="status" value="published"
+          checked={(v.status ?? "published") === "published"}
+          class="h-4 w-4 border-gray-300 text-brand-500" />
+        Đã xuất bản (hiển thị trên trang công khai)
+      </label>
+      <label class="flex items-center gap-2 text-theme-sm text-gray-700">
+        <input type="radio" name="status" value="draft"
+          checked={v.status === "draft"}
+          class="h-4 w-4 border-gray-300 text-brand-500" />
+        Bản nháp (chỉ admin thấy)
+      </label>
+    </div>
+  </fieldset>
+
+  <div class="flex items-center justify-between gap-3">
+    <a
+      href="/admin/members"
+      class="rounded-lg border border-gray-200 px-5 py-2.5 text-theme-sm font-medium text-gray-700 hover:bg-gray-50"
+    >
+      Hủy
+    </a>
+    <button
+      type="submit"
+      class="rounded-lg bg-brand-500 px-5 py-2.5 text-theme-sm font-medium text-white shadow-theme-xs hover:bg-brand-600"
+    >
+      {submitLabel}
+    </button>
+  </div>
+</form>

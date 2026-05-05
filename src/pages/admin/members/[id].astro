@@ -1,0 +1,70 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import MemberForm from "@/components/admin/MemberForm.astro";
+import {
+  getMember,
+  listMemberRefs,
+  upsertMember,
+  syncMemberChildren,
+} from "@/lib/members-admin";
+import { parseMemberForm } from "@/lib/members-form";
+import type { MemberInput, MemberRow } from "@/lib/members-admin";
+
+export const prerender = false;
+
+const me = Astro.locals.user!;
+const id = Astro.params.id!;
+let fieldError: string | null = null;
+let fieldOk: string | null = null;
+
+let existing = await getMember(id);
+if (!existing) {
+  return new Response("Không tìm thấy thành viên", { status: 404 });
+}
+
+if (Astro.url.searchParams.get("ok") === "created") {
+  fieldOk = "Đã tạo thành viên.";
+}
+
+let values: Partial<MemberRow> = existing;
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const { input, errors } = parseMemberForm(form);
+  // Don't allow id change on edit — keep the original id even if the form
+  // somehow submitted a different one.
+  const sanitized: MemberInput = { ...input, id };
+  values = { ...existing, ...sanitized };
+  if (errors.length > 0) {
+    fieldError = errors.join(" ");
+  } else {
+    try {
+      await upsertMember(sanitized, "update", me.id);
+      await syncMemberChildren();
+      existing = await getMember(id);
+      values = existing ?? values;
+      fieldOk = "Đã lưu thay đổi.";
+    } catch (e) {
+      fieldError = e instanceof Error ? e.message : "Lưu thất bại.";
+    }
+  }
+}
+
+const refs = await listMemberRefs();
+---
+
+<AdminLayout
+  title={existing?.name ?? id}
+  crumbs={[
+    { label: "Thành viên", href: "/admin/members" },
+    { label: existing?.name ?? id },
+  ]}
+>
+  <MemberForm
+    mode="edit"
+    values={values}
+    refs={refs}
+    fieldError={fieldError}
+    fieldOk={fieldOk}
+  />
+</AdminLayout>
