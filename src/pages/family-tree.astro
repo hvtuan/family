@@ -1,0 +1,255 @@
+---
+import Base from "@/layouts/Base.astro";
+import PageHead from "@/components/astro/PageHead.astro";
+import { getCollection } from "astro:content";
+
+const members = await getCollection("members", ({ data }) => data.status === "published");
+
+type M = (typeof members)[number];
+type Pair = { type: "pair"; left: M; right: M } | { type: "single"; member: M };
+
+const genMap = new Map<number, M[]>();
+for (const m of members) {
+  if (!genMap.has(m.data.gen)) genMap.set(m.data.gen, []);
+  genMap.get(m.data.gen)!.push(m);
+}
+
+function pairUp(list: M[]): Pair[] {
+  const sorted = [...list].sort(
+    (a, b) => (a.data.birthOrder ?? 99) - (b.data.birthOrder ?? 99),
+  );
+  const seen = new Set<string>();
+  const out: Pair[] = [];
+  for (const m of sorted) {
+    if (seen.has(m.id)) continue;
+    const spouseRef = m.data.spouse?.id;
+    const partner = spouseRef ? sorted.find((x) => x.id === spouseRef) : undefined;
+    if (partner && !seen.has(partner.id)) {
+      out.push({ type: "pair", left: m, right: partner });
+      seen.add(m.id);
+      seen.add(partner.id);
+    } else {
+      out.push({ type: "single", member: m });
+      seen.add(m.id);
+    }
+  }
+  return out;
+}
+
+const generations = [...genMap.entries()]
+  .sort((a, b) => a[0] - b[0])
+  .map(([gen, list]) => ({ gen, pairs: pairUp(list) }));
+
+function yearRange(m: M) {
+  const b = m.data.born?.slice(0, 4);
+  const d = m.data.died?.slice(0, 4);
+  if (!b) return "";
+  return d ? `${b} – ${d}` : `${b} –`;
+}
+---
+
+<Base title="Cây gia phả" pageKey="family-tree">
+  <PageHead
+    kicker="Cây gia phả • Family Tree"
+    title="Bốn thế hệ họ Nguyễn"
+    subtitle="Sơ đồ tĩnh tạm thời — phiên bản kéo/thu phóng tương tác sẽ có ở bản cập nhật tới."
+    subtitleEn="Interactive pan/zoom view coming next iteration."
+  />
+
+  <section class="tree-static">
+    {
+      generations.map(({ gen, pairs }) => (
+        <div class="tree-row" role="group" aria-label={`Đời thứ ${gen}`}>
+          <div class="tree-row-label">
+            <span class="row-label-vi">Đời thứ {gen}</span>
+            <span class="row-label-en" lang="en">
+              Generation {gen}
+            </span>
+          </div>
+          <ul class="tree-row-cards">
+            {pairs.map((p) =>
+              p.type === "pair" ? (
+                <li class="tree-couple">
+                  {[p.left, p.right].map((m) => (
+                    <a class="tree-card" href={`/members?member=${m.data.id}`}>
+                      <span class="tree-card-mono" aria-hidden="true">
+                        {m.data.name.split(" ").slice(-1)[0].charAt(0)}
+                      </span>
+                      <span class="tree-card-body">
+                        <span class="tree-card-name">{m.data.name}</span>
+                        <span class="tree-card-role">{m.data.role}</span>
+                        <span class="tree-card-years">{yearRange(m)}</span>
+                      </span>
+                    </a>
+                  ))}
+                </li>
+              ) : (
+                <li>
+                  <a class="tree-card" href={`/members?member=${p.member.data.id}`}>
+                    <span class="tree-card-mono" aria-hidden="true">
+                      {p.member.data.name.split(" ").slice(-1)[0].charAt(0)}
+                    </span>
+                    <span class="tree-card-body">
+                      <span class="tree-card-name">{p.member.data.name}</span>
+                      <span class="tree-card-role">{p.member.data.role}</span>
+                      <span class="tree-card-years">{yearRange(p.member)}</span>
+                    </span>
+                  </a>
+                </li>
+              ),
+            )}
+          </ul>
+        </div>
+      ))
+    }
+  </section>
+
+  <style>
+    .tree-static {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 1rem 1.25rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2.25rem;
+    }
+    .tree-row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 1.25rem;
+      align-items: center;
+      position: relative;
+    }
+    .tree-row::before {
+      content: "";
+      position: absolute;
+      left: 152px;
+      right: 0;
+      bottom: -1.125rem;
+      height: 1px;
+      background: var(--color-line);
+    }
+    .tree-row:last-child::before {
+      display: none;
+    }
+    .tree-row-label {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      padding-right: 0.5rem;
+      border-right: 2px solid var(--color-vermilion);
+      line-height: 1.1;
+    }
+    .row-label-vi {
+      font-family: var(--font-display);
+      font-weight: 700;
+      color: var(--color-vermilion);
+    }
+    .row-label-en {
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-ink-3);
+    }
+
+    .tree-row-cards {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.875rem;
+    }
+    .tree-couple {
+      display: inline-flex;
+      gap: 0.625rem;
+      padding: 0.5rem;
+      background: var(--color-paper-2);
+      border-radius: 14px;
+      position: relative;
+    }
+    .tree-couple::before {
+      content: "♡";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.25rem;
+      color: var(--color-vermilion);
+      background: var(--color-paper);
+      border-radius: 999px;
+      width: 1.6rem;
+      height: 1.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .tree-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.625rem;
+      padding: 0.625rem 0.875rem;
+      background: var(--color-cream);
+      border: 1px solid var(--color-line-strong);
+      border-radius: 12px;
+      box-shadow: var(--shadow-paper-1);
+      min-width: 200px;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+    .tree-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-paper-2);
+      color: var(--color-ink);
+    }
+    .tree-card-mono {
+      flex: none;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--color-vermilion);
+      color: var(--color-vermilion);
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1rem;
+      background: rgba(139, 42, 31, 0.04);
+    }
+    .tree-card-body {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.15;
+      gap: 0.15rem;
+    }
+    .tree-card-name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      color: var(--color-ink);
+    }
+    .tree-card-role {
+      font-size: 0.78rem;
+      color: var(--color-ink-2);
+    }
+    .tree-card-years {
+      font-size: 0.7rem;
+      color: var(--color-ink-3);
+      font-feature-settings: "tnum" 1;
+    }
+
+    @media (max-width: 768px) {
+      .tree-row {
+        grid-template-columns: 1fr;
+      }
+      .tree-row-label {
+        align-items: flex-start;
+        border-right: none;
+        border-bottom: 2px solid var(--color-vermilion);
+        padding: 0 0 0.25rem 0;
+      }
+    }
+  </style>
+</Base>

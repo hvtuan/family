@@ -1,0 +1,52 @@
+---
+interface Props {
+  kicker?: string;
+  title: string;
+  subtitle?: string;
+  subtitleEn?: string;
+  align?: "center" | "left";
+}
+
+const { kicker, title, subtitle, subtitleEn, align = "center" } = Astro.props;
+---
+
+<header class={`page-head ${align === "left" ? "is-left" : ""}`}>
+  {kicker && <p class="u-kicker">{kicker}</p>}
+  <h1>{title}</h1>
+  {subtitle && <p class="page-head-sub">{subtitle}</p>}
+  {subtitleEn && <p class="page-head-sub-en" lang="en">{subtitleEn}</p>}
+</header>
+
+<style>
+  .page-head {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 3rem 1.25rem 1.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    align-items: center;
+  }
+  .page-head.is-left {
+    text-align: left;
+    align-items: flex-start;
+  }
+  .page-head h1 {
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    line-height: 1.1;
+    color: var(--color-ink);
+  }
+  .page-head-sub {
+    color: var(--color-ink-2);
+    font-size: 1.05rem;
+    max-width: 60ch;
+  }
+  .page-head-sub-en {
+    color: var(--color-ink-3);
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    max-width: 70ch;
+  }
+</style>

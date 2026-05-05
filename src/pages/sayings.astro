@@ -1,0 +1,173 @@
+---
+import Base from "@/layouts/Base.astro";
+import PageHead from "@/components/astro/PageHead.astro";
+import { getCollection } from "astro:content";
+
+const quotes = await getCollection("quotes");
+const memberIndex = new Map(
+  (await getCollection("members")).map((m) => [m.id, m]),
+);
+
+type Q = (typeof quotes)[number];
+const typeLabel: Record<Q["data"]["type"], { vi: string; en: string }> = {
+  proverb: { vi: "Tục ngữ", en: "Proverb" },
+  family: { vi: "Lời nhà", en: "Family" },
+  poem: { vi: "Thơ", en: "Poem" },
+  letter: { vi: "Thư", en: "Letter" },
+};
+---
+
+<Base title="Lời nhắn" pageKey="sayings">
+  <PageHead
+    kicker="Lời nhắn • Sayings"
+    title="Lời ông bà cha mẹ"
+    subtitle="Tinh hoa truyền miệng và những câu nói được giữ trong nhà."
+    subtitleEn="Words remembered and repeated across generations"
+  />
+
+  <section class="sayings">
+    {
+      quotes.length === 0 ? (
+        <p class="empty-state">Chưa có lời nhắn nào được ghi chép.</p>
+      ) : (
+        <ul class="quote-grid">
+          {quotes.map((q) => {
+            const author = q.data.authorRef
+              ? memberIndex.get(q.data.authorRef.id)
+              : undefined;
+            const t = typeLabel[q.data.type];
+            return (
+              <li class="quote-card u-card">
+                <span class="quote-mark" aria-hidden="true">
+                  "
+                </span>
+                <blockquote>
+                  <p class="quote-text">{q.data.text}</p>
+                  {q.data.textEn && (
+                    <p class="quote-text-en" lang="en">
+                      {q.data.textEn}
+                    </p>
+                  )}
+                  <footer>
+                    <span class="quote-author">
+                      —{" "}
+                      {author ? (
+                        <a href={`/members?member=${author.data.id}`}>
+                          {q.data.author}
+                        </a>
+                      ) : (
+                        q.data.author
+                      )}
+                    </span>
+                    <span class="quote-type">
+                      <span>{t.vi}</span>
+                      <span class="quote-type-en" lang="en">
+                        {t.en}
+                      </span>
+                    </span>
+                  </footer>
+                  {q.data.context && (
+                    <p class="quote-context">{q.data.context}</p>
+                  )}
+                </blockquote>
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+  </section>
+
+  <style>
+    .sayings {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1rem 1.25rem 4rem;
+    }
+    .quote-grid {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+    .quote-card {
+      position: relative;
+      padding: 2rem 1.75rem 1.5rem;
+    }
+    .quote-mark {
+      position: absolute;
+      top: -0.4rem;
+      left: 1rem;
+      font-family: var(--font-display);
+      font-size: 5rem;
+      color: var(--color-vermilion);
+      opacity: 0.2;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .quote-card blockquote {
+      margin: 0;
+    }
+    .quote-text {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-style: italic;
+      color: var(--color-ink);
+      line-height: 1.5;
+    }
+    .quote-text-en {
+      margin-top: 0.4rem;
+      color: var(--color-ink-3);
+      font-size: 0.92rem;
+      font-style: italic;
+    }
+    .quote-card footer {
+      margin-top: 0.875rem;
+      padding-top: 0.625rem;
+      border-top: 1px dashed var(--color-line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .quote-author {
+      font-size: 0.92rem;
+      color: var(--color-ink-2);
+      font-weight: 600;
+    }
+    .quote-author a {
+      color: var(--color-vermilion);
+    }
+    .quote-type {
+      display: inline-flex;
+      flex-direction: column;
+      line-height: 1.1;
+      padding: 0.25rem 0.7rem;
+      background: var(--color-paper-2);
+      border: 1px solid var(--color-line);
+      border-radius: 999px;
+      font-size: 0.74rem;
+      color: var(--color-ink-2);
+    }
+    .quote-type-en {
+      font-size: 0.58rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-ink-3);
+    }
+    .quote-context {
+      margin-top: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--color-ink-3);
+      line-height: 1.55;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 4rem 1rem;
+      color: var(--color-ink-3);
+    }
+  </style>
+</Base>

@@ -1,0 +1,157 @@
+---
+import Base from "@/layouts/Base.astro";
+import PageHead from "@/components/astro/PageHead.astro";
+import { getCollection } from "astro:content";
+
+const all = await getCollection("members", ({ data }) => data.status === "published");
+const members = all
+  .slice()
+  .sort(
+    (a, b) =>
+      a.data.gen - b.data.gen ||
+      (a.data.birthOrder ?? 99) - (b.data.birthOrder ?? 99),
+  );
+
+function yearRange(m: (typeof members)[number]) {
+  const b = m.data.born?.slice(0, 4);
+  const d = m.data.died?.slice(0, 4);
+  if (!b) return "";
+  return d ? `${b} – ${d}` : `${b} –`;
+}
+---
+
+<Base title="Thành viên" pageKey="members">
+  <PageHead
+    kicker="Thành viên • Members"
+    title="Tất cả thành viên"
+    subtitle={`Hiện có ${members.length} thành viên qua ${new Set(members.map((m) => m.data.gen)).size} thế hệ.`}
+    subtitleEn={`${members.length} members across ${new Set(members.map((m) => m.data.gen)).size} generations`}
+  />
+
+  <section class="members-list">
+    <ul class="member-grid">
+      {
+        members.map((m) => (
+          <li class="member-card u-card" data-pattern={m.data.pattern}>
+            <div class="member-portrait" aria-hidden="true">
+              <span class="portrait-monogram">
+                {m.data.name.split(" ").slice(-1)[0].charAt(0)}
+              </span>
+            </div>
+            <div class="member-body">
+              <p class="member-gen">
+                Đời thứ {m.data.gen} • <span lang="en">Gen {m.data.gen}</span>
+              </p>
+              <h3 class="member-name">{m.data.name}</h3>
+              <p class="member-role">{m.data.role}</p>
+              <p class="member-years">{yearRange(m)}</p>
+              <p class="member-bio">{m.data.bio}</p>
+              {m.data.tags.length > 0 && (
+                <ul class="member-tags" aria-label="Thẻ">
+                  {m.data.tags.map((t) => (
+                    <li>{t}</li>
+                  ))}
+                </ul>
+              )}
+              <a class="member-cta" href={`/members?member=${m.data.id}`}>
+                Xem chi tiết →
+              </a>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <style>
+    .members-list {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 1rem 1.25rem 4rem;
+    }
+    .member-grid {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+    .member-card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .member-portrait {
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(201, 163, 90, 0.25), transparent 60%),
+        var(--color-paper-3);
+      border-bottom: 1px solid var(--color-line);
+    }
+    .portrait-monogram {
+      font-family: var(--font-display);
+      font-size: 4.5rem;
+      font-weight: 700;
+      color: var(--color-vermilion);
+      opacity: 0.85;
+    }
+    .member-body {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      flex: 1;
+    }
+    .member-gen {
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-gold-2);
+    }
+    .member-name {
+      font-size: 1.4rem;
+      margin: 0;
+    }
+    .member-role {
+      font-size: 0.95rem;
+      color: var(--color-ink-2);
+    }
+    .member-years {
+      font-size: 0.82rem;
+      color: var(--color-ink-3);
+      font-feature-settings: "tnum" 1;
+    }
+    .member-bio {
+      font-size: 0.92rem;
+      color: var(--color-ink-2);
+      line-height: 1.55;
+    }
+    .member-tags {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .member-tags li {
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      background: var(--color-paper-2);
+      color: var(--color-ink-2);
+    }
+    .member-cta {
+      margin-top: auto;
+      padding-top: 0.75rem;
+      font-weight: 600;
+      color: var(--color-vermilion);
+      font-size: 0.9rem;
+    }
+  </style>
+</Base>

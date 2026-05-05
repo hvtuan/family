@@ -1,0 +1,212 @@
+---
+import Base from "@/layouts/Base.astro";
+import PageHead from "@/components/astro/PageHead.astro";
+import { getCollection, render } from "astro:content";
+
+const traditions = await getCollection("traditions");
+
+type T = (typeof traditions)[number];
+
+const iconGlyph: Record<T["data"]["icon"], string> = {
+  bowl: "🍚",
+  fish: "🐟",
+  leaf: "🍃",
+  shell: "🐚",
+  incense: "🪔",
+  blossom: "❀",
+};
+
+const categoryLabel: Record<T["data"]["category"], { vi: string; en: string }> = {
+  food: { vi: "Ẩm thực", en: "Food" },
+  festival: { vi: "Lễ hội", en: "Festival" },
+  ceremony: { vi: "Nghi lễ", en: "Ceremony" },
+  craft: { vi: "Thủ công", en: "Craft" },
+};
+
+const rendered = await Promise.all(
+  traditions.map(async (t) => ({ entry: t, ...(await render(t)) })),
+);
+---
+
+<Base title="Truyền thống" pageKey="traditions">
+  <PageHead
+    kicker="Truyền thống • Traditions"
+    title="Nếp nhà giữ qua thời gian"
+    subtitle="Những nét sinh hoạt, ẩm thực và lễ nghi mà gia đình lưu truyền."
+    subtitleEn="Customs, foods, and rituals passed down through the household"
+  />
+
+  <section class="traditions">
+    <ul class="tradition-grid">
+      {
+        rendered.map(({ entry: t, Content }) => {
+          const cat = categoryLabel[t.data.category];
+          return (
+            <li class="tradition-card u-card">
+              <header class="tradition-head">
+                <span class="tradition-icon" aria-hidden="true">
+                  {iconGlyph[t.data.icon]}
+                </span>
+                <span class="tradition-cat">
+                  <span>{cat.vi}</span>
+                  <span class="tradition-cat-en" lang="en">
+                    {cat.en}
+                  </span>
+                </span>
+              </header>
+              <h2>{t.data.name}</h2>
+              <p class="tradition-name-en" lang="en">
+                {t.data.nameEn}
+              </p>
+              <p class="tradition-desc">{t.data.desc}</p>
+              <p class="tradition-desc-en" lang="en">
+                {t.data.descEn}
+              </p>
+              {t.data.origin && (
+                <p class="tradition-origin">
+                  <span class="origin-label">Nguồn gốc</span>
+                  <span>{t.data.origin}</span>
+                </p>
+              )}
+              <details class="tradition-body">
+                <summary>Xem chi tiết / Read more</summary>
+                <div class="tradition-content">
+                  <Content />
+                </div>
+              </details>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </section>
+
+  <style>
+    .traditions {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 1rem 1.25rem 4rem;
+    }
+    .tradition-grid {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.25rem;
+    }
+    .tradition-card {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .tradition-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .tradition-icon {
+      font-size: 2.4rem;
+      line-height: 1;
+    }
+    .tradition-cat {
+      display: inline-flex;
+      flex-direction: column;
+      line-height: 1.1;
+      padding: 0.3rem 0.75rem;
+      background: var(--color-jade);
+      color: var(--color-paper);
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .tradition-cat-en {
+      font-size: 0.6rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.85;
+    }
+    .tradition-card h2 {
+      font-size: 1.4rem;
+      margin: 0;
+    }
+    .tradition-name-en {
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-ink-3);
+      margin-bottom: 0.4rem;
+    }
+    .tradition-desc {
+      color: var(--color-ink-2);
+      line-height: 1.55;
+    }
+    .tradition-desc-en {
+      color: var(--color-ink-3);
+      font-size: 0.88rem;
+      line-height: 1.5;
+      font-style: italic;
+    }
+    .tradition-origin {
+      display: flex;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--color-ink-2);
+      align-items: baseline;
+      margin-top: 0.5rem;
+    }
+    .origin-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-gold-2);
+    }
+    .tradition-body {
+      margin-top: 0.5rem;
+    }
+    .tradition-body summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--color-vermilion);
+      list-style: none;
+      padding: 0.4rem 0;
+    }
+    .tradition-body summary::-webkit-details-marker {
+      display: none;
+    }
+    .tradition-body summary::after {
+      content: " ▾";
+      transition: transform 160ms ease;
+      display: inline-block;
+    }
+    .tradition-body[open] summary::after {
+      transform: rotate(180deg);
+    }
+    .tradition-content {
+      padding-top: 0.75rem;
+      border-top: 1px dashed var(--color-line);
+      color: var(--color-ink-2);
+      line-height: 1.7;
+    }
+    .tradition-content :global(h2),
+    .tradition-content :global(h3) {
+      font-size: 1.05rem;
+      margin: 1rem 0 0.5rem;
+      color: var(--color-vermilion);
+    }
+    .tradition-content :global(ul),
+    .tradition-content :global(ol) {
+      padding-left: 1.5rem;
+      margin: 0.5rem 0;
+    }
+    .tradition-content :global(blockquote) {
+      border-left: 3px solid var(--color-vermilion);
+      padding: 0.25rem 0 0.25rem 1rem;
+      margin: 0.75rem 0;
+      font-style: italic;
+      color: var(--color-ink-2);
+    }
+  </style>
+</Base>
