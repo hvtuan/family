@@ -1,0 +1,120 @@
+---
+/**
+ * File picker + inline Cropper.js editor panel.
+ *
+ * The <input type="file" data-photo-edit> is auto-bound by
+ * src/scripts/photo-editor.ts after DOMContentLoaded. When a file is
+ * picked the panel reveals a Cropper.js viewport over the image; the
+ * user can crop / rotate / flip / pick aspect / cap max dimension.
+ * "Áp dụng chỉnh sửa" renders the cropper viewport to a canvas, encodes
+ * a Blob, and swaps it into the input via DataTransfer so the existing
+ * form submit uploads the edited bytes.
+ *
+ * Usage:
+ *   <PhotoEditorInput name="file" required />
+ */
+
+interface Props {
+  name?: string;
+  required?: boolean;
+  accept?: string;
+}
+
+const {
+  name = "file",
+  required = false,
+  accept = "image/jpeg,image/png,image/webp,image/gif",
+} = Astro.props;
+---
+
+<div class="space-y-3">
+  <input
+    type="file"
+    name={name}
+    data-photo-edit
+    required={required}
+    accept={accept}
+    class="block w-full text-theme-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-theme-sm file:font-medium file:text-brand-600 hover:file:bg-brand-100 cursor-pointer"
+  />
+
+  <div data-photo-editor-panel hidden class="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+    <!-- Cropper container — must be a block element of fixed-ish size -->
+    <div class="bg-white border border-gray-200 rounded-md overflow-hidden">
+      <!-- Cropper replaces this img with its own DOM, so styles only matter pre-init -->
+      <img data-photo-target alt="" class="block max-w-full max-h-96 mx-auto" />
+    </div>
+
+    <!-- Action buttons -->
+    <div class="flex flex-wrap items-center justify-center gap-2">
+      <button type="button" data-photo-action="rotate-left"
+        class="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-theme-xs font-medium text-gray-700 hover:bg-gray-100">
+        ↺ Xoay trái
+      </button>
+      <button type="button" data-photo-action="rotate-right"
+        class="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-theme-xs font-medium text-gray-700 hover:bg-gray-100">
+        ↻ Xoay phải
+      </button>
+      <button type="button" data-photo-action="flip-h"
+        class="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-theme-xs font-medium text-gray-700 hover:bg-gray-100">
+        ⇆ Lật ngang
+      </button>
+      <button type="button" data-photo-action="flip-v"
+        class="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-theme-xs font-medium text-gray-700 hover:bg-gray-100">
+        ⇅ Lật dọc
+      </button>
+      <button type="button" data-photo-action="reset"
+        class="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-theme-xs font-medium text-gray-700 hover:bg-gray-100">
+        Đặt lại
+      </button>
+    </div>
+
+    <!-- Aspect ratio + max dim -->
+    <div class="flex flex-wrap items-center justify-center gap-2">
+      <span class="text-theme-xs text-gray-500 mr-1">Tỉ lệ:</span>
+      <button type="button" data-photo-aspect="free"
+        class="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-theme-xs text-gray-700 hover:bg-gray-100">
+        Tự do
+      </button>
+      <button type="button" data-photo-aspect="1"
+        class="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-theme-xs text-gray-700 hover:bg-gray-100">
+        1:1
+      </button>
+      <button type="button" data-photo-aspect={4 / 3}
+        class="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-theme-xs text-gray-700 hover:bg-gray-100">
+        4:3
+      </button>
+      <button type="button" data-photo-aspect={3 / 4}
+        class="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-theme-xs text-gray-700 hover:bg-gray-100">
+        3:4
+      </button>
+      <button type="button" data-photo-aspect={16 / 9}
+        class="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-theme-xs text-gray-700 hover:bg-gray-100">
+        16:9
+      </button>
+      <span class="ml-3 text-theme-xs text-gray-500">Resize max:</span>
+      <select data-photo-max
+        class="h-8 rounded-md border border-gray-200 bg-white px-2 text-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10">
+        <option value="">Giữ nguyên</option>
+        <option value="800">800 px</option>
+        <option value="1200">1200 px</option>
+        <option value="1600" selected>1600 px</option>
+        <option value="2400">2400 px</option>
+      </select>
+    </div>
+
+    <!-- Apply -->
+    <div class="flex items-center justify-between gap-3">
+      <p data-photo-status class="text-theme-xs text-gray-500">—</p>
+      <button type="button" data-photo-apply
+        class="rounded-md border border-brand-200 bg-brand-50 px-3 py-1.5 text-theme-xs font-medium text-brand-600 hover:bg-brand-100">
+        Áp dụng chỉnh sửa
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Imported once per page; the editor module auto-inits on every
+  // input[type=file][data-photo-edit] it finds in the DOM.
+  import "@/scripts/photo-editor";
+</script>
