@@ -1,6 +1,10 @@
 ---
 import "@/styles/global.css";
 import { SITE, NAV_LINKS } from "@/data/site";
+import { getCollection } from "astro:content";
+import { toClientMember } from "@/lib/members-client";
+import ThemeSwitcher from "@/components/react/ThemeSwitcher";
+import MemberModal from "@/components/react/MemberModal";
 
 interface Props {
   title?: string;
@@ -13,6 +17,12 @@ const pageTitle = title ? `${title} — ${SITE.brand.vi}` : SITE.brand.vi;
 const pageDesc =
   description ?? `${SITE.brand.vi} • ${SITE.hometown} • ${SITE.motto}`;
 const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
+
+const allMembers = await getCollection(
+  "members",
+  ({ data }) => data.status === "published",
+);
+const clientMembers = allMembers.map(toClientMember);
 ---
 
 <!doctype html>
@@ -79,10 +89,16 @@ const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
             }
           </ul>
         </nav>
+
+        <div class="header-tools">
+          <ThemeSwitcher client:load />
+        </div>
       </div>
     </header>
 
     <main id="main"><slot /></main>
+
+    <MemberModal client:load members={clientMembers} />
 
     <footer class="site-footer">
       <div class="footer-inner">
@@ -131,9 +147,15 @@ const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
         margin: 0 auto;
         padding: 0.875rem 1.25rem;
         display: flex;
-        gap: 1.25rem;
+        gap: 1rem;
         align-items: center;
         justify-content: space-between;
+        flex-wrap: wrap;
+      }
+      .header-tools {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
       }
       .brand {
         display: inline-flex;
@@ -252,11 +274,10 @@ const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
         opacity: 0.85;
       }
 
-      @media (max-width: 768px) {
-        .header-inner {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 0.625rem;
+      @media (max-width: 968px) {
+        .primary-nav {
+          order: 3;
+          flex-basis: 100%;
         }
         .primary-nav ul {
           justify-content: center;
