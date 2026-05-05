@@ -1,0 +1,200 @@
+.ft-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.ft-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+}
+
+.ft-toolbar button {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-cream);
+  color: var(--color-ink);
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 38px;
+}
+
+.ft-toolbar button:hover {
+  background: var(--color-paper-3);
+}
+
+.ft-toolbar button:focus-visible {
+  outline: 2px solid var(--color-vermilion);
+  outline-offset: 2px;
+}
+
+.ft-zoom-readout {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--color-ink-3);
+  font-feature-settings: "tnum" 1;
+}
+
+.ft-hint {
+  font-size: 0.78rem;
+  color: var(--color-ink-3);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.ft-hint-en {
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-style: italic;
+}
+
+.ft-stage {
+  position: relative;
+  width: 100%;
+  height: 70vh;
+  min-height: 420px;
+  background:
+    radial-gradient(ellipse at center, rgba(201, 163, 90, 0.08), transparent 80%),
+    var(--color-paper-2);
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.ft-stage:active {
+  cursor: grabbing;
+}
+
+.ft-stage:focus-visible {
+  outline: 2px solid var(--color-vermilion);
+  outline-offset: 2px;
+}
+
+.ft-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.ft-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.ft-row-label {
+  position: absolute;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--color-vermilion);
+  background: var(--color-paper);
+  border: 1px solid var(--color-vermilion);
+  border-radius: 8px;
+  padding: 0.2rem 0.6rem;
+  pointer-events: none;
+  transform: translateX(calc(-100% - 12px));
+  z-index: 2;
+}
+
+.ft-card {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  border: 2px solid var(--color-line-strong);
+  background: var(--color-cream);
+  border-radius: 12px;
+  box-shadow: var(--shadow-paper-1);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  z-index: 3;
+  transition: box-shadow 120ms ease, transform 120ms ease,
+    border-color 120ms ease;
+}
+
+.ft-card:hover {
+  border-color: var(--color-vermilion);
+  box-shadow: var(--shadow-paper-2);
+  transform: translateY(-1px);
+}
+
+.ft-card:focus-visible {
+  outline: 2px solid var(--color-vermilion);
+  outline-offset: 2px;
+}
+
+.ft-card-mono {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--color-vermilion);
+  border-radius: 8px;
+  background: rgba(139, 42, 31, 0.04);
+  color: var(--color-vermilion);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.ft-card-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  min-width: 0;
+  flex: 1;
+}
+
+.ft-card-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft-card-role {
+  font-size: 0.72rem;
+  color: var(--color-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft-card-years {
+  font-size: 0.7rem;
+  color: var(--color-ink-3);
+  font-feature-settings: "tnum" 1;
+}
+
+@media (max-width: 568px) {
+  .ft-row-label {
+    transform: translateX(0);
+    top: -28px !important;
+  }
+}
