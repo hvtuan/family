@@ -1,4 +1,27 @@
-# Phase 2 — drop-in Admin (Sveltia / Decap CMS)
+# Phase 2 — drop-in Admin (Sveltia / Decap CMS) **[DEPRECATED 2026-05-05]**
+
+> **⚠️ DEPRECATED** — superseded by `DESIGN-PHASE-2-ADMIN.md`.
+>
+> **Why deprecated**: User requirements (SSO Google/email, admin approval flow,
+> role-based granular permissions for `nhánh nội` / `nhánh ngoại`) are not
+> natively supported by Sveltia/Decap, which assume per-editor GitHub accounts
+> and all-or-nothing repo write access.
+>
+> **New direction** (Path B): custom admin built on Astro hybrid + Supabase
+> (Postgres + Auth + Storage) with TailAdmin-pattern UI components. See
+> [`DESIGN-PHASE-2-ADMIN.md`](./DESIGN-PHASE-2-ADMIN.md) for full design,
+> 12-entry decision log, and 11 implementation phases (P0–P10).
+>
+> This document is preserved for historical context — schemas below remain a
+> useful reference because Postgres tables in the new design mirror them 1:1.
+
+---
+
+> _Original Sveltia plan follows below._
+
+---
+
+# Phase 2 — drop-in Admin (Sveltia / Decap CMS) [original draft]
 
 > Phase 1 keeps content as plain markdown + YAML files committed to the repo.
 > When non-technical family members need to edit data without touching git,
