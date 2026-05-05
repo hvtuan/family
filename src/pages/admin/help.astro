@@ -1,0 +1,165 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+
+export const prerender = false;
+---
+
+<AdminLayout title="Hướng dẫn sử dụng" crumbs={[{ label: "Trợ giúp" }]}>
+  <div class="prose-admin space-y-8">
+    <section class="rounded-2xl border border-brand-100 bg-brand-50 p-5">
+      <h2 class="text-theme-sm font-semibold text-brand-700 mb-2">
+        Mục đích trang quản trị
+      </h2>
+      <p class="text-theme-sm text-gray-700 leading-relaxed">
+        Đây là nơi cô/chú/anh/chị thêm và sửa thông tin về dòng họ — tên,
+        ngày sinh, hình ảnh, câu chuyện, ngày giỗ, địa điểm. Mọi thay đổi
+        sau khi lưu sẽ <strong>tự động xuất hiện ngay</strong> trên trang
+        công khai
+        <a href="https://family.huynhvantuan.net" class="text-brand-500 hover:underline">family.huynhvantuan.net</a>,
+        không cần thao tác gì thêm.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="text-theme-sm font-semibold text-gray-800 mb-3">1. Đăng nhập</h2>
+      <ul class="list-disc pl-5 space-y-1.5 text-theme-sm text-gray-700">
+        <li>
+          Mở trang
+          <a href="https://family.huynhvantuan.net/admin/login" class="text-brand-500 hover:underline">
+            family.huynhvantuan.net/admin/login
+          </a>
+        </li>
+        <li>Nhập tên đăng nhập + mật khẩu mà chú An đã cấp qua Zalo / SMS.</li>
+        <li>
+          Quên mật khẩu? Liên hệ chú An
+          (<a href="mailto:hvtuan0311@gmail.com" class="text-brand-500 hover:underline">hvtuan0311@gmail.com</a>)
+          để được cấp lại.
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="text-theme-sm font-semibold text-gray-800 mb-3">2. Bố cục trang</h2>
+      <ul class="list-disc pl-5 space-y-1.5 text-theme-sm text-gray-700">
+        <li>
+          <strong>Cột bên trái</strong> (menu): các nhóm dữ liệu — Thành viên,
+          Niên đại, Truyền thống, Album, Câu nói, Ngày lễ, Địa điểm.
+        </li>
+        <li>
+          <strong>Đầu trang</strong>: nút mở/đóng menu (☰) và nút <em>Đăng xuất</em>
+          ở góc phải. Luôn nhớ đăng xuất khi xong trên máy chung.
+        </li>
+        <li>
+          <strong>Tổng quan</strong>: trang đầu hiển thị số lượng từng nhóm.
+          Bấm vào ô bất kỳ để mở danh sách tương ứng.
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="text-theme-sm font-semibold text-gray-800 mb-3">3. Thêm thành viên mới</h2>
+      <ol class="list-decimal pl-5 space-y-2 text-theme-sm text-gray-700">
+        <li>Bấm <em>Thành viên</em> ở menu trái → nút <strong>+ Tạo mới</strong> ở góc phải.</li>
+        <li>
+          Nhập <strong>ID</strong> (mã định danh): chữ thường, số và dấu gạch
+          ngang. Ví dụ: <code class="rounded bg-gray-100 px-1.5">g4-1</code>
+          (đời 4, người thứ 1) hoặc <code class="rounded bg-gray-100 px-1.5">co-hai</code>.
+          ID không thay đổi được sau khi tạo.
+        </li>
+        <li>
+          Điền đầy đủ ô có dấu <span class="text-error-500">*</span> (Họ tên, Đời,
+          Vai vế, Năm sinh, Tiểu sử vi/en, Nhánh).
+        </li>
+        <li>
+          Nếu cụ/ông/bà đã được nhập trước đó, chọn ở phần <em>Quan hệ</em>
+          (Cha, Mẹ, Vợ/chồng) — phần <em>Con cái</em> sẽ tự suy ra từ Cha/Mẹ
+          đã chọn ở các thành viên khác.
+        </li>
+        <li>
+          <strong>Trạng thái</strong>: chọn <em>Đã xuất bản</em> để hiển thị
+          công khai, hoặc <em>Bản nháp</em> để giữ riêng (chỉ admin thấy).
+        </li>
+        <li>Bấm <strong>Tạo thành viên</strong>. Trang sẽ chuyển sang chế độ chỉnh sửa.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2 class="text-theme-sm font-semibold text-gray-800 mb-3">4. Sửa hoặc xóa</h2>
+      <ul class="list-disc pl-5 space-y-1.5 text-theme-sm text-gray-700">
+        <li>Vào danh sách → bấm <strong>Sửa</strong> bên cạnh người cần chỉnh.</li>
+        <li>Sau khi sửa xong, kéo xuống cuối form → <strong>Lưu thay đổi</strong>.</li>
+        <li>Xóa: bấm <strong>Xóa</strong> ở danh sách. Hỏi xác nhận trước khi xóa thật.</li>
+        <li>
+          Khi xóa một thành viên, các quan hệ <em>Cha/Mẹ/Vợ chồng</em> ở
+          các thành viên khác trỏ tới người đó sẽ tự bỏ tham chiếu (không xóa
+          các thành viên khác).
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h2 class="text-theme-sm font-semibold text-gray-800 mb-3">5. Tải ảnh lên Album</h2>
+      <ol class="list-decimal pl-5 space-y-2 text-theme-sm text-gray-700">
+        <li>Menu → <em>Album</em> → <strong>+ Tạo mới</strong>.</li>
+        <li>
+          Đặt <strong>ID ảnh</strong> dễ nhớ. Ví dụ:
+          <code class="rounded bg-gray-100 px-1.5">g3-1-graduation</code>,
+          <code class="rounded bg-gray-100 px-1.5">tet-2025</code>.
+        </li>
+        <li>
+          Phần <em>Ảnh</em>: bấm nút <strong>Choose file</strong> chọn ảnh từ
+          điện thoại/máy tính (jpg / png / webp, dưới 8 MB).
+        </li>
+        <li>Nhập caption tiếng Việt + tiếng Anh, năm chụp, địa điểm (nếu nhớ).</li>
+        <li>
+          Tích chọn các <strong>thành viên trong ảnh</strong> ở phần dưới —
+          ảnh sẽ tự xuất hiện ở trang chi tiết của những người đó.
+        </li>
+        <li>Bấm <strong>Tạo ảnh</strong>. Ảnh được tải lên kho và hiển thị ngay.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2 class="text-theme-sm font-semibold text-gray-800 mb-3">6. Lời khuyên nhỏ</h2>
+      <ul class="list-disc pl-5 space-y-1.5 text-theme-sm text-gray-700">
+        <li>
+          <strong>Lưu thường xuyên</strong>: trình duyệt không tự lưu nháp,
+          nên đừng để form mở quá lâu trên màn hình rồi đi đâu khác.
+        </li>
+        <li>
+          <strong>Tiếng Việt có dấu</strong>: cứ gõ bình thường, hệ thống lưu
+          đúng dấu.
+        </li>
+        <li>
+          <strong>Bản nháp</strong>: nếu chưa chắc, lưu ở trạng thái <em>Bản
+          nháp</em> trước. Khi nào hoàn chỉnh thì đổi sang <em>Đã xuất bản</em>.
+        </li>
+        <li>
+          <strong>Privacy</strong>: phần Số điện thoại / Email / Địa chỉ chỉ
+          công khai khi tích ô <em>Cho phép hiển thị thông tin liên hệ</em>.
+          Hệ thống tự kiểm tra để không lộ thông tin của ai chưa cho phép.
+        </li>
+        <li>
+          <strong>Lo lắng làm hỏng?</strong> Mọi thay đổi đều ghi lại ở
+          <em>Nhật ký</em> (chỉ admin xem được) — dễ truy ngược.
+        </li>
+      </ul>
+    </section>
+
+    <section class="rounded-2xl border border-gray-200 bg-white p-5">
+      <h2 class="text-theme-sm font-semibold text-gray-800 mb-2">Cần giúp đỡ?</h2>
+      <p class="text-theme-sm text-gray-700">
+        Liên hệ chú An:
+        <a href="mailto:hvtuan0311@gmail.com" class="text-brand-500 hover:underline">hvtuan0311@gmail.com</a>
+        — gửi ảnh chụp màn hình lỗi nếu có, sẽ hỗ trợ sớm.
+      </p>
+    </section>
+  </div>
+</AdminLayout>
+
+<style>
+  /* Light styling tweak so help paragraphs look comfortable inside the
+     gray dashboard background. Scoped so it doesn't leak to other pages. */
+  .prose-admin h2 { letter-spacing: -0.01em; }
+  .prose-admin section + section { margin-top: 2rem; }
+</style>
