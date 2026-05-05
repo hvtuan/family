@@ -15,12 +15,24 @@ COPY . .
 RUN pnpm build
 
 # ─── Serve stage ──────────────────────────────────────────────────────────────
-FROM nginx:1.27-alpine AS serve
-RUN apk add --no-cache curl
+# Phase 2 spike: serve via @astrojs/node standalone instead of nginx static.
+# Public pages are still prerendered into dist/client/; entry.mjs serves them
+# alongside SSR routes (/admin/**).
+FROM node:22-alpine AS serve
+WORKDIR /app
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist /usr/share/nginx/html
+RUN apk add --no-cache curl libc6-compat
 
-EXPOSE 80
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./package.json
+
+ENV HOST=0.0.0.0
+ENV PORT=3000
+ENV NODE_ENV=production
+
+EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -fsS http://localhost/ >/dev/null || exit 1
+  CMD curl -fsS http://localhost:3000/ >/dev/null || exit 1
+
+CMD ["node", "./dist/server/entry.mjs"]

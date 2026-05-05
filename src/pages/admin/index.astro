@@ -1,0 +1,84 @@
+---
+// SPIKE — Phase 2 admin placeholder.
+// SSR opt-in via `prerender = false` (hybrid mode: rest of site stays static).
+// Real /admin shell + auth lands in P4.
+export const prerender = false;
+
+const now = new Date();
+const builtAt = now.toISOString();
+const userAgent = Astro.request.headers.get("user-agent") ?? "unknown";
+---
+
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Admin — Gia phả họ Nguyễn</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 2rem 1rem;
+        background: #f9fafb;
+        color: #111827;
+      }
+      main {
+        max-width: 36rem;
+        margin: 0 auto;
+        padding: 2rem;
+        background: #fff;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      }
+      h1 { margin-top: 0; font-size: 1.5rem; }
+      code {
+        background: #f3f4f6;
+        padding: 0.15rem 0.35rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+      }
+      .meta {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
+        font-size: 0.875rem;
+        color: #6b7280;
+      }
+      .badge {
+        display: inline-block;
+        padding: 0.15rem 0.5rem;
+        background: #dbeafe;
+        color: #1e40af;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.025em;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="badge">SSR · Spike P0</span>
+      <h1>Admin (sẽ ra mắt sau)</h1>
+      <p>
+        Trang này là placeholder của Phase 2. Trong P4 sẽ có login Google /
+        magic link, dashboard và các form sửa nội dung.
+      </p>
+      <p>
+        Xác nhận route <code>/admin</code> đang chạy ở chế độ
+        <strong>SSR</strong>; các trang công khai khác (<code>/</code>,
+        <code>/members</code>, …) vẫn render tĩnh để giữ Lighthouse ≥ 95.
+      </p>
+      <div class="meta">
+        <div>Render time: <code>{builtAt}</code></div>
+        <div>UA: <code>{userAgent}</code></div>
+      </div>
+    </main>
+  </body>
+</html>
