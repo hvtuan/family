@@ -14,7 +14,9 @@
     "check": "astro check",
     "check:privacy": "node scripts/check-bundle-privacy.mjs",
     "db:migrate": "node --env-file=.env.local scripts/db-migrate.mjs",
-    "db:smoke": "node --env-file=.env.local scripts/db-smoke.mjs"
+    "db:smoke": "node --env-file=.env.local scripts/db-smoke.mjs",
+    "db:seed:dry": "node --env-file=.env.local scripts/migrate-content-to-db.mjs --dry-run",
+    "db:seed": "node --env-file=.env.local scripts/migrate-content-to-db.mjs --apply"
   },
   "dependencies": {
     "@astrojs/node": "^10.0.6",
@@ -48,6 +50,9 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.1",
+    "mime-types": "^3.0.2",
     "postgres": "^3.4.9",
     "typescript": "^6.0.3"
   }
