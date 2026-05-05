@@ -1,0 +1,37 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import TimelineForm from "@/components/admin/TimelineForm.astro";
+import { upsertTimeline, parseTimelineForm } from "@/lib/timeline-admin";
+import { listMemberRefs } from "@/lib/members-admin";
+import type { TimelineRow } from "@/lib/timeline-admin";
+
+export const prerender = false;
+
+let fieldError: string | null = null;
+let values: Partial<TimelineRow> = { lunar: false, category: "milestone" };
+let selectedMembers: string[] = [];
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const { input, memberIds, errors } = parseTimelineForm(form);
+  values = input as Partial<TimelineRow>;
+  selectedMembers = memberIds;
+  if (errors.length > 0) {
+    fieldError = errors.join(" ");
+  } else {
+    try {
+      const newId = await upsertTimeline(input, memberIds, "create");
+      return Astro.redirect(`/admin/timeline/${newId}?ok=created`);
+    } catch (e) {
+      fieldError = e instanceof Error ? e.message : "Lưu thất bại.";
+    }
+  }
+}
+
+const refs = await listMemberRefs();
+---
+
+<AdminLayout title="Sự kiện mới" crumbs={[{ label: "Niên đại", href: "/admin/timeline" }, { label: "Tạo mới" }]}>
+  <TimelineForm mode="create" values={values} refs={refs}
+    selectedMembers={selectedMembers} fieldError={fieldError} />
+</AdminLayout>

@@ -1,0 +1,78 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { listQuotes, deleteQuote } from "@/lib/quotes-admin";
+
+export const prerender = false;
+
+let banner: { kind: "ok" | "err"; text: string } | null = null;
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  if (form.get("action") === "delete") {
+    const id = Number(form.get("id"));
+    try {
+      await deleteQuote(id);
+      banner = { kind: "ok", text: `Đã xóa #${id}.` };
+    } catch (e) {
+      banner = { kind: "err", text: e instanceof Error ? e.message : "Xóa thất bại." };
+    }
+  }
+}
+const rows = await listQuotes();
+
+const typeLabel: Record<string, string> = {
+  proverb: "Tục ngữ", family: "Lời gia đình", poem: "Thơ", letter: "Thư",
+};
+---
+
+<AdminLayout title="Câu nói" crumbs={[{ label: "Câu nói" }]}>
+  <div class="space-y-6">
+    {banner && (
+      <div class:list={["rounded-lg border px-4 py-3 text-theme-sm",
+        banner.kind === "ok"
+          ? "border-success-100 bg-success-50 text-success-700"
+          : "border-error-100 bg-error-50 text-error-700"]}>{banner.text}</div>
+    )}
+
+    <section class="rounded-2xl border border-gray-200 bg-white shadow-theme-xs">
+      <header class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <h2 class="text-theme-sm font-semibold text-gray-800">Câu nói ({rows.length})</h2>
+        <a href="/admin/quotes/new" class="rounded-lg bg-brand-500 px-4 py-2 text-theme-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">+ Tạo mới</a>
+      </header>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-theme-sm">
+          <thead class="bg-gray-50 text-theme-xs uppercase text-gray-500">
+            <tr>
+              <th class="px-5 py-3 font-medium">Nội dung</th>
+              <th class="px-5 py-3 font-medium">Tác giả</th>
+              <th class="px-5 py-3 font-medium">Loại</th>
+              <th class="px-5 py-3 font-medium text-right">Hành động</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {rows.length === 0 && <tr><td colspan="4" class="px-5 py-8 text-center text-gray-500">Chưa có câu nói nào.</td></tr>}
+            {rows.map((q) => (
+              <tr class="hover:bg-gray-50">
+                <td class="px-5 py-3 max-w-md">
+                  <div class="text-gray-800 line-clamp-2">{q.text_vi}</div>
+                  {q.text_en && <div class="text-theme-xs text-gray-500 line-clamp-1 italic">{q.text_en}</div>}
+                </td>
+                <td class="px-5 py-3 text-gray-700">{q.author}</td>
+                <td class="px-5 py-3 text-gray-700">{typeLabel[q.type] ?? q.type}</td>
+                <td class="px-5 py-3 text-right">
+                  <div class="flex justify-end gap-2">
+                    <a href={`/admin/quotes/${q.id}`} class="rounded-md border border-gray-200 px-3 py-1 text-theme-xs font-medium text-gray-700 hover:bg-gray-50">Sửa</a>
+                    <form method="post" class="inline" onsubmit="return confirm('Xóa câu nói này?');">
+                      <input type="hidden" name="action" value="delete" />
+                      <input type="hidden" name="id" value={q.id} />
+                      <button type="submit" class="rounded-md border border-error-100 px-3 py-1 text-theme-xs font-medium text-error-700 hover:bg-error-50">Xóa</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</AdminLayout>

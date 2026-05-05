@@ -1,0 +1,44 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import TraditionForm from "@/components/admin/TraditionForm.astro";
+import {
+  getTradition, upsertTradition, parseTraditionForm,
+} from "@/lib/traditions-admin";
+import type { TraditionRow } from "@/lib/traditions-admin";
+
+export const prerender = false;
+
+const id = Astro.params.id!;
+let fieldError: string | null = null;
+let fieldOk: string | null = null;
+
+let existing = await getTradition(id);
+if (!existing) return new Response("Không tìm thấy", { status: 404 });
+
+if (Astro.url.searchParams.get("ok") === "created") fieldOk = "Đã tạo truyền thống.";
+
+let values: Partial<TraditionRow> = existing;
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const { input, errors } = parseTraditionForm(form);
+  const sanitized = { ...input, id };
+  values = sanitized;
+  if (errors.length > 0) {
+    fieldError = errors.join(" ");
+  } else {
+    try {
+      await upsertTradition(sanitized, "update");
+      existing = await getTradition(id);
+      values = existing ?? sanitized;
+      fieldOk = "Đã lưu thay đổi.";
+    } catch (e) {
+      fieldError = e instanceof Error ? e.message : "Lưu thất bại.";
+    }
+  }
+}
+---
+
+<AdminLayout title={existing?.name ?? id} crumbs={[{ label: "Truyền thống", href: "/admin/traditions" }, { label: existing?.name ?? id }]}>
+  <TraditionForm mode="edit" values={values} fieldError={fieldError} fieldOk={fieldOk} />
+</AdminLayout>

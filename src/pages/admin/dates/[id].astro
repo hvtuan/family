@@ -1,0 +1,45 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import DateForm from "@/components/admin/DateForm.astro";
+import { getDate, upsertDate, parseDateForm } from "@/lib/dates-admin";
+import { listMemberRefs } from "@/lib/members-admin";
+import type { DateRow } from "@/lib/dates-admin";
+
+export const prerender = false;
+
+const id = Number(Astro.params.id!);
+if (!Number.isInteger(id)) return new Response("ID không hợp lệ", { status: 404 });
+
+let fieldError: string | null = null;
+let fieldOk: string | null = null;
+let existing = await getDate(id);
+if (!existing) return new Response("Không tìm thấy", { status: 404 });
+if (Astro.url.searchParams.get("ok") === "created") fieldOk = "Đã tạo ngày lễ.";
+
+let values: Partial<DateRow> = existing;
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const { input, errors } = parseDateForm(form);
+  const sanitized = { ...input, id };
+  values = sanitized;
+  if (errors.length > 0) {
+    fieldError = errors.join(" ");
+  } else {
+    try {
+      await upsertDate(sanitized, "update");
+      existing = await getDate(id);
+      values = existing ?? values;
+      fieldOk = "Đã lưu thay đổi.";
+    } catch (e) {
+      fieldError = e instanceof Error ? e.message : "Lưu thất bại.";
+    }
+  }
+}
+
+const refs = await listMemberRefs();
+---
+
+<AdminLayout title={existing?.name ?? `#${id}`} crumbs={[{ label: "Ngày lễ", href: "/admin/dates" }, { label: existing?.name ?? `#${id}` }]}>
+  <DateForm mode="edit" values={values} refs={refs} fieldError={fieldError} fieldOk={fieldOk} />
+</AdminLayout>

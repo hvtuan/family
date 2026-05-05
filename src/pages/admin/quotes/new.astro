@@ -1,0 +1,34 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import QuoteForm from "@/components/admin/QuoteForm.astro";
+import { upsertQuote, parseQuoteForm } from "@/lib/quotes-admin";
+import { listMemberRefs } from "@/lib/members-admin";
+import type { QuoteRow } from "@/lib/quotes-admin";
+
+export const prerender = false;
+
+let fieldError: string | null = null;
+let values: Partial<QuoteRow> = { type: "proverb" };
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const { input, errors } = parseQuoteForm(form);
+  values = input as Partial<QuoteRow>;
+  if (errors.length > 0) {
+    fieldError = errors.join(" ");
+  } else {
+    try {
+      const newId = await upsertQuote(input, "create");
+      return Astro.redirect(`/admin/quotes/${newId}?ok=created`);
+    } catch (e) {
+      fieldError = e instanceof Error ? e.message : "Lưu thất bại.";
+    }
+  }
+}
+
+const refs = await listMemberRefs();
+---
+
+<AdminLayout title="Câu nói mới" crumbs={[{ label: "Câu nói", href: "/admin/quotes" }, { label: "Tạo mới" }]}>
+  <QuoteForm mode="create" values={values} refs={refs} fieldError={fieldError} />
+</AdminLayout>

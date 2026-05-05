@@ -1,0 +1,34 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import DateForm from "@/components/admin/DateForm.astro";
+import { upsertDate, parseDateForm } from "@/lib/dates-admin";
+import { listMemberRefs } from "@/lib/members-admin";
+import type { DateRow } from "@/lib/dates-admin";
+
+export const prerender = false;
+
+let fieldError: string | null = null;
+let values: Partial<DateRow> = { calendar: "solar", type: "festival", recurring: true };
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const { input, errors } = parseDateForm(form);
+  values = input as Partial<DateRow>;
+  if (errors.length > 0) {
+    fieldError = errors.join(" ");
+  } else {
+    try {
+      const newId = await upsertDate(input, "create");
+      return Astro.redirect(`/admin/dates/${newId}?ok=created`);
+    } catch (e) {
+      fieldError = e instanceof Error ? e.message : "Lưu thất bại.";
+    }
+  }
+}
+
+const refs = await listMemberRefs();
+---
+
+<AdminLayout title="Ngày lễ mới" crumbs={[{ label: "Ngày lễ", href: "/admin/dates" }, { label: "Tạo mới" }]}>
+  <DateForm mode="create" values={values} refs={refs} fieldError={fieldError} />
+</AdminLayout>

@@ -1,0 +1,78 @@
+---
+import type { LocationRow } from "@/lib/locations-admin";
+import MemberPicker from "./MemberPicker.astro";
+
+interface Props {
+  mode: "create" | "edit";
+  values: Partial<LocationRow>;
+  refs: { id: string; name: string; gen: number }[];
+  selectedMembers?: string[];
+  fieldError?: string | null;
+  fieldOk?: string | null;
+}
+const { mode, values: v, refs, selectedMembers = [], fieldError, fieldOk } = Astro.props;
+---
+
+<form method="post" class="space-y-6">
+  {fieldError && <div class="rounded-lg border border-error-100 bg-error-50 px-4 py-3 text-theme-sm text-error-700">{fieldError}</div>}
+  {fieldOk && <div class="rounded-lg border border-success-100 bg-success-50 px-4 py-3 text-theme-sm text-success-700">{fieldOk}</div>}
+
+  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <legend class="px-2 text-theme-sm font-semibold text-gray-800">Định danh</legend>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">ID (slug, không đổi sau tạo) *</label>
+        <input type="text" name="id" required pattern="[a-z0-9][a-z0-9-]{0,30}"
+          value={v.id ?? ""} readonly={mode === "edit"} placeholder="vd: tinh-khe"
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 read-only:bg-gray-50 read-only:text-gray-500" />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Tỉnh/thành *</label>
+        <input type="text" name="province" required value={v.province ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Tên (vi) *</label>
+        <input type="text" name="name" required value={v.name ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Tên (en) *</label>
+        <input type="text" name="name_en" required value={v.name_en ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Vĩ độ (latitude) *</label>
+        <input type="number" step="any" name="lat" required value={v.lat ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Kinh độ (longitude) *</label>
+        <input type="number" step="any" name="lng" required value={v.lng ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+      <label class="flex items-center gap-2 text-theme-sm text-gray-700 md:col-span-2">
+        <input type="checkbox" name="is_hometown" value="1" checked={v.is_hometown}
+          class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500/20" />
+        Là quê nhà / hometown (đánh dấu nổi bật trên bản đồ)
+      </label>
+      <div class="md:col-span-2">
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Mô tả</label>
+        <textarea name="description" rows="3" class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10">{v.description ?? ""}</textarea>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <legend class="px-2 text-theme-sm font-semibold text-gray-800">Thành viên gắn với địa điểm</legend>
+    <MemberPicker name="members" label="" refs={refs} selected={selectedMembers}
+      hint="Tích chọn các thành viên có liên quan đến địa điểm này (sinh ra, sống, mất...)." />
+  </fieldset>
+
+  <div class="flex items-center justify-between gap-3">
+    <a href="/admin/locations" class="rounded-lg border border-gray-200 px-5 py-2.5 text-theme-sm font-medium text-gray-700 hover:bg-gray-50">Hủy</a>
+    <button type="submit" class="rounded-lg bg-brand-500 px-5 py-2.5 text-theme-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">
+      {mode === "create" ? "Tạo địa điểm" : "Lưu thay đổi"}
+    </button>
+  </div>
+</form>

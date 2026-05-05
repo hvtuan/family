@@ -1,0 +1,38 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import LocationForm from "@/components/admin/LocationForm.astro";
+import { upsertLocation, parseLocationForm } from "@/lib/locations-admin";
+import { listMemberRefs } from "@/lib/members-admin";
+import type { LocationRow } from "@/lib/locations-admin";
+
+export const prerender = false;
+
+let fieldError: string | null = null;
+let values: Partial<LocationRow> = { lat: 15.18, lng: 108.83, is_hometown: false };
+let selectedMembers: string[] = [];
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const { input, memberIds, errors } = parseLocationForm(form);
+  values = input;
+  selectedMembers = memberIds;
+  if (errors.length > 0) {
+    fieldError = errors.join(" ");
+  } else {
+    try {
+      await upsertLocation(input, memberIds, "create");
+      return Astro.redirect(`/admin/locations/${input.id}?ok=created`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Lưu thất bại.";
+      fieldError = msg.includes("duplicate") || msg.includes("23505")
+        ? `ID "${input.id}" đã tồn tại.` : msg;
+    }
+  }
+}
+
+const refs = await listMemberRefs();
+---
+
+<AdminLayout title="Địa điểm mới" crumbs={[{ label: "Địa điểm", href: "/admin/locations" }, { label: "Tạo mới" }]}>
+  <LocationForm mode="create" values={values} refs={refs} selectedMembers={selectedMembers} fieldError={fieldError} />
+</AdminLayout>

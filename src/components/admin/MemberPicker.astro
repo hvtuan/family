@@ -1,0 +1,44 @@
+---
+/**
+ * Multi-select for picking related members. Renders as a vertical list of
+ * checkboxes (more usable than <select multiple> for 5–50 members).
+ * Posts as multiple form fields with the same name.
+ */
+
+interface Props {
+  name: string;
+  label: string;
+  refs: { id: string; name: string; gen: number }[];
+  selected?: string[];
+  hint?: string;
+}
+
+const { name, label, refs, selected = [], hint } = Astro.props;
+const selectedSet = new Set(selected);
+---
+
+<div>
+  <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+    {label}
+  </label>
+  {hint && <p class="mb-2 text-theme-xs text-gray-500">{hint}</p>}
+  {refs.length === 0 ? (
+    <p class="text-theme-xs text-gray-500 italic">Chưa có thành viên nào.</p>
+  ) : (
+    <div class="max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2 custom-scrollbar">
+      {refs.map((r) => (
+        <label class="flex items-center gap-2 px-2 py-1 text-theme-sm text-gray-700 hover:bg-gray-50 rounded">
+          <input
+            type="checkbox"
+            name={name}
+            value={r.id}
+            checked={selectedSet.has(r.id)}
+            class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500/20"
+          />
+          <span>{r.name}</span>
+          <span class="ml-auto text-theme-xs text-gray-400">đời {r.gen}</span>
+        </label>
+      ))}
+    </div>
+  )}
+</div>

@@ -1,0 +1,49 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import LocationForm from "@/components/admin/LocationForm.astro";
+import {
+  getLocation, getLocationMembers, upsertLocation, parseLocationForm,
+} from "@/lib/locations-admin";
+import { listMemberRefs } from "@/lib/members-admin";
+import type { LocationRow } from "@/lib/locations-admin";
+
+export const prerender = false;
+
+const id = Astro.params.id!;
+let fieldError: string | null = null;
+let fieldOk: string | null = null;
+let existing = await getLocation(id);
+if (!existing) return new Response("Không tìm thấy", { status: 404 });
+if (Astro.url.searchParams.get("ok") === "created") fieldOk = "Đã tạo địa điểm.";
+
+let values: Partial<LocationRow> = existing;
+let selectedMembers = await getLocationMembers(id);
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const { input, memberIds, errors } = parseLocationForm(form);
+  const sanitized = { ...input, id };
+  values = sanitized;
+  selectedMembers = memberIds;
+  if (errors.length > 0) {
+    fieldError = errors.join(" ");
+  } else {
+    try {
+      await upsertLocation(sanitized, memberIds, "update");
+      existing = await getLocation(id);
+      values = existing ?? values;
+      selectedMembers = await getLocationMembers(id);
+      fieldOk = "Đã lưu thay đổi.";
+    } catch (e) {
+      fieldError = e instanceof Error ? e.message : "Lưu thất bại.";
+    }
+  }
+}
+
+const refs = await listMemberRefs();
+---
+
+<AdminLayout title={existing?.name ?? id} crumbs={[{ label: "Địa điểm", href: "/admin/locations" }, { label: existing?.name ?? id }]}>
+  <LocationForm mode="edit" values={values} refs={refs} selectedMembers={selectedMembers}
+    fieldError={fieldError} fieldOk={fieldOk} />
+</AdminLayout>

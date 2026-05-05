@@ -1,0 +1,75 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { listDates, deleteDate } from "@/lib/dates-admin";
+
+export const prerender = false;
+
+let banner: { kind: "ok" | "err"; text: string } | null = null;
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  if (form.get("action") === "delete") {
+    const id = Number(form.get("id"));
+    try { await deleteDate(id); banner = { kind: "ok", text: `Đã xóa #${id}.` }; }
+    catch (e) { banner = { kind: "err", text: e instanceof Error ? e.message : "Xóa thất bại." }; }
+  }
+}
+const rows = await listDates();
+const typeLabel: Record<string, string> = {
+  memorial: "Giỗ", festival: "Lễ hội", birthday: "Sinh nhật",
+  national: "Lễ quốc gia", anniversary: "Kỷ niệm", gathering: "Sum họp",
+};
+---
+
+<AdminLayout title="Ngày lễ" crumbs={[{ label: "Ngày lễ" }]}>
+  <div class="space-y-6">
+    {banner && <div class:list={["rounded-lg border px-4 py-3 text-theme-sm",
+      banner.kind === "ok" ? "border-success-100 bg-success-50 text-success-700"
+        : "border-error-100 bg-error-50 text-error-700"]}>{banner.text}</div>}
+
+    <section class="rounded-2xl border border-gray-200 bg-white shadow-theme-xs">
+      <header class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <h2 class="text-theme-sm font-semibold text-gray-800">Ngày lễ ({rows.length})</h2>
+        <a href="/admin/dates/new" class="rounded-lg bg-brand-500 px-4 py-2 text-theme-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">+ Tạo mới</a>
+      </header>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-theme-sm">
+          <thead class="bg-gray-50 text-theme-xs uppercase text-gray-500">
+            <tr>
+              <th class="px-5 py-3 font-medium">Ngày</th>
+              <th class="px-5 py-3 font-medium">Tên</th>
+              <th class="px-5 py-3 font-medium">Loại</th>
+              <th class="px-5 py-3 font-medium">Lịch</th>
+              <th class="px-5 py-3 font-medium">Lặp</th>
+              <th class="px-5 py-3 font-medium text-right">Hành động</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {rows.length === 0 && <tr><td colspan="6" class="px-5 py-8 text-center text-gray-500">Chưa có ngày nào.</td></tr>}
+            {rows.map((d) => (
+              <tr class="hover:bg-gray-50">
+                <td class="px-5 py-3 font-medium text-gray-800">{d.date}</td>
+                <td class="px-5 py-3">
+                  <div class="text-gray-800">{d.name}</div>
+                  <div class="text-theme-xs text-gray-500">{d.name_en}</div>
+                </td>
+                <td class="px-5 py-3 text-gray-700">{typeLabel[d.type] ?? d.type}</td>
+                <td class="px-5 py-3 text-gray-700">{d.calendar === "lunar" ? "Âm" : "Dương"}</td>
+                <td class="px-5 py-3 text-theme-xs text-gray-500">{d.recurring ? "Hằng năm" : "—"}</td>
+                <td class="px-5 py-3 text-right">
+                  <div class="flex justify-end gap-2">
+                    <a href={`/admin/dates/${d.id}`} class="rounded-md border border-gray-200 px-3 py-1 text-theme-xs font-medium text-gray-700 hover:bg-gray-50">Sửa</a>
+                    <form method="post" class="inline" onsubmit={`return confirm('Xóa ${d.name}?');`}>
+                      <input type="hidden" name="action" value="delete" />
+                      <input type="hidden" name="id" value={d.id} />
+                      <button type="submit" class="rounded-md border border-error-100 px-3 py-1 text-theme-xs font-medium text-error-700 hover:bg-error-50">Xóa</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</AdminLayout>

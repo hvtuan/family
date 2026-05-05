@@ -1,0 +1,93 @@
+---
+import type { TimelineRow } from "@/lib/timeline-admin";
+import { TIMELINE_CATS } from "@/lib/timeline-admin";
+import MemberPicker from "./MemberPicker.astro";
+
+interface Props {
+  mode: "create" | "edit";
+  values: Partial<TimelineRow>;
+  refs: { id: string; name: string; gen: number }[];
+  selectedMembers?: string[];
+  fieldError?: string | null;
+  fieldOk?: string | null;
+}
+const { mode, values: v, refs, selectedMembers = [], fieldError, fieldOk } = Astro.props;
+
+const catLabel: Record<(typeof TIMELINE_CATS)[number], string> = {
+  founding: "Khai lập", birth: "Sinh", marriage: "Hôn nhân",
+  death: "Mất", milestone: "Cột mốc", gathering: "Sum họp",
+};
+---
+
+<form method="post" class="space-y-6">
+  {fieldError && <div class="rounded-lg border border-error-100 bg-error-50 px-4 py-3 text-theme-sm text-error-700">{fieldError}</div>}
+  {fieldOk && <div class="rounded-lg border border-success-100 bg-success-50 px-4 py-3 text-theme-sm text-success-700">{fieldOk}</div>}
+
+  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <legend class="px-2 text-theme-sm font-semibold text-gray-800">Sự kiện</legend>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Năm *</label>
+        <input type="number" name="year" required value={v.year ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Ngày (MM-DD, không bắt buộc)</label>
+        <input type="text" name="date" value={v.date ?? ""} placeholder="03-12"
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+      <div class="md:col-span-2 flex items-center gap-3">
+        <label class="flex items-center gap-2 text-theme-sm text-gray-700">
+          <input type="checkbox" name="lunar" value="1" checked={v.lunar}
+            class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500/20" />
+          Ngày âm lịch
+        </label>
+        <label class="ml-auto text-theme-sm font-medium text-gray-700">
+          Danh mục
+          <select name="category" class="ml-2 h-11 rounded-lg border border-gray-300 px-3 py-2 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10">
+            <option value="" selected={!v.category}>—</option>
+            {TIMELINE_CATS.map((c) => (
+              <option value={c} selected={v.category === c}>{catLabel[c]}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Tiêu đề (vi) *</label>
+        <input type="text" name="title" required value={v.title ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Tiêu đề (en) *</label>
+        <input type="text" name="title_en" required value={v.title_en ?? ""}
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Mô tả (vi) *</label>
+        <textarea name="desc_text" required rows="3" class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10">{v.desc_text ?? ""}</textarea>
+      </div>
+      <div>
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Mô tả (en) *</label>
+        <textarea name="desc_en" required rows="3" class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10">{v.desc_en ?? ""}</textarea>
+      </div>
+      <div class="md:col-span-2">
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">URL ảnh minh họa</label>
+        <input type="url" name="image" value={v.image ?? ""} placeholder="https://..."
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+    <legend class="px-2 text-theme-sm font-semibold text-gray-800">Thành viên liên quan</legend>
+    <MemberPicker name="members" label="" refs={refs} selected={selectedMembers}
+      hint="Tích chọn các thành viên xuất hiện trong sự kiện này." />
+  </fieldset>
+
+  <div class="flex items-center justify-between gap-3">
+    <a href="/admin/timeline" class="rounded-lg border border-gray-200 px-5 py-2.5 text-theme-sm font-medium text-gray-700 hover:bg-gray-50">Hủy</a>
+    <button type="submit" class="rounded-lg bg-brand-500 px-5 py-2.5 text-theme-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">
+      {mode === "create" ? "Tạo sự kiện" : "Lưu thay đổi"}
+    </button>
+  </div>
+</form>

@@ -1,0 +1,46 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import QuoteForm from "@/components/admin/QuoteForm.astro";
+import { getQuote, upsertQuote, parseQuoteForm } from "@/lib/quotes-admin";
+import { listMemberRefs } from "@/lib/members-admin";
+import type { QuoteRow } from "@/lib/quotes-admin";
+
+export const prerender = false;
+
+const id = Number(Astro.params.id!);
+if (!Number.isInteger(id)) return new Response("ID không hợp lệ", { status: 404 });
+
+let fieldError: string | null = null;
+let fieldOk: string | null = null;
+let existing = await getQuote(id);
+if (!existing) return new Response("Không tìm thấy", { status: 404 });
+
+if (Astro.url.searchParams.get("ok") === "created") fieldOk = "Đã tạo câu nói.";
+
+let values: Partial<QuoteRow> = existing;
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const { input, errors } = parseQuoteForm(form);
+  const sanitized = { ...input, id };
+  values = { ...sanitized };
+  if (errors.length > 0) {
+    fieldError = errors.join(" ");
+  } else {
+    try {
+      await upsertQuote(sanitized, "update");
+      existing = await getQuote(id);
+      values = existing ?? values;
+      fieldOk = "Đã lưu thay đổi.";
+    } catch (e) {
+      fieldError = e instanceof Error ? e.message : "Lưu thất bại.";
+    }
+  }
+}
+
+const refs = await listMemberRefs();
+---
+
+<AdminLayout title={`Câu #${id}`} crumbs={[{ label: "Câu nói", href: "/admin/quotes" }, { label: `#${id}` }]}>
+  <QuoteForm mode="edit" values={values} refs={refs} fieldError={fieldError} fieldOk={fieldOk} />
+</AdminLayout>
