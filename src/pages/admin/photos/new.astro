@@ -1,7 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import PhotoForm from "@/components/admin/PhotoForm.astro";
-import { upsertPhoto, parsePhotoForm } from "@/lib/photos-admin";
+import { upsertPhoto, parsePhotoForm, uploadPhotoFile } from "@/lib/photos-admin";
 import { listMemberRefs } from "@/lib/members-admin";
 import type { PhotoRow } from "@/lib/photos-admin";
 
@@ -16,6 +16,22 @@ if (Astro.request.method === "POST") {
   const { input, memberIds, errors } = parsePhotoForm(form);
   values = input;
   selectedMembers = memberIds;
+
+  const file = form.get("file");
+  const hasFile = file instanceof File && file.size > 0;
+  if (!input.src && !hasFile) {
+    errors.push("Cần URL ảnh hoặc file upload.");
+  }
+
+  if (errors.length === 0 && hasFile) {
+    try {
+      input.src = await uploadPhotoFile(file as File, input.id);
+      values = input;
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : "Upload thất bại.");
+    }
+  }
+
   if (errors.length > 0) {
     fieldError = errors.join(" ");
   } else {

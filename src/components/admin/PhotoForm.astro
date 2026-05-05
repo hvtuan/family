@@ -13,7 +13,7 @@ interface Props {
 const { mode, values: v, refs, selectedMembers = [], fieldError, fieldOk } = Astro.props;
 ---
 
-<form method="post" class="space-y-6">
+<form method="post" enctype="multipart/form-data" class="space-y-6">
   {fieldError && <div class="rounded-lg border border-error-100 bg-error-50 px-4 py-3 text-theme-sm text-error-700">{fieldError}</div>}
   {fieldOk && <div class="rounded-lg border border-success-100 bg-success-50 px-4 py-3 text-theme-sm text-success-700">{fieldOk}</div>}
 
@@ -27,14 +27,26 @@ const { mode, values: v, refs, selectedMembers = [], fieldError, fieldOk } = Ast
           class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 read-only:bg-gray-50 read-only:text-gray-500" />
       </div>
       <div>
-        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">URL ảnh *</label>
-        <input type="url" name="src" required value={v.src ?? ""}
-          placeholder="https://supabase.huynhvantuan.net/storage/v1/object/public/family-photos/..."
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">URL ảnh</label>
+        <input type="url" name="src" value={v.src ?? ""}
+          placeholder="Để trống nếu upload file bên dưới"
           class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      </div>
+      <div class="md:col-span-2">
+        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          Hoặc upload file mới
+        </label>
+        <input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+          class="block w-full text-theme-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-theme-sm file:font-medium file:text-brand-600 hover:file:bg-brand-100 cursor-pointer" />
+        <p class="mt-1 text-theme-xs text-gray-500">
+          jpg / png / webp / gif / svg, ≤ 8 MB. File sẽ ghi đè vào
+          <code class="font-mono text-theme-xs">family-photos/uploads/{`{id}`}.{`{ext}`}</code>;
+          URL public tự động lưu vào trường URL ảnh.
+        </p>
       </div>
       {v.src && (
         <div class="md:col-span-2">
-          <p class="mb-2 text-theme-xs text-gray-500">Xem trước:</p>
+          <p class="mb-2 text-theme-xs text-gray-500">Ảnh hiện tại:</p>
           <img src={v.src} alt={v.caption ?? ""} loading="lazy"
             class="max-h-48 rounded-lg border border-gray-200 bg-gray-50" />
         </div>

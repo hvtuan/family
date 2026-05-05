@@ -2,7 +2,7 @@
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import PhotoForm from "@/components/admin/PhotoForm.astro";
 import {
-  getPhoto, getPhotoMembers, upsertPhoto, parsePhotoForm,
+  getPhoto, getPhotoMembers, upsertPhoto, parsePhotoForm, uploadPhotoFile,
 } from "@/lib/photos-admin";
 import { listMemberRefs } from "@/lib/members-admin";
 import type { PhotoRow } from "@/lib/photos-admin";
@@ -23,8 +23,26 @@ if (Astro.request.method === "POST") {
   const form = await Astro.request.formData();
   const { input, memberIds, errors } = parsePhotoForm(form);
   const sanitized = { ...input, id };
-  values = sanitized;
   selectedMembers = memberIds;
+
+  const file = form.get("file");
+  const hasFile = file instanceof File && file.size > 0;
+
+  // Edit: if neither src nor a new file is present, keep the existing src.
+  if (!sanitized.src && !hasFile) {
+    sanitized.src = existing.src;
+  }
+
+  if (errors.length === 0 && hasFile) {
+    try {
+      sanitized.src = await uploadPhotoFile(file as File, id);
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : "Upload thất bại.");
+    }
+  }
+
+  values = sanitized;
+
   if (errors.length > 0) {
     fieldError = errors.join(" ");
   } else {
