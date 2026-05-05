@@ -48,6 +48,36 @@ export async function uploadPhotoFile(
   return data.publicUrl;
 }
 
+/** Upload an attachment for a non-photos record (member avatar,
+ *  timeline event image, tradition image, etc.) into
+ *  family-photos/<prefix>/<id>.<ext>. Returns the public URL.
+ *
+ *  Different prefix from `uploads/` (which is for /admin/photos rows)
+ *  so a member with id="g3-1" doesn't collide with a photos row with
+ *  id="g3-1". */
+export async function uploadAttachment(
+  file: File,
+  prefix: string,
+  id: string,
+): Promise<string> {
+  if (!ALLOWED_MIME.has(file.type)) {
+    throw new Error(`Định dạng không hỗ trợ: ${file.type}.`);
+  }
+  if (file.size > MAX_BYTES) {
+    throw new Error(`File ${(file.size / 1024 / 1024).toFixed(1)} MB vượt giới hạn 8 MB.`);
+  }
+  const path = `${prefix}/${id}.${extFromFile(file)}`;
+  const { error } = await supabaseAdmin.storage
+    .from(STORAGE_BUCKET)
+    .upload(path, file, {
+      contentType: file.type,
+      upsert: true,
+    });
+  if (error) throw new Error(`uploadAttachment: ${error.message}`);
+  const { data } = supabaseAdmin.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
 /** Delete every uploaded variant of a photo id (different extensions
  *  may exist if the admin re-uploaded with a different format).
  *  Best-effort — orphans don't break anything. */

@@ -2,6 +2,7 @@
 import type { TraditionRow } from "@/lib/traditions-admin";
 import { TRADITION_CATS, TRADITION_ICONS } from "@/lib/traditions-admin";
 import { formatCsv } from "@/lib/members-admin";
+import AttachmentInput from "./AttachmentInput.astro";
 
 interface Props {
   mode: "create" | "edit";
@@ -20,7 +21,7 @@ const catLabel: Record<(typeof TRADITION_CATS)[number], string> = {
 };
 ---
 
-<form method="post" class="space-y-6">
+<form method="post" enctype="multipart/form-data" class="space-y-6">
   {fieldError && <div class="rounded-lg border border-error-100 bg-error-50 px-4 py-3 text-theme-sm text-error-700">{fieldError}</div>}
   {fieldOk && <div class="rounded-lg border border-success-100 bg-success-50 px-4 py-3 text-theme-sm text-success-700">{fieldOk}</div>}
 
@@ -59,10 +60,12 @@ const catLabel: Record<(typeof TRADITION_CATS)[number], string> = {
           ))}
         </select>
       </div>
-      <div>
-        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">URL ảnh</label>
-        <input type="url" name="image" value={v.image ?? ""} placeholder="https://..."
-          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+      <div class="md:col-span-2">
+        <AttachmentInput
+          urlFieldName="image"
+          currentUrl={v.image ?? null}
+          label="Ảnh minh họa"
+        />
       </div>
     </div>
   </fieldset>

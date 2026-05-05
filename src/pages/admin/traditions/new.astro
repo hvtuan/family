@@ -5,6 +5,7 @@ import {
   upsertTradition,
   parseTraditionForm,
 } from "@/lib/traditions-admin";
+import { uploadAttachment } from "@/lib/photos-admin";
 import type { TraditionRow } from "@/lib/traditions-admin";
 
 export const prerender = false;
@@ -16,6 +17,17 @@ if (Astro.request.method === "POST") {
   const form = await Astro.request.formData();
   const { input, errors } = parseTraditionForm(form);
   values = input;
+
+  const imageFile = form.get("image_file");
+  if (errors.length === 0 && imageFile instanceof File && imageFile.size > 0) {
+    try {
+      input.image = await uploadAttachment(imageFile, "traditions", input.id);
+      values = input;
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : "Upload ảnh thất bại.");
+    }
+  }
+
   if (errors.length > 0) {
     fieldError = errors.join(" ");
   } else {

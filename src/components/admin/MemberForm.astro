@@ -1,6 +1,7 @@
 ---
 import type { MemberRow } from "@/lib/members-admin";
 import { formatCsv } from "@/lib/members-admin";
+import AttachmentInput from "./AttachmentInput.astro";
 
 interface Props {
   mode: "create" | "edit";
@@ -21,7 +22,7 @@ const refOptions = refs.filter((r) => r.id !== v.id);
 const submitLabel = mode === "create" ? "Tạo thành viên" : "Lưu thay đổi";
 ---
 
-<form method="post" class="space-y-6" autocomplete="off">
+<form method="post" enctype="multipart/form-data" class="space-y-6" autocomplete="off">
   {fieldError && (
     <div class="rounded-lg border border-error-100 bg-error-50 px-4 py-3 text-theme-sm text-error-700">
       {fieldError}
@@ -322,13 +323,11 @@ const submitLabel = mode === "create" ? "Tạo thành viên" : "Lưu thay đổi
           class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
         />
       </div>
-      <div>
-        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">URL ảnh đại diện</label>
-        <input
-          type="url" name="photo"
-          value={v.photo ?? ""}
-          placeholder="https://..."
-          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+      <div class="md:col-span-2">
+        <AttachmentInput
+          urlFieldName="photo"
+          currentUrl={v.photo ?? null}
+          label="Ảnh đại diện"
         />
       </div>
       <div>

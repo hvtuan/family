@@ -1,0 +1,74 @@
+---
+/**
+ * Single-image attachment for forms where one record holds one image
+ * URL — member avatar, timeline event image, tradition image.
+ *
+ * Renders:
+ *   - a thumbnail of the current value (if any) so the admin sees what's
+ *     already attached without leaving the page
+ *   - a PhotoEditorInput (Cropper.js) for upload + crop/rotate/flip/resize
+ *   - a collapsed <details> with a plain URL input for the case the
+ *     admin wants to paste an external URL instead
+ *
+ * Field naming convention so the page handler can disambiguate:
+ *   - `<urlFieldName>`        the actual URL stored in the row
+ *   - `<urlFieldName>_file`   the new file (if any) — page handler
+ *                              uploads + overwrites the URL field
+ */
+
+import PhotoEditorInput from "./PhotoEditorInput.astro";
+
+interface Props {
+  /** Form field name for the URL column (e.g. "photo", "image"). */
+  urlFieldName: string;
+  /** Current value to render as a thumbnail + as the URL fallback default. */
+  currentUrl?: string | null;
+  label?: string;
+  required?: boolean;
+}
+
+const { urlFieldName, currentUrl, label, required = false } = Astro.props;
+const fileFieldName = `${urlFieldName}_file`;
+---
+
+<div class="space-y-3">
+  {label && (
+    <label class="block text-theme-sm font-medium text-gray-700">
+      {label}
+    </label>
+  )}
+
+  {currentUrl && (
+    <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+      <img
+        src={currentUrl}
+        alt=""
+        class="h-20 w-20 rounded-md object-cover bg-white border border-gray-200"
+      />
+      <div class="min-w-0 flex-1">
+        <p class="text-theme-xs text-gray-500">Ảnh hiện tại</p>
+        <p class="text-theme-xs text-gray-400 truncate font-mono" title={currentUrl}>
+          {currentUrl.split("/").pop()}
+        </p>
+      </div>
+    </div>
+  )}
+
+  <PhotoEditorInput name={fileFieldName} required={required && !currentUrl} />
+
+  <details class="rounded-lg border border-gray-200 bg-white p-3">
+    <summary class="cursor-pointer text-theme-xs text-gray-500 hover:text-gray-700">
+      … hoặc dán URL bên ngoài
+    </summary>
+    <input
+      type="url"
+      name={urlFieldName}
+      value={currentUrl ?? ""}
+      placeholder="https://..."
+      class="mt-2 h-10 w-full rounded-md border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+    />
+    <p class="mt-1 text-theme-xs text-gray-400">
+      Nếu chọn file ở trên, file mới sẽ ghi đè URL này khi lưu.
+    </p>
+  </details>
+</div>

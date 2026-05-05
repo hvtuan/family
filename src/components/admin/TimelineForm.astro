@@ -2,6 +2,7 @@
 import type { TimelineRow } from "@/lib/timeline-admin";
 import { TIMELINE_CATS } from "@/lib/timeline-admin";
 import MemberPicker from "./MemberPicker.astro";
+import AttachmentInput from "./AttachmentInput.astro";
 
 interface Props {
   mode: "create" | "edit";
@@ -19,7 +20,7 @@ const catLabel: Record<(typeof TIMELINE_CATS)[number], string> = {
 };
 ---
 
-<form method="post" class="space-y-6">
+<form method="post" enctype="multipart/form-data" class="space-y-6">
   {fieldError && <div class="rounded-lg border border-error-100 bg-error-50 px-4 py-3 text-theme-sm text-error-700">{fieldError}</div>}
   {fieldOk && <div class="rounded-lg border border-success-100 bg-success-50 px-4 py-3 text-theme-sm text-success-700">{fieldOk}</div>}
 
@@ -71,9 +72,11 @@ const catLabel: Record<(typeof TIMELINE_CATS)[number], string> = {
         <textarea name="desc_en" required rows="3" class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10">{v.desc_en ?? ""}</textarea>
       </div>
       <div class="md:col-span-2">
-        <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">URL ảnh minh họa</label>
-        <input type="url" name="image" value={v.image ?? ""} placeholder="https://..."
-          class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+        <AttachmentInput
+          urlFieldName="image"
+          currentUrl={v.image ?? null}
+          label="Ảnh minh họa"
+        />
       </div>
     </div>
   </fieldset>

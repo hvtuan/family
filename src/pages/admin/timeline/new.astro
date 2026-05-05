@@ -3,6 +3,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import TimelineForm from "@/components/admin/TimelineForm.astro";
 import { upsertTimeline, parseTimelineForm } from "@/lib/timeline-admin";
 import { listMemberRefs } from "@/lib/members-admin";
+import { uploadAttachment } from "@/lib/photos-admin";
 import type { TimelineRow } from "@/lib/timeline-admin";
 
 export const prerender = false;
@@ -16,15 +17,21 @@ if (Astro.request.method === "POST") {
   const { input, memberIds, errors } = parseTimelineForm(form);
   values = input as Partial<TimelineRow>;
   selectedMembers = memberIds;
-  if (errors.length > 0) {
-    fieldError = errors.join(" ");
-  } else {
+  if (errors.length === 0) {
     try {
+      // Insert first to get the auto-id, then upload + update.
       const newId = await upsertTimeline(input, memberIds, "create");
+      const imageFile = form.get("image_file");
+      if (imageFile instanceof File && imageFile.size > 0) {
+        const url = await uploadAttachment(imageFile, "timeline", String(newId));
+        await upsertTimeline({ ...input, id: newId, image: url }, memberIds, "update");
+      }
       return Astro.redirect(`/admin/timeline/${newId}?ok=created`);
     } catch (e) {
       fieldError = e instanceof Error ? e.message : "Lưu thất bại.";
     }
+  } else {
+    fieldError = errors.join(" ");
   }
 }
 

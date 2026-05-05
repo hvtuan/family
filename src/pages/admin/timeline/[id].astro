@@ -5,6 +5,7 @@ import {
   getTimelineEvent, getTimelineMembers, upsertTimeline, parseTimelineForm,
 } from "@/lib/timeline-admin";
 import { listMemberRefs } from "@/lib/members-admin";
+import { uploadAttachment } from "@/lib/photos-admin";
 import type { TimelineRow } from "@/lib/timeline-admin";
 
 export const prerender = false;
@@ -25,8 +26,18 @@ if (Astro.request.method === "POST") {
   const form = await Astro.request.formData();
   const { input, memberIds, errors } = parseTimelineForm(form);
   const sanitized = { ...input, id };
-  values = sanitized;
   selectedMembers = memberIds;
+
+  const imageFile = form.get("image_file");
+  if (errors.length === 0 && imageFile instanceof File && imageFile.size > 0) {
+    try {
+      sanitized.image = await uploadAttachment(imageFile, "timeline", String(id));
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : "Upload ảnh thất bại.");
+    }
+  }
+  values = sanitized;
+
   if (errors.length > 0) {
     fieldError = errors.join(" ");
   } else {

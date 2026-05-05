@@ -12,6 +12,7 @@ import { parseMemberForm } from "@/lib/members-form";
 import {
   listPhotosForMember,
   listPhotosNotLinkedTo,
+  uploadAttachment,
 } from "@/lib/photos-admin";
 import type { MemberInput, MemberRow } from "@/lib/members-admin";
 
@@ -48,6 +49,17 @@ if (Astro.request.method === "POST") {
   // somehow submitted a different one.
   const sanitized: MemberInput = { ...input, id };
   values = { ...existing, ...sanitized };
+
+  const photoFile = form.get("photo_file");
+  if (errors.length === 0 && photoFile instanceof File && photoFile.size > 0) {
+    try {
+      sanitized.photo = await uploadAttachment(photoFile, "avatars", id);
+      values = { ...existing, ...sanitized };
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : "Upload ảnh thất bại.");
+    }
+  }
+
   if (errors.length > 0) {
     fieldError = errors.join(" ");
   } else {

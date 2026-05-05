@@ -7,6 +7,7 @@ import {
   syncMemberChildren,
 } from "@/lib/members-admin";
 import { parseMemberForm } from "@/lib/members-form";
+import { uploadAttachment } from "@/lib/photos-admin";
 import type { MemberInput } from "@/lib/members-admin";
 
 export const prerender = false;
@@ -28,6 +29,18 @@ if (Astro.request.method === "POST") {
   const form = await Astro.request.formData();
   const { input, errors } = parseMemberForm(form);
   values = input;
+
+  // Avatar upload — file field overrides URL field if both present.
+  const photoFile = form.get("photo_file");
+  if (errors.length === 0 && photoFile instanceof File && photoFile.size > 0) {
+    try {
+      input.photo = await uploadAttachment(photoFile, "avatars", input.id);
+      values = input;
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : "Upload ảnh thất bại.");
+    }
+  }
+
   if (errors.length > 0) {
     fieldError = errors.join(" ");
   } else {
