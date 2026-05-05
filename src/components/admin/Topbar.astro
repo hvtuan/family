@@ -1,0 +1,55 @@
+---
+interface Props {
+  email: string;
+  role: "admin" | "editor" | "branch_editor";
+  branch: "noi" | "ngoai" | "both" | null;
+  title?: string;
+}
+
+const { email, role, branch, title } = Astro.props;
+
+const roleLabel: Record<Props["role"], string> = {
+  admin: "Quản trị viên",
+  editor: "Biên tập viên",
+  branch_editor: "Biên tập theo nhánh",
+};
+const branchLabel: Record<NonNullable<Props["branch"]>, string> = {
+  noi: "Họ Nội",
+  ngoai: "Họ Ngoại",
+  both: "Cả nội + ngoại",
+};
+---
+
+<header class="flex items-center justify-between gap-4 px-4 lg:px-6 py-3 border-b border-line bg-cream/80 backdrop-blur sticky top-0 z-10">
+  <div class="flex items-center gap-3 min-w-0">
+    <button
+      type="button"
+      class="lg:hidden p-2 text-ink-2"
+      aria-label="Mở menu"
+      data-admin-menu-toggle
+    >
+      ☰
+    </button>
+    {title && (
+      <h1 class="font-display text-lg lg:text-xl text-ink truncate">{title}</h1>
+    )}
+  </div>
+
+  <div class="flex items-center gap-3 text-sm">
+    <div class="hidden sm:flex flex-col items-end leading-tight">
+      <span class="font-semibold text-ink truncate max-w-[14rem]">{email}</span>
+      <span class="text-xs text-ink-3">
+        {roleLabel[role]}
+        {branch && ` • ${branchLabel[branch]}`}
+      </span>
+    </div>
+    <form method="post" action="/admin/logout">
+      <button
+        type="submit"
+        class="px-3 py-1.5 rounded-md border border-line text-ink-2 hover:bg-paper-2 transition-colors"
+      >
+        Đăng xuất
+      </button>
+    </form>
+  </div>
+</header>

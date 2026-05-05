@@ -1,0 +1,46 @@
+---
+import "@/styles/global.css";
+import Sidebar from "@/components/admin/Sidebar.astro";
+import Topbar from "@/components/admin/Topbar.astro";
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const user = Astro.locals.user;
+
+if (!user) {
+  // Shouldn't happen — middleware enforces auth before reaching layouts.
+  // Hard-fail loud rather than silently rendering an empty shell.
+  throw new Error("AdminLayout used outside an authed route");
+}
+
+const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
+---
+
+<!doctype html>
+<html lang="vi" class="bg-paper">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} — Gia phả họ Nguyễn</title>
+  </head>
+  <body class="font-body text-ink antialiased min-h-screen">
+    <div class="flex min-h-screen">
+      <Sidebar pathname={pathname} role={user.role} />
+      <div class="flex-1 flex flex-col min-w-0">
+        <Topbar
+          email={user.email}
+          role={user.role}
+          branch={user.branch}
+          title={title}
+        />
+        <main class="flex-1 p-4 lg:p-6">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
