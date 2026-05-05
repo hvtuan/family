@@ -266,12 +266,6 @@ type MemberRow = {
   achievements: { title: string; year?: number }[];
   anecdotes: { title: string; body: string }[];
   photo: string | null;
-  embedded_photos: {
-    src: string;
-    caption: string;
-    caption_en: string;
-    year: number | null;
-  }[];
   pattern: MemberData["pattern"];
   branch: MemberData["branch"];
   contact_public: boolean;
@@ -284,7 +278,22 @@ type MemberRow = {
   updated_at_user: string | null;
 };
 
-function mapMember(row: MemberRow, childrenByParent: Map<string | number, string[]>): MemberEntry {
+/** Photos linked to one member id, ready to drop into MemberData.photos.
+ *  Sourced from family.photos via the photo_members M2M (post-media-2/3
+ *  migration); members.embedded_photos is no longer read at runtime even
+ *  though the column still exists. */
+type LinkedPhoto = {
+  src: string;
+  caption: string;
+  captionEn: string;
+  year?: number;
+};
+
+function mapMember(
+  row: MemberRow,
+  childrenByParent: Map<string | number, string[]>,
+  photos: LinkedPhoto[],
+): MemberEntry {
   const data: MemberData = {
     id: row.id,
     name: row.name,
@@ -326,12 +335,7 @@ function mapMember(row: MemberRow, childrenByParent: Map<string | number, string
     achievements: row.achievements ?? [],
     anecdotes: row.anecdotes ?? [],
     photo: row.photo ?? undefined,
-    photos: (row.embedded_photos ?? []).map((p) => ({
-      src: p.src,
-      caption: p.caption,
-      captionEn: p.caption_en,
-      year: p.year ?? undefined,
-    })),
+    photos,
     pattern: row.pattern ?? undefined,
     branch: row.branch,
     contactPublic: row.contact_public,
@@ -355,13 +359,38 @@ function mapMember(row: MemberRow, childrenByParent: Map<string | number, string
 export async function getMembers(
   filter?: (entry: MemberEntry) => boolean,
 ): Promise<MemberEntry[]> {
-  const rows = await fetchAllRows<MemberRow>("members", "*", "gen");
-  const childrenByParent = await fetchM2M(
-    "member_children",
-    "parent_id",
-    "child_id",
-  );
-  const all = rows.map((r) => mapMember(r, childrenByParent));
+  const [rows, childrenByParent, photosByMember, photoById] = await Promise.all([
+    fetchAllRows<MemberRow>("members", "*", "gen"),
+    fetchM2M("member_children", "parent_id", "child_id"),
+    fetchM2M("photo_members", "member_id", "photo_id"),
+    fetchAllRows<{
+      id: string;
+      src: string;
+      caption: string;
+      caption_en: string;
+      year: number | null;
+      featured: boolean;
+    }>("photos", "id, src, caption, caption_en, year, featured").then(
+      (list) => new Map(list.map((p) => [p.id, p])),
+    ),
+  ]);
+  const all = rows.map((r) => {
+    const linkedIds = (photosByMember.get(r.id) ?? []) as string[];
+    const linked: LinkedPhoto[] = linkedIds
+      .map((pid) => photoById.get(pid))
+      .filter((p): p is NonNullable<typeof p> => Boolean(p))
+      .sort((a, b) => {
+        if (a.featured !== b.featured) return a.featured ? -1 : 1;
+        return (b.year ?? 0) - (a.year ?? 0);
+      })
+      .map((p) => ({
+        src: p.src,
+        caption: p.caption,
+        captionEn: p.caption_en,
+        year: p.year ?? undefined,
+      }));
+    return mapMember(r, childrenByParent, linked);
+  });
   return filter ? all.filter(filter) : all;
 }
 
