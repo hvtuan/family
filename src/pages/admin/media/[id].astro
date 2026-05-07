@@ -2,6 +2,7 @@
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import MemberPicker from "@/components/admin/MemberPicker.astro";
 import PhotoEditorInput from "@/components/admin/PhotoEditorInput.astro";
+import ToastBanner from "@/components/admin/ToastBanner.tsx";
 import {
   getPhoto, getPhotoMembers, upsertPhoto, parsePhotoForm,
   replacePhotoMedia, deletePhoto,
@@ -107,9 +108,10 @@ function formatDuration(seconds?: number | null): string {
 <AdminLayout title={v.alt_vi ?? v.caption ?? id}
   crumbs={[{ label: "Thư viện ảnh", href: "/admin/media" }, { label: v.alt_vi ?? v.caption ?? id }]}>
 
+  {fieldError && <ToastBanner client:load kind="err" text={fieldError} />}
+  {fieldOk && <ToastBanner client:load kind="ok" text={fieldOk} />}
+
   <div class="space-y-4">
-    {fieldError && <div class="rounded-lg border border-error-100 bg-error-50 px-4 py-3 text-theme-sm text-error-700">{fieldError}</div>}
-    {fieldOk && <div class="rounded-lg border border-success-100 bg-success-50 px-4 py-3 text-theme-sm text-success-700">{fieldOk}</div>}
     {altMissing && (
       <div class="rounded-lg border border-warning-100 bg-warning-50 px-4 py-3 text-theme-sm text-warning-700">
         ⚠️ Chưa có <strong>alt text (vi)</strong> — nên thêm để trình đọc màn hình mô tả được {isVideo ? "video" : "ảnh"} cho người khiếm thị.

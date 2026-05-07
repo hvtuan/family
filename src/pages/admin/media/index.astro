@@ -1,6 +1,21 @@
 ---
+/**
+ * /admin/media — pro media library hub.
+ *
+ * Astro page is the SSR shell:
+ *   - Fetches every photos row server-side.
+ *   - Handles POST bulk-delete + single-delete (idempotent admin path).
+ *   - Hands the data + last-action banner to the React island
+ *     <MediaLibrary> which renders the masonry grid + lightbox + chip
+ *     filters + sticky year sections + selection bar via shadcn/ui.
+ *   - Mounts <MediaUploaderModal> (Uppy v5) for the upload flow.
+ *
+ * Banner state (after a server-side bulk delete) is forwarded to the
+ * island and surfaced as a sonner toast on first hydration.
+ */
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import MediaUploaderModal from "@/components/admin/MediaUploaderModal.tsx";
+import MediaLibrary, { type MediaItem } from "@/components/admin/MediaLibrary.tsx";
 import { listPhotos, deletePhoto } from "@/lib/photos-admin";
 
 export const prerender = false;
@@ -27,257 +42,52 @@ if (Astro.request.method === "POST") {
   }
 }
 
-const url = new URL(Astro.request.url);
-const q = (url.searchParams.get("q") ?? "").trim().toLowerCase();
-const year = url.searchParams.get("year") ?? "";
-const tag = url.searchParams.get("tag") ?? "";
-const featuredOnly = url.searchParams.get("featured") === "1";
-const kindFilter = url.searchParams.get("kind") ?? ""; // '' | 'image' | 'video'
-
 const all = await listPhotos();
 
-// Compute filter facets BEFORE filtering, so the dropdowns show every option
-// the dataset actually contains, not just options inside the current filter.
-const yearFacets = Array.from(
-  new Set(all.map((p) => p.year).filter((y): y is number => typeof y === "number")),
-).sort((a, b) => b - a);
-
-const tagFacets = Array.from(
-  new Set(all.flatMap((p) => (Array.isArray(p.tags) ? p.tags : []))),
-).sort();
-
-const rows = all.filter((p) => {
-  if (q) {
-    const hay = [
-      p.id, p.caption, p.caption_en, p.alt_vi ?? "", p.alt_en ?? "",
-      p.location ?? "", p.album ?? "",
-      ...(Array.isArray(p.tags) ? p.tags : []),
-    ].join(" ").toLowerCase();
-    if (!hay.includes(q)) return false;
-  }
-  if (year && String(p.year ?? "") !== year) return false;
-  if (tag && !(Array.isArray(p.tags) && p.tags.includes(tag))) return false;
-  if (featuredOnly && !p.featured) return false;
-  if (kindFilter && (p.kind ?? "image") !== kindFilter) return false;
-  return true;
-});
-
-function thumbFor(p: typeof rows[number]): string {
-  // For video rows the thumb is the poster (src_thumb / src_medium).
-  // The original src is the video itself which can't render as an <img>.
-  if (p.kind === "video") return p.src_thumb || p.src_medium || "";
-  return p.src_thumb || p.src_medium || p.src;
-}
-
-function durationLabel(seconds?: number | null): string {
-  if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) return "";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
+// Shape rows for the React island — strip nullables to the props type.
+const items: MediaItem[] = all.map((p) => ({
+  id: p.id,
+  kind: (p.kind ?? "image") as "image" | "video",
+  src: p.src,
+  src_thumb: p.src_thumb ?? null,
+  src_medium: p.src_medium ?? null,
+  alt_vi: p.alt_vi ?? null,
+  caption: p.caption,
+  caption_en: p.caption_en,
+  year: p.year ?? null,
+  location: p.location ?? null,
+  album: p.album ?? null,
+  featured: p.featured,
+  tags: Array.isArray(p.tags) ? p.tags : [],
+  width: p.width ?? null,
+  height: p.height ?? null,
+  duration_seconds: p.duration_seconds ?? null,
+}));
 ---
 
 <AdminLayout title="Thư viện ảnh" crumbs={[{ label: "Thư viện ảnh" }]}>
   <div class="space-y-6">
-    {banner && (
-      <div class:list={[
-        "rounded-lg border px-4 py-3 text-theme-sm",
-        banner.kind === "ok"
-          ? "border-success-100 bg-success-50 text-success-700"
-          : "border-error-100 bg-error-50 text-error-700",
-      ]}>{banner.text}</div>
-    )}
+    <header class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <h1 class="text-xl font-semibold text-foreground">Thư viện ảnh & video</h1>
+        <p class="mt-0.5 text-sm text-muted-foreground">
+          Toàn bộ kỷ niệm — dùng chung cho thành viên, niên đại, truyền thống.
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button" data-uppy-trigger
+          class="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-theme-xs hover:bg-brand-600 focus-visible:outline-hidden focus-visible:ring-3 focus-visible:ring-ring/40">
+          + Tải ảnh / video
+        </button>
+        <a href="/admin/media/new"
+          class="inline-flex h-10 items-center rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground shadow-theme-xs hover:bg-accent">
+          Tạo có form đầy đủ
+        </a>
+      </div>
+    </header>
 
-    <section class="rounded-2xl border border-gray-200 bg-white shadow-theme-xs">
-      <header class="flex flex-col gap-4 border-b border-gray-100 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h2 class="text-theme-sm font-semibold text-gray-800">
-            Ảnh ({rows.length}{rows.length !== all.length ? ` / ${all.length}` : ""})
-          </h2>
-          <p class="text-theme-xs text-gray-500 mt-0.5">
-            Toàn bộ ảnh dùng chung cho thành viên, niên đại, truyền thống.
-          </p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <button type="button" data-uppy-trigger
-            class="rounded-lg bg-brand-500 px-4 py-2 text-theme-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">
-            + Tải ảnh / video
-          </button>
-          <a href="/admin/media/new"
-            class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50"
-            title="Form đầy đủ với caption + member picker">
-            Tạo có form đầy đủ
-          </a>
-        </div>
-      </header>
-
-      <form method="get" class="flex flex-col gap-3 border-b border-gray-100 bg-gray-50 px-5 py-4 lg:flex-row lg:items-center">
-        <input type="search" name="q" value={q}
-          placeholder="Tìm theo tên, caption, alt, tag, địa điểm…"
-          class="h-10 w-full lg:w-72 rounded-lg border border-gray-200 bg-white px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
-
-        <select name="kind" class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10">
-          <option value="">Mọi loại</option>
-          <option value="image" selected={kindFilter === "image"}>Ảnh</option>
-          <option value="video" selected={kindFilter === "video"}>Video</option>
-        </select>
-
-        <select name="year" class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10">
-          <option value="">Mọi năm</option>
-          {yearFacets.map((y) => (
-            <option value={String(y)} selected={String(y) === year}>{y}</option>
-          ))}
-        </select>
-
-        <select name="tag" class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10">
-          <option value="">Mọi tag</option>
-          {tagFacets.map((t) => (
-            <option value={t} selected={t === tag}>{t}</option>
-          ))}
-        </select>
-
-        <label class="flex items-center gap-2 text-theme-sm text-gray-700">
-          <input type="checkbox" name="featured" value="1" checked={featuredOnly}
-            class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500" />
-          Nổi bật
-        </label>
-
-        <div class="flex items-center gap-2 lg:ml-auto">
-          <button type="submit" class="h-10 rounded-lg bg-gray-900 px-4 text-theme-sm font-medium text-white hover:bg-gray-800">Lọc</button>
-          {(q || year || tag || featuredOnly || kindFilter) && (
-            <a href="/admin/media" class="h-10 inline-flex items-center rounded-lg border border-gray-200 bg-white px-4 text-theme-sm font-medium text-gray-700 hover:bg-gray-50">Xóa lọc</a>
-          )}
-        </div>
-      </form>
-
-      {rows.length === 0 ? (
-        <div class="px-5 py-16 text-center">
-          <p class="text-theme-sm text-gray-500">
-            {all.length === 0 ? "Chưa có ảnh nào." : "Không có ảnh nào khớp bộ lọc."}
-          </p>
-        </div>
-      ) : (
-        <form method="post" id="bulk-form">
-          <input type="hidden" name="action" value="bulk-delete" />
-          <div class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {rows.map((p) => (
-              <div class="group relative rounded-lg border border-gray-200 bg-white overflow-hidden transition hover:shadow-theme-md has-[:checked]:border-brand-400 has-[:checked]:ring-2 has-[:checked]:ring-brand-500/20">
-                {/* Whole card is a link to detail; checkbox + featured
-                    badge are absolutely positioned siblings so clicks
-                    on them don't navigate. */}
-                <a href={`/admin/media/${p.id}`} class="block">
-                  <div class="aspect-square bg-gray-100 relative">
-                    {thumbFor(p) ? (
-                      <img src={thumbFor(p)} alt={p.alt_vi ?? p.caption} loading="lazy"
-                        class="absolute inset-0 h-full w-full object-cover" />
-                    ) : (
-                      <div class="absolute inset-0 flex items-center justify-center text-3xl opacity-60">
-                        {p.kind === "video" ? "🎬" : "🖼️"}
-                      </div>
-                    )}
-                    {p.kind === "video" && (
-                      <>
-                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <span class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-900/60 text-white">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                          </span>
-                        </div>
-                        {durationLabel(p.duration_seconds) && (
-                          <span class="absolute bottom-2 right-2 rounded bg-gray-900/70 px-1.5 py-0.5 text-theme-xs font-medium text-white tabular-nums">
-                            {durationLabel(p.duration_seconds)}
-                          </span>
-                        )}
-                      </>
-                    )}
-                    {p.kind !== "video" && !p.src_thumb && (
-                      <span class="absolute bottom-2 left-2 rounded bg-gray-900/60 px-1.5 py-0.5 text-theme-xs font-medium text-white" title="Ảnh chưa có thumbnail (legacy)">legacy</span>
-                    )}
-                  </div>
-                  <div class="p-2.5">
-                    <div class="text-theme-sm font-medium text-gray-800 line-clamp-1">
-                      {p.alt_vi ?? p.caption}
-                    </div>
-                    <div class="text-theme-xs text-gray-500 line-clamp-1">
-                      {p.year ?? "—"}{p.location ? ` · ${p.location}` : ""}
-                    </div>
-                    {Array.isArray(p.tags) && p.tags.length > 0 && (
-                      <div class="mt-1.5 flex flex-wrap gap-1">
-                        {p.tags.slice(0, 3).map((t) => (
-                          <span class="rounded bg-gray-100 px-1.5 py-0.5 text-theme-xs text-gray-600">{t}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </a>
-
-                {/* Checkbox overlay — its own label so the click target
-                    is just the box, not the whole card. */}
-                <label class="absolute top-2 left-2 z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded bg-white/80 shadow-sm hover:bg-white">
-                  <input type="checkbox" name="ids" value={p.id} form="bulk-form"
-                    data-bulk-checkbox
-                    class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500" />
-                </label>
-
-                {p.featured && (
-                  <span class="pointer-events-none absolute top-2 right-2 rounded bg-warning-50 px-1.5 py-0.5 text-theme-xs font-medium text-warning-600 border border-warning-100 z-10" title="Nổi bật">★</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </form>
-      )}
-    </section>
+    <MediaLibrary client:load items={items} initialBanner={banner} />
   </div>
 
-  <!-- Uppy Dashboard mounts itself into <body> when triggered. -->
   <MediaUploaderModal client:load />
-
-  <!-- Sticky bulk action bar (hidden until any checkbox is ticked) -->
-  <div data-bulk-bar
-    class="fixed inset-x-0 bottom-0 z-40 hidden border-t border-gray-200 bg-white shadow-[0_-2px_10px_rgba(0,0,0,.04)]">
-    <div class="mx-auto flex max-w-screen-2xl items-center justify-between px-6 py-3">
-      <div class="text-theme-sm text-gray-700">
-        Đã chọn <span data-bulk-count class="font-semibold">0</span> ảnh
-      </div>
-      <div class="flex items-center gap-2">
-        <button type="button" data-bulk-clear class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-theme-sm font-medium text-gray-700 hover:bg-gray-50">Bỏ chọn</button>
-        <button type="button" data-bulk-delete class="rounded-lg border border-error-100 bg-error-50 px-4 py-2 text-theme-sm font-medium text-error-700 hover:bg-error-100">Xóa đã chọn</button>
-      </div>
-    </div>
-  </div>
-
-  <script is:inline>
-    (() => {
-      const form = document.getElementById("bulk-form");
-      if (!form) return;
-      const bar = document.querySelector("[data-bulk-bar]");
-      const count = document.querySelector("[data-bulk-count]");
-      const boxes = () => Array.from(form.querySelectorAll("[data-bulk-checkbox]"));
-
-      function refresh() {
-        const checked = boxes().filter((b) => b.checked);
-        count.textContent = String(checked.length);
-        bar.classList.toggle("hidden", checked.length === 0);
-      }
-
-      form.addEventListener("change", (e) => {
-        if (e.target && e.target.matches("[data-bulk-checkbox]")) refresh();
-      });
-
-      document.querySelector("[data-bulk-clear]")?.addEventListener("click", () => {
-        boxes().forEach((b) => (b.checked = false));
-        refresh();
-      });
-
-      document.querySelector("[data-bulk-delete]")?.addEventListener("click", () => {
-        const checked = boxes().filter((b) => b.checked);
-        if (checked.length === 0) return;
-        if (!confirm(`Xóa ${checked.length} ảnh? Hành động này không hoàn tác được.`)) return;
-        form.submit();
-      });
-
-      refresh();
-    })();
-  </script>
-
 </AdminLayout>

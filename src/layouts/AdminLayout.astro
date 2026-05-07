@@ -2,6 +2,7 @@
 import "@/styles/admin.css";
 import Sidebar from "@/components/admin/Sidebar.astro";
 import Topbar from "@/components/admin/Topbar.astro";
+import { Toaster } from "@/components/ui/sonner";
 
 interface Props {
   title: string;
@@ -129,5 +130,8 @@ const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
         });
       })();
     </script>
+
+    <!-- Sonner toast portal — mounts once globally for any admin page -->
+    <Toaster client:load />
   </body>
 </html>

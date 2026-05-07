@@ -112,6 +112,32 @@
   --z-index-999: 999;
   --z-index-9999: 9999;
   --z-index-99999: 99999;
+
+  /* ─── shadcn/ui semantic tokens — bridged onto TailAdmin palette ─── */
+  --color-background: var(--color-white);
+  --color-foreground: var(--color-gray-900);
+  --color-card: var(--color-white);
+  --color-card-foreground: var(--color-gray-900);
+  --color-popover: var(--color-white);
+  --color-popover-foreground: var(--color-gray-900);
+  --color-primary: var(--color-brand-500);
+  --color-primary-foreground: var(--color-white);
+  --color-secondary: var(--color-gray-100);
+  --color-secondary-foreground: var(--color-gray-900);
+  --color-muted: var(--color-gray-50);
+  --color-muted-foreground: var(--color-gray-500);
+  --color-accent: var(--color-gray-100);
+  --color-accent-foreground: var(--color-gray-900);
+  --color-destructive: var(--color-error-500);
+  --color-destructive-foreground: var(--color-white);
+  --color-border: var(--color-gray-200);
+  --color-input: var(--color-gray-300);
+  --color-ring: var(--color-brand-500);
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
 @layer base {
