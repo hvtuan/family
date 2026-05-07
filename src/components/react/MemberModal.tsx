@@ -5,8 +5,18 @@ import * as Tabs from "@radix-ui/react-tabs";
 import useEmblaCarousel from "embla-carousel-react";
 import { $modalMember } from "@/stores/ui";
 import type { ClientMember, ClientPhoto } from "@/lib/members-client";
+import MemberPlacesMap from "./MemberPlacesMap";
 
-type Props = { members: ClientMember[] };
+export type LocationLookup = Record<
+  string,
+  { name: string; lat: number; lng: number; province?: string }
+>;
+
+type Props = {
+  members: ClientMember[];
+  locationLookup?: LocationLookup;
+  googleMapsApiKey?: string;
+};
 
 function fmtDate(iso?: string | null): string | null {
   if (!iso) return null;
@@ -22,7 +32,11 @@ function yearRange(m: ClientMember): string {
   return d ? `${b} – ${d}` : `${b} – nay`;
 }
 
-export default function MemberModal({ members }: Props) {
+export default function MemberModal({
+  members,
+  locationLookup = {},
+  googleMapsApiKey,
+}: Props) {
   const id = useStore($modalMember);
 
   const byId = useMemo(() => {
@@ -74,7 +88,14 @@ export default function MemberModal({ members }: Props) {
           className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(720px,calc(100vw-1.5rem))] max-h-[calc(100vh-2rem)] overflow-auto bg-cream text-ink border border-line rounded-2xl shadow-paper-2 z-[90] p-0 animate-mm-slide max-mobile:w-screen max-mobile:max-h-screen max-mobile:rounded-none max-mobile:top-0 max-mobile:left-0 max-mobile:[transform:none]"
           aria-describedby={undefined}
         >
-          {member && <ModalBody member={member} byId={byId} />}
+          {member && (
+            <ModalBody
+              member={member}
+              byId={byId}
+              locationLookup={locationLookup}
+              googleMapsApiKey={googleMapsApiKey}
+            />
+          )}
           <Dialog.Close
             className="absolute top-2 right-2 w-9 h-9 border-0 rounded-full bg-paper-2 text-ink text-[1.4rem] leading-none cursor-pointer flex items-center justify-center z-10 hover:bg-paper-3"
             aria-label="Đóng"
@@ -90,9 +111,13 @@ export default function MemberModal({ members }: Props) {
 function ModalBody({
   member: m,
   byId,
+  locationLookup,
+  googleMapsApiKey,
 }: {
   member: ClientMember;
   byId: Map<string, ClientMember>;
+  locationLookup: LocationLookup;
+  googleMapsApiKey?: string;
 }) {
   const hasRelations =
     m.father || m.mother || m.spouse || m.children.length > 0;
@@ -195,6 +220,14 @@ function ModalBody({
               }
             />
           </dl>
+
+          <MemberPlacesMap
+            apiKey={googleMapsApiKey}
+            locationLookup={locationLookup}
+            birthPlace={m.birthPlace}
+            deathPlace={m.deathPlace}
+            gravesite={m.gravesite}
+          />
 
           {m.hobbies.length > 0 && (
             <div>

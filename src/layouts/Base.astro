@@ -1,7 +1,7 @@
 ---
 import "@/styles/global.css";
 import { SITE, NAV_LINKS } from "@/data/site";
-import { getMembers } from "@/lib/content";
+import { getLocations, getMembers } from "@/lib/content";
 import { toClientMember } from "@/lib/members-client";
 import ThemeSwitcher from "@/components/react/ThemeSwitcher";
 import MemberModal from "@/components/react/MemberModal";
@@ -20,6 +20,39 @@ const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
 
 const allMembers = await getMembers((entry) => entry.data.status === "published");
 const clientMembers = allMembers.map(toClientMember);
+
+// Build a name → coords lookup so the MemberModal can show a small map
+// when birthPlace / deathPlace / gravesite text matches a known location.
+const locationEntries = await getLocations();
+type LocationLookupEntry = {
+  name: string;
+  lat: number;
+  lng: number;
+  province?: string;
+};
+const locationLookup: Record<string, LocationLookupEntry> = {};
+for (const loc of locationEntries) {
+  if (
+    typeof loc.data.coords?.lat !== "number" ||
+    typeof loc.data.coords?.lng !== "number"
+  ) {
+    continue;
+  }
+  const entry: LocationLookupEntry = {
+    name: loc.data.name,
+    lat: loc.data.coords.lat,
+    lng: loc.data.coords.lng,
+    province: loc.data.province,
+  };
+  // Index by both vi name and en name (lowercase) so substring matches
+  // on either work in the modal.
+  locationLookup[loc.data.name.toLowerCase()] = entry;
+  if (loc.data.nameEn) {
+    locationLookup[loc.data.nameEn.toLowerCase()] = entry;
+  }
+}
+
+const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 ---
 
 <!doctype html>
@@ -117,7 +150,12 @@ const clientMembers = allMembers.map(toClientMember);
 
     <main id="main" class="min-h-[60vh]"><slot /></main>
 
-    <MemberModal client:load members={clientMembers} />
+    <MemberModal
+      client:load
+      members={clientMembers}
+      locationLookup={locationLookup}
+      googleMapsApiKey={googleMapsApiKey}
+    />
 
     <footer class="mt-16 border-t border-line bg-paper-2">
       <div class="max-w-[1240px] mx-auto px-5 py-10 grid gap-3 text-center text-ink-2">
