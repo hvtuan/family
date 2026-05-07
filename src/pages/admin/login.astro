@@ -49,63 +49,68 @@ if (Astro.request.method === "POST") {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Đăng nhập — Gia phả họ Nguyễn Admin</title>
+    <title>Đăng nhập — Gia phả họ Nguyễn</title>
   </head>
-  <body class="bg-white">
-    <div class="relative p-6 z-1 sm:p-0">
-      <div class="relative flex h-screen w-full flex-col justify-center sm:p-0 lg:flex-row">
-        <div class="flex w-full flex-1 flex-col lg:w-1/2">
-          <div class="mx-auto w-full max-w-md pt-10">
-            <a
-              href="/"
-              class="inline-flex items-center text-theme-sm text-gray-500 transition-colors hover:text-gray-700"
-            >
-              <svg class="stroke-current" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M12.7083 5L7.5 10.2083L12.7083 15.4167" stroke="" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Về trang công khai
-            </a>
+  <body class="bg-background">
+    <div class="grid min-h-screen lg:grid-cols-2">
+      <!-- ── Form column ─────────────────────────────────────────── -->
+      <div class="flex flex-col px-6 py-8 sm:px-10 lg:px-16">
+        <div>
+          <a
+            href="/"
+            class="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+              <path d="M12.7083 5L7.5 10.2083L12.7083 15.4167" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Về trang công khai
+          </a>
+        </div>
+
+        <div class="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
+          <div class="mb-8">
+            <h1 class="mb-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+              Đăng nhập quản trị
+            </h1>
+            <p class="text-sm text-muted-foreground">
+              Nhập tên đăng nhập và mật khẩu được quản trị cấp qua Zalo / SMS.
+            </p>
           </div>
 
-          <div class="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
-            <div class="mb-5 sm:mb-8">
-              <h1 class="mb-2 font-semibold text-gray-800 text-title-sm sm:text-title-md">
-                Đăng nhập quản trị
-              </h1>
-              <p class="text-theme-sm text-gray-500">
-                Nhập tên đăng nhập và mật khẩu do quản trị cấp.
-              </p>
+          {errorMessage && (
+            <div class="mb-5 flex items-start gap-2 rounded-lg border border-error-100 bg-error-50 px-4 py-3 text-sm text-error-700">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="mt-0.5 shrink-0">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          <form method="post" class="space-y-4" autocomplete="on">
+            <div class="space-y-1.5">
+              <label for="username" class="block text-sm font-medium text-foreground">
+                Tên đăng nhập
+              </label>
+              <input
+                type="text"
+                id="username"
+                name="username"
+                required
+                autocomplete="username"
+                spellcheck="false"
+                autocapitalize="off"
+                value={username}
+                placeholder="ví dụ: admin"
+                class="flex h-11 w-full rounded-md border border-input bg-background px-3 text-sm shadow-theme-xs placeholder:text-muted-foreground focus-visible:border-primary/50 focus-visible:outline-hidden focus-visible:ring-3 focus-visible:ring-ring/20"
+              />
             </div>
 
-            {errorMessage && (
-              <div class="mb-5 rounded-lg border border-error-100 bg-error-50 px-4 py-3 text-theme-sm text-error-700">
-                {errorMessage}
-              </div>
-            )}
-
-            <form method="post" class="space-y-5" autocomplete="on">
-              <div>
-                <label for="username" class="mb-1.5 block text-theme-sm font-medium text-gray-700">
-                  Tên đăng nhập
-                </label>
-                <input
-                  type="text"
-                  id="username"
-                  name="username"
-                  required
-                  autocomplete="username"
-                  spellcheck="false"
-                  autocapitalize="off"
-                  value={username}
-                  placeholder="ví dụ: admin"
-                  class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
-                />
-              </div>
-
-              <div>
-                <label for="password" class="mb-1.5 block text-theme-sm font-medium text-gray-700">
-                  Mật khẩu
-                </label>
+            <div class="space-y-1.5">
+              <label for="password" class="block text-sm font-medium text-foreground">
+                Mật khẩu
+              </label>
+              <div class="relative">
                 <input
                   type="password"
                   id="password"
@@ -113,48 +118,121 @@ if (Astro.request.method === "POST") {
                   required
                   autocomplete="current-password"
                   placeholder="••••••••"
-                  class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+                  class="flex h-11 w-full rounded-md border border-input bg-background px-3 pr-12 text-sm shadow-theme-xs placeholder:text-muted-foreground focus-visible:border-primary/50 focus-visible:outline-hidden focus-visible:ring-3 focus-visible:ring-ring/20"
                 />
+                <button
+                  type="button"
+                  data-toggle-password
+                  class="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-accent"
+                  aria-label="Hiện / ẩn mật khẩu"
+                >
+                  <svg data-eye-show width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg data-eye-hide style="display:none" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                    <line x1="2" x2="22" y1="2" y2="22"/>
+                  </svg>
+                </button>
               </div>
+            </div>
 
-              <button
-                type="submit"
-                class="flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-3 text-theme-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600"
-              >
-                Đăng nhập
-              </button>
-            </form>
+            <button
+              type="submit"
+              class="inline-flex h-11 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-theme-xs transition hover:bg-brand-600 focus-visible:outline-hidden focus-visible:ring-3 focus-visible:ring-ring/40"
+            >
+              Đăng nhập
+            </button>
+          </form>
 
-            <p class="mt-5 text-theme-xs text-gray-500 leading-relaxed">
-              Quên mật khẩu? Liên hệ
-              <a href="mailto:hvtuan0311@gmail.com" class="text-brand-500 hover:text-brand-600">
-                hvtuan0311@gmail.com
-              </a>
-              để được cấp lại.
-            </p>
-          </div>
-
-          <div class="mx-auto w-full max-w-md py-6 text-center text-theme-xs text-gray-400">
-            © Gia phả họ Nguyễn — Quản trị nội bộ
-          </div>
+          <p class="mt-6 text-xs text-muted-foreground leading-relaxed">
+            Quên mật khẩu? Liên hệ
+            <a href="mailto:hvtuan0311@gmail.com" class="font-medium text-primary hover:underline">
+              hvtuan0311@gmail.com
+            </a>
+            để được cấp lại. Tài khoản chỉ dành cho người trong gia tộc.
+          </p>
         </div>
 
-        <div class="relative hidden h-full w-full items-center bg-brand-950 lg:grid lg:w-1/2">
-          <div class="z-1 flex items-center justify-center">
-            <div class="flex max-w-xs flex-col items-center text-center">
-              <div class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-2xl text-white">
-                族
-              </div>
-              <h2 class="mb-3 text-title-sm font-semibold text-white">
-                Gia phả họ Nguyễn
-              </h2>
-              <p class="text-theme-sm text-white/70">
-                Tịnh Khê, Sơn Tịnh, Quảng Ngãi · Uống nước nhớ nguồn
-              </p>
-            </div>
+        <div class="mx-auto w-full max-w-md text-center text-xs text-muted-foreground">
+          © Gia phả họ Nguyễn — Quản trị nội bộ
+        </div>
+      </div>
+
+      <!-- ── Brand panel (cream/gold gradient + Vietnamese family feel) ── -->
+      <div class="relative hidden overflow-hidden lg:block">
+        <div
+          class="absolute inset-0"
+          style="background: linear-gradient(135deg, #faf3e0 0%, #efe4c7 35%, #e6d9b3 70%, #c9a35a 100%);"
+          aria-hidden="true"
+        ></div>
+        <!-- Pattern overlay -->
+        <div
+          class="absolute inset-0 opacity-30 mix-blend-overlay"
+          style="background-image: repeating-linear-gradient(45deg, transparent 0, transparent 20px, rgba(139, 42, 31, 0.08) 20px, rgba(139, 42, 31, 0.08) 21px);"
+          aria-hidden="true"
+        ></div>
+
+        <div class="relative flex h-full flex-col items-center justify-center p-12 text-center">
+          <!-- Seal -->
+          <div
+            class="mb-8 flex h-28 w-28 items-center justify-center rounded-full text-5xl font-bold shadow-2xl"
+            style="background: #8b2a1f; color: #faf3e0; font-family: 'Lora', 'Be Vietnam Pro', serif;"
+            aria-hidden="true"
+          >
+            族
           </div>
+
+          <h2
+            class="mb-3 text-3xl font-semibold tracking-tight"
+            style="color: #1a120a; font-family: 'Lora', 'Be Vietnam Pro', serif;"
+          >
+            Gia phả họ Nguyễn
+          </h2>
+          <p class="mb-1 text-sm" style="color: #3a2a1a;">
+            Tịnh Khê · Sơn Tịnh · Quảng Ngãi
+          </p>
+
+          <!-- Decorative divider -->
+          <div class="my-6 flex items-center gap-3" aria-hidden="true">
+            <span class="h-px w-12" style="background: rgba(26, 18, 10, 0.3);"></span>
+            <span class="text-xl" style="color: #8b2a1f;">❀</span>
+            <span class="h-px w-12" style="background: rgba(26, 18, 10, 0.3);"></span>
+          </div>
+
+          <blockquote class="max-w-xs">
+            <p
+              class="text-lg italic leading-relaxed"
+              style="color: #1a120a; font-family: 'Lora', 'Be Vietnam Pro', serif;"
+            >
+              "Cây có gốc, nước có nguồn. Con người có tổ tiên."
+            </p>
+            <footer class="mt-3 text-xs uppercase tracking-widest" style="color: #5c4a33;">
+              Lời ông bà
+            </footer>
+          </blockquote>
         </div>
       </div>
     </div>
+
+    <script is:inline>
+      // Show / hide password toggle.
+      (() => {
+        const btn = document.querySelector("[data-toggle-password]");
+        const input = document.getElementById("password");
+        const eyeShow = document.querySelector("[data-eye-show]");
+        const eyeHide = document.querySelector("[data-eye-hide]");
+        if (!btn || !input || !eyeShow || !eyeHide) return;
+        btn.addEventListener("click", () => {
+          const show = input.type === "password";
+          input.type = show ? "text" : "password";
+          eyeShow.style.display = show ? "none" : "";
+          eyeHide.style.display = show ? "" : "none";
+        });
+      })();
+    </script>
   </body>
 </html>

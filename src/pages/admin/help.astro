@@ -1,165 +1,227 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
-
-export const prerender = false;
 ---
 
 <AdminLayout title="Hướng dẫn sử dụng" crumbs={[{ label: "Trợ giúp" }]}>
-  <div class="prose-admin space-y-8">
-    <section class="rounded-2xl border border-brand-100 bg-brand-50 p-5">
-      <h2 class="text-theme-sm font-semibold text-brand-700 mb-2">
-        Mục đích trang quản trị
-      </h2>
-      <p class="text-theme-sm text-gray-700 leading-relaxed">
-        Đây là nơi cô/chú/anh/chị thêm và sửa thông tin về dòng họ — tên,
-        ngày sinh, hình ảnh, câu chuyện, ngày giỗ, địa điểm. Mọi thay đổi
-        sau khi lưu sẽ <strong>tự động xuất hiện ngay</strong> trên trang
-        công khai
-        <a href="https://family.huynhvantuan.net" class="text-brand-500 hover:underline">family.huynhvantuan.net</a>,
+  <div class="space-y-6">
+    <header>
+      <h1 class="text-xl font-semibold text-foreground">Hướng dẫn sử dụng</h1>
+      <p class="mt-0.5 text-sm text-muted-foreground">
+        Mọi điều cần biết để cập nhật gia phả — viết cho cô / chú / anh / chị, không cần biết gì về tech.
+      </p>
+    </header>
+
+    <!-- Sticky TOC -->
+    <nav
+      data-help-toc
+      class="sticky top-16 z-30 -mx-2 flex flex-wrap gap-1 overflow-x-auto rounded-lg border border-border bg-background/95 p-1.5 shadcn-tabs shadow-theme-xs backdrop-blur-sm"
+      aria-label="Mục lục hướng dẫn"
+    >
+      <a href="#login" class="help-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">1. Đăng nhập</a>
+      <a href="#layout" class="help-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">2. Bố cục</a>
+      <a href="#cmdk" class="help-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">3. Tìm nhanh ⌘K</a>
+      <a href="#members" class="help-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">4. Thành viên</a>
+      <a href="#media" class="help-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">5. Ảnh / Video</a>
+      <a href="#locations" class="help-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">6. Địa điểm + Bản đồ</a>
+      <a href="#tips" class="help-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">7. Lời khuyên</a>
+      <a href="#contact" class="help-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">8. Liên hệ</a>
+    </nav>
+
+    <!-- Intro card -->
+    <section class="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+      <h2 class="mb-2 text-sm font-semibold text-primary">Mục đích</h2>
+      <p class="text-sm leading-relaxed text-foreground">
+        Đây là nơi cô/chú/anh/chị thêm và sửa thông tin về dòng họ — tên, ngày sinh, hình ảnh,
+        câu chuyện, ngày giỗ, địa điểm. Mọi thay đổi sau khi lưu sẽ
+        <strong>tự động xuất hiện ngay</strong> trên trang công khai
+        <a href="https://family.huynhvantuan.net" class="font-medium text-primary hover:underline">family.huynhvantuan.net</a>,
         không cần thao tác gì thêm.
       </p>
     </section>
 
-    <section>
-      <h2 class="text-theme-sm font-semibold text-gray-800 mb-3">1. Đăng nhập</h2>
-      <ul class="list-disc pl-5 space-y-1.5 text-theme-sm text-gray-700">
+    <section id="login" class="scroll-mt-32 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
+      <h2 class="mb-3 text-base font-semibold text-foreground">1. Đăng nhập</h2>
+      <ul class="list-disc space-y-2 pl-5 text-sm text-foreground">
         <li>
           Mở trang
-          <a href="https://family.huynhvantuan.net/admin/login" class="text-brand-500 hover:underline">
+          <a href="https://family.huynhvantuan.net/admin/login" class="text-primary hover:underline">
             family.huynhvantuan.net/admin/login
           </a>
         </li>
         <li>Nhập tên đăng nhập + mật khẩu mà chú An đã cấp qua Zalo / SMS.</li>
+        <li>Bấm 👁 ở ô mật khẩu để xem lại nếu sợ gõ sai.</li>
         <li>
           Quên mật khẩu? Liên hệ chú An
-          (<a href="mailto:hvtuan0311@gmail.com" class="text-brand-500 hover:underline">hvtuan0311@gmail.com</a>)
-          để được cấp lại.
+          (<a href="mailto:hvtuan0311@gmail.com" class="text-primary hover:underline">hvtuan0311@gmail.com</a>)
+          để được cấp lại — không tự đặt lại được.
         </li>
       </ul>
     </section>
 
-    <section>
-      <h2 class="text-theme-sm font-semibold text-gray-800 mb-3">2. Bố cục trang</h2>
-      <ul class="list-disc pl-5 space-y-1.5 text-theme-sm text-gray-700">
-        <li>
-          <strong>Cột bên trái</strong> (menu): các nhóm dữ liệu — Thành viên,
-          Niên đại, Truyền thống, Album, Câu nói, Ngày lễ, Địa điểm.
-        </li>
-        <li>
-          <strong>Đầu trang</strong>: nút mở/đóng menu (☰) và nút <em>Đăng xuất</em>
-          ở góc phải. Luôn nhớ đăng xuất khi xong trên máy chung.
-        </li>
-        <li>
-          <strong>Tổng quan</strong>: trang đầu hiển thị số lượng từng nhóm.
-          Bấm vào ô bất kỳ để mở danh sách tương ứng.
-        </li>
+    <section id="layout" class="scroll-mt-32 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
+      <h2 class="mb-3 text-base font-semibold text-foreground">2. Bố cục trang</h2>
+      <ul class="list-disc space-y-2 pl-5 text-sm text-foreground">
+        <li><strong>Cột bên trái</strong> (menu): Tổng quan, Thành viên, Niên đại, Truyền thống, Thư viện ảnh, Câu nói, Ngày lễ, Địa điểm.</li>
+        <li><strong>Đầu trang</strong>: nút <kbd class="rounded border border-border bg-background px-1.5 py-0.5 font-mono text-xs">☰</kbd> mở/đóng menu, ô <em>Tìm nhanh</em>, và nút <em>Đăng xuất</em> ở góc phải.</li>
+        <li><strong>Tổng quan (trang chủ admin)</strong>: hero chào, đếm số lượng từng nhóm, ảnh mới tải lên gần đây, và nhật ký hoạt động 8 lần gần nhất.</li>
       </ul>
     </section>
 
-    <section>
-      <h2 class="text-theme-sm font-semibold text-gray-800 mb-3">3. Thêm thành viên mới</h2>
-      <ol class="list-decimal pl-5 space-y-2 text-theme-sm text-gray-700">
-        <li>Bấm <em>Thành viên</em> ở menu trái → nút <strong>+ Tạo mới</strong> ở góc phải.</li>
+    <section id="cmdk" class="scroll-mt-32 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
+      <h2 class="mb-3 text-base font-semibold text-foreground">3. Tìm nhanh — ⌘K</h2>
+      <p class="mb-2 text-sm text-foreground">
+        Bấm <kbd class="rounded border border-border bg-background px-1.5 py-0.5 font-mono text-xs">⌘K</kbd>
+        (Mac) hoặc <kbd class="rounded border border-border bg-background px-1.5 py-0.5 font-mono text-xs">Ctrl K</kbd>
+        (Windows) — hoặc bấm nút <em>Tìm nhanh</em> ở đầu trang. Một ô tìm kiếm hiện ra:
+      </p>
+      <ul class="list-disc space-y-1.5 pl-5 text-sm text-foreground">
+        <li>Gõ tên người (vd: <em>"hai"</em>) → nhảy thẳng tới trang sửa thành viên.</li>
+        <li>Gõ caption ảnh (vd: <em>"đám cưới"</em>) → mở chi tiết ảnh.</li>
+        <li>Gõ tên trang (vd: <em>"niên đại"</em>) → mở danh sách.</li>
+        <li>Phím <kbd class="rounded border border-border bg-background px-1.5 py-0.5 font-mono text-xs">↑ ↓</kbd> chọn, <kbd class="rounded border border-border bg-background px-1.5 py-0.5 font-mono text-xs">Enter</kbd> mở, <kbd class="rounded border border-border bg-background px-1.5 py-0.5 font-mono text-xs">Esc</kbd> thoát.</li>
+      </ul>
+    </section>
+
+    <section id="members" class="scroll-mt-32 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
+      <h2 class="mb-3 text-base font-semibold text-foreground">4. Thêm / sửa thành viên</h2>
+      <h3 class="mb-2 mt-3 text-sm font-medium text-foreground">Thêm mới</h3>
+      <ol class="list-decimal space-y-2 pl-5 text-sm text-foreground">
+        <li>Menu → <em>Thành viên</em> → nút <strong>+ Thêm thành viên</strong>.</li>
         <li>
-          Nhập <strong>ID</strong> (mã định danh): chữ thường, số và dấu gạch
-          ngang. Ví dụ: <code class="rounded bg-gray-100 px-1.5">g4-1</code>
-          (đời 4, người thứ 1) hoặc <code class="rounded bg-gray-100 px-1.5">co-hai</code>.
-          ID không thay đổi được sau khi tạo.
+          Nhập <strong>ID</strong>: chữ thường + số + dấu gạch ngang. VD:
+          <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">g4-1</code> (đời 4, người 1) hoặc
+          <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">co-hai</code>. Không đổi được sau khi tạo.
         </li>
-        <li>
-          Điền đầy đủ ô có dấu <span class="text-error-500">*</span> (Họ tên, Đời,
-          Vai vế, Năm sinh, Tiểu sử vi/en, Nhánh).
-        </li>
-        <li>
-          Nếu cụ/ông/bà đã được nhập trước đó, chọn ở phần <em>Quan hệ</em>
-          (Cha, Mẹ, Vợ/chồng) — phần <em>Con cái</em> sẽ tự suy ra từ Cha/Mẹ
-          đã chọn ở các thành viên khác.
-        </li>
-        <li>
-          <strong>Trạng thái</strong>: chọn <em>Đã xuất bản</em> để hiển thị
-          công khai, hoặc <em>Bản nháp</em> để giữ riêng (chỉ admin thấy).
-        </li>
-        <li>Bấm <strong>Tạo thành viên</strong>. Trang sẽ chuyển sang chế độ chỉnh sửa.</li>
+        <li>Form chia 7 mục, dùng <strong>thanh điều hướng dính (sticky)</strong> ở đầu form để nhảy giữa các mục.</li>
+        <li>Phải điền: Họ tên, Đời, Vai vế, Năm sinh, Tiểu sử, Nhánh.</li>
+        <li>Nếu cha / mẹ / vợ chồng đã có trong hệ thống, chọn ở mục <em>Quan hệ</em>. Con cái suy ngược tự động.</li>
+        <li>Đổi <strong>Trạng thái</strong> sang <em>Đã xuất bản</em> để hiển thị công khai (mặc định <em>Bản nháp</em>).</li>
+        <li>Bấm <strong>Tạo thành viên</strong>.</li>
       </ol>
-    </section>
-
-    <section>
-      <h2 class="text-theme-sm font-semibold text-gray-800 mb-3">4. Sửa hoặc xóa</h2>
-      <ul class="list-disc pl-5 space-y-1.5 text-theme-sm text-gray-700">
-        <li>Vào danh sách → bấm <strong>Sửa</strong> bên cạnh người cần chỉnh.</li>
-        <li>Sau khi sửa xong, kéo xuống cuối form → <strong>Lưu thay đổi</strong>.</li>
-        <li>Xóa: bấm <strong>Xóa</strong> ở danh sách. Hỏi xác nhận trước khi xóa thật.</li>
-        <li>
-          Khi xóa một thành viên, các quan hệ <em>Cha/Mẹ/Vợ chồng</em> ở
-          các thành viên khác trỏ tới người đó sẽ tự bỏ tham chiếu (không xóa
-          các thành viên khác).
-        </li>
+      <h3 class="mb-2 mt-4 text-sm font-medium text-foreground">Sửa / xóa</h3>
+      <ul class="list-disc space-y-1.5 pl-5 text-sm text-foreground">
+        <li>Bấm vào thẻ thành viên trong lưới — vào trang sửa, không cần qua nút.</li>
+        <li>Hover thẻ → hiện nút <em>Xóa</em> đỏ ở góc.</li>
+        <li>Khi xóa, các quan hệ ở thành viên khác trỏ tới người đó tự bỏ tham chiếu (không xóa người khác).</li>
       </ul>
     </section>
 
-    <section>
-      <h2 class="text-theme-sm font-semibold text-gray-800 mb-3">5. Tải ảnh lên Album</h2>
-      <ol class="list-decimal pl-5 space-y-2 text-theme-sm text-gray-700">
-        <li>Menu → <em>Album</em> → <strong>+ Tạo mới</strong>.</li>
-        <li>
-          Đặt <strong>ID ảnh</strong> dễ nhớ. Ví dụ:
-          <code class="rounded bg-gray-100 px-1.5">g3-1-graduation</code>,
-          <code class="rounded bg-gray-100 px-1.5">tet-2025</code>.
-        </li>
-        <li>
-          Phần <em>Ảnh</em>: bấm nút <strong>Choose file</strong> chọn ảnh từ
-          điện thoại/máy tính (jpg / png / webp, dưới 8 MB).
-        </li>
-        <li>Nhập caption tiếng Việt + tiếng Anh, năm chụp, địa điểm (nếu nhớ).</li>
-        <li>
-          Tích chọn các <strong>thành viên trong ảnh</strong> ở phần dưới —
-          ảnh sẽ tự xuất hiện ở trang chi tiết của những người đó.
-        </li>
-        <li>Bấm <strong>Tạo ảnh</strong>. Ảnh được tải lên kho và hiển thị ngay.</li>
+    <section id="media" class="scroll-mt-32 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
+      <h2 class="mb-3 text-base font-semibold text-foreground">5. Tải ảnh / video</h2>
+      <p class="mb-3 text-sm text-foreground">
+        Vào <em>Thư viện ảnh</em> → có 4 tab: <strong>Thư viện</strong> (ảnh tất cả),
+        <strong>Người</strong> (nhóm theo thành viên), <strong>Memories</strong> (kỷ niệm 1/5/10/20 năm),
+        <strong>Bản đồ</strong> (theo địa điểm).
+      </p>
+
+      <h3 class="mb-2 mt-3 text-sm font-medium text-foreground">Tải nhanh nhiều file</h3>
+      <ol class="list-decimal space-y-2 pl-5 text-sm text-foreground">
+        <li>Bấm <strong>+ Tải ảnh / video</strong> → mở dialog Uppy.</li>
+        <li>Kéo-thả file vào (hoặc bấm để chọn / chụp webcam / paste từ clipboard).</li>
+        <li>Mỗi file vào hàng đợi → có thể bấm <strong>✎</strong> để cắt / xoay / chỉnh tỉ lệ trước khi gửi.</li>
+        <li>Bỏ file không muốn (✕). Nhấn <strong>Upload</strong> → mới gửi server (tránh tải nhầm).</li>
+        <li>Ảnh: ≤ 25 MB · Video: ≤ 200 MB. Hỗ trợ HEIC iPhone (tự chuyển JPG).</li>
+        <li>EXIF (GPS, máy ảnh, ngày chụp) <strong>tự động xóa</strong> để bảo vệ riêng tư.</li>
       </ol>
+
+      <h3 class="mb-2 mt-4 text-sm font-medium text-foreground">Sửa metadata</h3>
+      <ul class="list-disc space-y-1.5 pl-5 text-sm text-foreground">
+        <li>Bấm vào ảnh → mở trang chi tiết với 3 tab bên phải: <em>Mô tả</em> (caption, alt text, năm, địa điểm, tag), <em>Liên kết</em> (chọn ai có trong ảnh), <em>File</em> (kích thước, URL).</li>
+        <li>Phía bên trái có nút <strong>Thay ảnh</strong> (giữ nguyên ID + liên kết) với editor cắt sẵn.</li>
+        <li>Click ảnh trong lưới → mở <strong>lightbox toàn màn hình</strong> với phím mũi tên để chuyển ảnh.</li>
+      </ul>
+
+      <h3 class="mb-2 mt-4 text-sm font-medium text-foreground">Bulk action</h3>
+      <ul class="list-disc space-y-1.5 pl-5 text-sm text-foreground">
+        <li>Tích checkbox vài ảnh → thanh thao tác hiện ở dưới: <strong>Nổi bật</strong> / <strong>Gắn tag</strong> / <strong>Xóa</strong>.</li>
+      </ul>
     </section>
 
-    <section>
-      <h2 class="text-theme-sm font-semibold text-gray-800 mb-3">6. Lời khuyên nhỏ</h2>
-      <ul class="list-disc pl-5 space-y-1.5 text-theme-sm text-gray-700">
+    <section id="locations" class="scroll-mt-32 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
+      <h2 class="mb-3 text-base font-semibold text-foreground">6. Địa điểm + Bản đồ</h2>
+      <ul class="list-disc space-y-2 pl-5 text-sm text-foreground">
         <li>
-          <strong>Lưu thường xuyên</strong>: trình duyệt không tự lưu nháp,
-          nên đừng để form mở quá lâu trên màn hình rồi đi đâu khác.
+          Menu → <em>Địa điểm</em> → <strong>+ Thêm địa điểm</strong>. Form có ô
+          <strong>Tìm địa điểm trên Google Maps</strong> ở đầu — gõ "Tịnh Khê" → chọn
+          từ gợi ý → tự điền tên + tỉnh + tọa độ.
         </li>
+        <li>Kéo điểm pin trên bản đồ để chỉnh tọa độ chính xác.</li>
+        <li>Trang danh sách có toggle <strong>Bảng / Bản đồ</strong>. Map view show pins toàn quốc, click pin → focus row.</li>
         <li>
-          <strong>Tiếng Việt có dấu</strong>: cứ gõ bình thường, hệ thống lưu
-          đúng dấu.
-        </li>
-        <li>
-          <strong>Bản nháp</strong>: nếu chưa chắc, lưu ở trạng thái <em>Bản
-          nháp</em> trước. Khi nào hoàn chỉnh thì đổi sang <em>Đã xuất bản</em>.
-        </li>
-        <li>
-          <strong>Privacy</strong>: phần Số điện thoại / Email / Địa chỉ chỉ
-          công khai khi tích ô <em>Cho phép hiển thị thông tin liên hệ</em>.
-          Hệ thống tự kiểm tra để không lộ thông tin của ai chưa cho phép.
-        </li>
-        <li>
-          <strong>Lo lắng làm hỏng?</strong> Mọi thay đổi đều ghi lại ở
-          <em>Nhật ký</em> (chỉ admin xem được) — dễ truy ngược.
+          Trong <em>Thư viện ảnh</em> → tab <em>Bản đồ</em>: pins từng địa điểm có ảnh,
+          click pin → InfoWindow + nút <em>Xem ảnh</em> → lọc thư viện theo địa điểm đó.
         </li>
       </ul>
     </section>
 
-    <section class="rounded-2xl border border-gray-200 bg-white p-5">
-      <h2 class="text-theme-sm font-semibold text-gray-800 mb-2">Cần giúp đỡ?</h2>
-      <p class="text-theme-sm text-gray-700">
+    <section id="tips" class="scroll-mt-32 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
+      <h2 class="mb-3 text-base font-semibold text-foreground">7. Lời khuyên</h2>
+      <ul class="list-disc space-y-2 pl-5 text-sm text-foreground">
+        <li><strong>Lưu thường xuyên</strong>: trình duyệt không tự lưu nháp; đừng để form mở quá lâu rồi đi đâu khác.</li>
+        <li><strong>Tiếng Việt có dấu</strong>: cứ gõ bình thường, hệ thống lưu đúng dấu.</li>
+        <li><strong>Bản nháp trước</strong>: nếu chưa chắc, lưu <em>Bản nháp</em>. Hoàn chỉnh thì đổi sang <em>Đã xuất bản</em>.</li>
+        <li><strong>Privacy</strong>: phần SĐT / Email / Địa chỉ chỉ công khai khi tích ô <em>Cho phép hiển thị thông tin liên hệ</em>.</li>
+        <li><strong>Lo lắng làm hỏng?</strong> Mọi thay đổi ghi lại ở <em>Nhật ký</em> (admin xem được) — dễ truy ngược.</li>
+        <li><strong>Mobile</strong>: dùng được trên điện thoại, nhưng form dài như Thành viên dùng máy tính sẽ thoải mái hơn.</li>
+      </ul>
+    </section>
+
+    <section id="contact" class="scroll-mt-32 rounded-2xl border border-vermilion/20 bg-vermilion/5 p-5">
+      <h2 class="mb-2 text-base font-semibold text-foreground">8. Cần giúp đỡ?</h2>
+      <p class="text-sm text-foreground">
         Liên hệ chú An:
-        <a href="mailto:hvtuan0311@gmail.com" class="text-brand-500 hover:underline">hvtuan0311@gmail.com</a>
+        <a href="mailto:hvtuan0311@gmail.com" class="font-medium text-vermilion hover:underline">
+          hvtuan0311@gmail.com
+        </a>
         — gửi ảnh chụp màn hình lỗi nếu có, sẽ hỗ trợ sớm.
+      </p>
+      <p class="mt-2 text-xs text-muted-foreground">
+        Anh em trong nhà xài chung — nếu có ý kiến thay đổi gì cứ nhắn,
+        miễn sao gia phả ngày càng đầy đặn.
       </p>
     </section>
   </div>
-</AdminLayout>
 
-<style>
-  /* Light styling tweak so help paragraphs look comfortable inside the
-     gray dashboard background. Scoped so it doesn't leak to other pages. */
-  .prose-admin h2 { letter-spacing: -0.01em; }
-  .prose-admin section + section { margin-top: 2rem; }
-</style>
+  <style>
+    .help-toc-link.is-active {
+      background-color: var(--color-primary);
+      color: var(--color-primary-foreground);
+    }
+  </style>
+
+  <script is:inline>
+    (() => {
+      const links = Array.from(document.querySelectorAll(".help-toc-link"));
+      if (links.length === 0) return;
+      const sections = links
+        .map((a) => {
+          const id = a.getAttribute("href")?.slice(1);
+          return id ? document.getElementById(id) : null;
+        })
+        .filter((s) => Boolean(s));
+      if (sections.length === 0) return;
+
+      const setActive = (id) => {
+        links.forEach((a) => {
+          a.classList.toggle("is-active", a.getAttribute("href") === `#${id}`);
+        });
+      };
+      setActive(sections[0].id);
+
+      const io = new IntersectionObserver(
+        (entries) => {
+          const visible = entries
+            .filter((e) => e.isIntersecting)
+            .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+          if (visible.length === 0) return;
+          setActive(visible[0].target.id);
+        },
+        {
+          rootMargin: "-128px 0px -50% 0px",
+          threshold: [0, 0.25, 0.5, 0.75, 1],
+        },
+      );
+      sections.forEach((s) => io.observe(s));
+    })();
+  </script>
+</AdminLayout>
