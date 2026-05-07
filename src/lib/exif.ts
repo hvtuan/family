@@ -1,21 +1,24 @@
 /**
- * Image processing pipeline for media v2.
+ * Media processing pipeline (image + video) for media v2.
  *
- *   processImage(file) → { original, medium, thumb, width, height, ... }
+ *   processMedia(file) → {
+ *     kind: 'image' | 'video',
+ *     original, medium, thumb,
+ *     width, height, bytes, mime, ext,
+ *   }
  *
- * - Strips ALL EXIF (GPS, camera serial, timestamps) on every variant.
- * - Auto-orients via the EXIF orientation tag before stripping (so
- *   iPhone portrait shots don't end up sideways).
- * - Generates two webp variants (medium 800w, thumb 320w) plus a copy
- *   of the original in the original format.
- * - SVG and GIF are passed through unchanged for variants too — the
- *   former is vector, the latter is animated and would lose frames.
- * - HEIC (iPhone iCloud) is converted to JPEG via lazy-loaded
- *   `heic-convert` before processing.
+ * Image path: sharp().rotate() → 3 outputs (original/medium 800w/thumb
+ * 320w). Default sharp behaviour STRIPS all EXIF/IPTC/XMP. SVG and GIF
+ * pass through unchanged. HEIC converts via lazy heic-convert first.
+ *
+ * Video path: NO server-side transcoding. Validates MIME + size only.
+ * Returns just the original buffer + ext + mime; caller is responsible
+ * for supplying a poster image (extracted client-side from a <video>
+ * element) which it routes through processImage() separately.
  */
 import sharp from "sharp";
 
-export const ALLOWED_MIME = new Set([
+export const ALLOWED_IMAGE_MIME = new Set([
   "image/jpeg",
   "image/png",
   "image/webp",
@@ -25,23 +28,39 @@ export const ALLOWED_MIME = new Set([
   "image/heif",
 ]);
 
-export const MAX_BYTES = 25 * 1024 * 1024; // 25 MB
+export const ALLOWED_VIDEO_MIME = new Set([
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+]);
 
-export type ProcessedImage = {
-  /** Bytes for original.<ext>, EXIF-stripped, format unchanged. */
+/** Backward-compat alias used by older callers. */
+export const ALLOWED_MIME = ALLOWED_IMAGE_MIME;
+
+export const MAX_BYTES_IMAGE = 25 * 1024 * 1024;   // 25 MB
+export const MAX_BYTES_VIDEO = 200 * 1024 * 1024;  // 200 MB
+
+/** Backward-compat alias. */
+export const MAX_BYTES = MAX_BYTES_IMAGE;
+
+export type MediaKind = "image" | "video";
+
+export type ProcessedMedia = {
+  kind: MediaKind;
   original: Buffer;
-  /** Bytes for medium.webp (800w) or null if input is svg/gif. */
+  /** Bytes for medium.webp (800w). null for video / svg / gif. */
   medium: Buffer | null;
-  /** Bytes for thumb.webp (320w) or null if input is svg/gif. */
+  /** Bytes for thumb.webp (320w). null for video / svg / gif. */
   thumb: Buffer | null;
   width: number;
   height: number;
   bytes: number;
-  /** Final mime AFTER any HEIC→JPEG conversion. */
   mime: string;
-  /** File extension to use for original.<ext>. */
   ext: string;
 };
+
+/** Backward-compat alias for older imports. */
+export type ProcessedImage = ProcessedMedia;
 
 const MIME_TO_EXT: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -49,19 +68,24 @@ const MIME_TO_EXT: Record<string, string> = {
   "image/webp": "webp",
   "image/gif": "gif",
   "image/svg+xml": "svg",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "video/quicktime": "mov",
 };
 
-/** Detect HEIC by mime OR extension (browsers often report octet-stream). */
 function isHeic(file: File): boolean {
   if (file.type === "image/heic" || file.type === "image/heif") return true;
   const lower = file.name.toLowerCase();
   return lower.endsWith(".heic") || lower.endsWith(".heif");
 }
 
-/** Lazy-load heic-convert only when needed (it pulls a wasm blob). */
+function isVideo(file: File): boolean {
+  if (ALLOWED_VIDEO_MIME.has(file.type)) return true;
+  const lower = file.name.toLowerCase();
+  return lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.endsWith(".mov");
+}
+
 async function convertHeic(file: File): Promise<File> {
-  // Dynamic import keeps it out of the cold-start bundle for the 99%
-  // case where the upload isn't HEIC.
   const mod = await import("heic-convert").catch(() => null);
   if (!mod) {
     throw new Error(
@@ -79,41 +103,74 @@ export async function convertHeicIfNeeded(file: File): Promise<File> {
   return isHeic(file) ? convertHeic(file) : file;
 }
 
-/** Single source of truth for input validation. Throws Vietnamese error. */
-function validate(file: File): void {
-  if (!ALLOWED_MIME.has(file.type) && !isHeic(file)) {
+export function detectKind(file: File): MediaKind {
+  return isVideo(file) ? "video" : "image";
+}
+
+function validate(file: File, kind: MediaKind): void {
+  if (kind === "video") {
+    if (!ALLOWED_VIDEO_MIME.has(file.type) && !isVideo(file)) {
+      throw new Error(
+        `Định dạng video ${file.type || "không xác định"} không hỗ trợ. Dùng MP4, WebM hoặc MOV.`,
+      );
+    }
+    if (file.size > MAX_BYTES_VIDEO) {
+      throw new Error(
+        `Video ${(file.size / 1024 / 1024).toFixed(1)} MB vượt giới hạn ${MAX_BYTES_VIDEO / 1024 / 1024} MB.`,
+      );
+    }
+    return;
+  }
+  if (!ALLOWED_IMAGE_MIME.has(file.type) && !isHeic(file)) {
     throw new Error(
-      `Định dạng ${file.type || "không xác định"} không hỗ trợ. Dùng JPG, PNG, WebP, GIF, SVG hoặc HEIC.`,
+      `Định dạng ${file.type || "không xác định"} không hỗ trợ. Dùng JPG, PNG, WebP, GIF, SVG, HEIC, MP4, WebM hoặc MOV.`,
     );
   }
-  if (file.size > MAX_BYTES) {
+  if (file.size > MAX_BYTES_IMAGE) {
     throw new Error(
-      `File ${(file.size / 1024 / 1024).toFixed(1)} MB vượt giới hạn ${MAX_BYTES / 1024 / 1024} MB.`,
+      `File ${(file.size / 1024 / 1024).toFixed(1)} MB vượt giới hạn ${MAX_BYTES_IMAGE / 1024 / 1024} MB.`,
     );
   }
 }
 
 /**
- * Process an uploaded file into the 3 variants we store. The caller
- * uploads each Buffer to its respective Storage path.
- *
- * For SVG and GIF (where resizing/transcoding loses fidelity) we set
- * `medium` and `thumb` to null and the caller stores the same path
- * for all three references. Width/height are inferred via sharp where
- * possible; SVG falls back to (0, 0).
+ * Route image vs video. Caller decides what to upload from the result.
+ * For video, `medium` and `thumb` are always null — caller must run a
+ * separately-supplied poster file through processImage() to fill them.
  */
-export async function processImage(input: File): Promise<ProcessedImage> {
-  validate(input);
+export async function processMedia(input: File): Promise<ProcessedMedia> {
+  const kind = detectKind(input);
+  validate(input, kind);
+
+  if (kind === "video") {
+    const buf = Buffer.from(await input.arrayBuffer());
+    return {
+      kind: "video",
+      original: buf,
+      medium: null,
+      thumb: null,
+      width: 0,
+      height: 0,
+      bytes: buf.byteLength,
+      mime: input.type || "video/mp4",
+      ext: MIME_TO_EXT[input.type] ?? input.name.split(".").pop()?.toLowerCase() ?? "mp4",
+    };
+  }
+
+  return processImage(input);
+}
+
+export async function processImage(input: File): Promise<ProcessedMedia> {
+  validate(input, "image");
   const file = await convertHeicIfNeeded(input);
 
   const buf = Buffer.from(await file.arrayBuffer());
   const mime = file.type || "application/octet-stream";
   const ext = MIME_TO_EXT[mime] ?? "bin";
 
-  // SVG: pass-through. Sharp can read SVG metadata but rasterizing
-  // breaks the use-case (vector logos, family crests).
   if (mime === "image/svg+xml") {
     return {
+      kind: "image",
       original: buf,
       medium: null,
       thumb: null,
@@ -125,12 +182,10 @@ export async function processImage(input: File): Promise<ProcessedImage> {
     };
   }
 
-  // GIF: pass-through to keep animation frames intact. Sharp's
-  // `animated: true` works but we don't need it for static thumbs;
-  // showing the first frame as the thumb would surprise users.
   if (mime === "image/gif") {
     const meta = await sharp(buf).metadata();
     return {
+      kind: "image",
       original: buf,
       medium: null,
       thumb: null,
@@ -142,10 +197,6 @@ export async function processImage(input: File): Promise<ProcessedImage> {
     };
   }
 
-  // Raster path: auto-orient → 3 outputs in parallel. Sharp's default
-  // behaviour is to STRIP all EXIF/IPTC/XMP/ICC metadata; we never call
-  // .keepMetadata() / .withMetadata() so GPS, camera serial, and
-  // timestamps don't leak through to the public site.
   const oriented = sharp(buf).rotate();
   const meta = await oriented.metadata();
 
@@ -164,6 +215,7 @@ export async function processImage(input: File): Promise<ProcessedImage> {
   ]);
 
   return {
+    kind: "image",
     original,
     medium,
     thumb,
@@ -175,7 +227,6 @@ export async function processImage(input: File): Promise<ProcessedImage> {
   };
 }
 
-/** Map the input mime to the file extension used for the original blob. */
 export function extForMime(mime: string): string {
   return MIME_TO_EXT[mime] ?? "bin";
 }

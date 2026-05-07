@@ -23,11 +23,14 @@ export async function GET({ locals }: APIContext): Promise<Response> {
   const all = await listPhotos();
   const photos = all.map((p) => ({
     id: p.id,
+    kind: p.kind ?? "image",
     src: p.src,
     src_thumb: p.src_thumb ?? null,
+    src_medium: p.src_medium ?? null,
     alt_vi: p.alt_vi ?? null,
     caption: p.caption,
     year: p.year,
+    duration_seconds: p.duration_seconds ?? null,
     tags: Array.isArray(p.tags) ? p.tags : [],
   }));
 

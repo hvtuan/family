@@ -85,9 +85,18 @@ if (Astro.request.method === "POST") {
 
 const refs = await listMemberRefs();
 const v = values as PhotoRow;
-const previewSrc = v.src_medium || v.src;
+const isVideo = v.kind === "video";
+const previewSrc = isVideo ? v.src : (v.src_medium || v.src);
+const posterSrc = isVideo ? (v.src_medium || v.src_thumb || "") : "";
 const tagsCsv = Array.isArray(v.tags) ? v.tags.join(", ") : "";
 const linkedMembers = refs.filter((r) => selectedMembers.includes(r.id));
+
+function formatDuration(seconds?: number | null): string {
+  if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) return "—";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
 ---
 
 <AdminLayout title={v.alt_vi ?? v.caption ?? id}
@@ -100,56 +109,104 @@ const linkedMembers = refs.filter((r) => selectedMembers.includes(r.id));
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_22rem]">
       <!-- Preview + replace -->
       <section class="space-y-4">
-        <div class="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-theme-xs">
-          {previewSrc ? (
+        <div class="overflow-hidden rounded-2xl border border-gray-200 bg-black shadow-theme-xs">
+          {isVideo && previewSrc ? (
+            <video
+              src={previewSrc}
+              poster={posterSrc || undefined}
+              controls
+              preload="metadata"
+              playsinline
+              class="block max-h-[70vh] w-full bg-black"
+            >
+              Trình duyệt không hỗ trợ HTML5 video.
+            </video>
+          ) : previewSrc ? (
             <img src={previewSrc} alt={v.alt_vi ?? v.caption ?? ""}
-              class="block max-h-[70vh] w-full object-contain" />
+              class="block max-h-[70vh] w-full object-contain bg-gray-50" />
           ) : (
             <div class="flex h-64 items-center justify-center text-theme-sm text-gray-500">
-              Chưa có ảnh
+              Chưa có {isVideo ? "video" : "ảnh"}
             </div>
           )}
         </div>
 
         <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
-          <h3 class="mb-3 text-theme-sm font-semibold text-gray-800">Thay ảnh (giữ nguyên ID + liên kết)</h3>
+          <h3 class="mb-3 text-theme-sm font-semibold text-gray-800">
+            Thay {isVideo ? "video" : "ảnh"} (giữ nguyên ID + liên kết)
+          </h3>
           <form method="post" enctype="multipart/form-data" class="flex flex-col gap-3 sm:flex-row sm:items-end">
             <input type="hidden" name="action" value="replace" />
             <div class="flex-1">
-              <label class="mb-1.5 block text-theme-xs text-gray-500">File mới (≤ 25 MB; jpg/png/webp/gif/svg/heic)</label>
-              <input type="file" name="file" required accept="image/*,.heic,.heif"
+              <label class="mb-1.5 block text-theme-xs text-gray-500">
+                File mới (
+                {isVideo ? "≤ 200 MB; mp4/webm/mov" : "≤ 25 MB; jpg/png/webp/gif/svg/heic"}
+                )
+              </label>
+              <input type="file" name="file" required
+                accept={isVideo ? "video/*,.mp4,.webm,.mov" : "image/*,.heic,.heif"}
                 class="block w-full text-theme-sm file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-theme-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200" />
             </div>
-            <button type="submit" class="rounded-lg bg-gray-900 px-4 py-2.5 text-theme-sm font-medium text-white hover:bg-gray-800">Thay ảnh</button>
+            <button type="submit" class="rounded-lg bg-gray-900 px-4 py-2.5 text-theme-sm font-medium text-white hover:bg-gray-800">
+              Thay {isVideo ? "video" : "ảnh"}
+            </button>
           </form>
-          <p class="mt-2 text-theme-xs text-gray-500">EXIF (GPS, máy ảnh) được tự động xóa. 3 phiên bản (gốc, 800w, 320w) được tạo lại.</p>
+          <p class="mt-2 text-theme-xs text-gray-500">
+            {isVideo
+              ? "Hiện tại thay video qua đây không tự trích lại poster — bấm vào ô trên để thử trình phát mới."
+              : "EXIF (GPS, máy ảnh) được tự động xóa. 3 phiên bản (gốc, 800w, 320w) được tạo lại."}
+          </p>
         </div>
 
         <!-- Metadata block -->
         <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
           <h3 class="mb-3 text-theme-sm font-semibold text-gray-800">Thông tin file</h3>
           <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-theme-sm">
+            <dt class="text-gray-500">Loại</dt>
+            <dd class="text-gray-800">{isVideo ? "🎬 Video" : "🖼️ Ảnh"}</dd>
             <dt class="text-gray-500">Kích thước</dt>
             <dd class="text-gray-800">{v.width && v.height ? `${v.width} × ${v.height} px` : "—"}</dd>
             <dt class="text-gray-500">Dung lượng</dt>
-            <dd class="text-gray-800">{v.bytes ? `${(v.bytes / 1024).toFixed(1)} KB` : "—"}</dd>
+            <dd class="text-gray-800">
+              {v.bytes ? (
+                v.bytes >= 1024 * 1024
+                  ? `${(v.bytes / 1024 / 1024).toFixed(1)} MB`
+                  : `${(v.bytes / 1024).toFixed(1)} KB`
+              ) : "—"}
+            </dd>
             <dt class="text-gray-500">Định dạng</dt>
             <dd class="text-gray-800">{v.mime ?? "—"}</dd>
-            <dt class="text-gray-500">EXIF</dt>
-            <dd class="text-gray-800">{v.bytes ? "đã xóa" : "—"}</dd>
-            <dt class="text-gray-500">Variants</dt>
-            <dd class="text-gray-800">
-              {v.src_thumb && v.src_medium ? "✓ thumb + medium" : (
-                <span class="text-warning-600">chỉ có gốc (legacy)</span>
-              )}
-            </dd>
+            {isVideo && (
+              <>
+                <dt class="text-gray-500">Thời lượng</dt>
+                <dd class="text-gray-800 tabular-nums">{formatDuration(v.duration_seconds)}</dd>
+                <dt class="text-gray-500">Poster</dt>
+                <dd class="text-gray-800">{v.src_medium ? "✓ có" : <span class="text-warning-600">chưa có</span>}</dd>
+              </>
+            )}
+            {!isVideo && (
+              <>
+                <dt class="text-gray-500">EXIF</dt>
+                <dd class="text-gray-800">{v.bytes ? "đã xóa" : "—"}</dd>
+                <dt class="text-gray-500">Variants</dt>
+                <dd class="text-gray-800">
+                  {v.src_thumb && v.src_medium ? "✓ thumb + medium" : (
+                    <span class="text-warning-600">chỉ có gốc (legacy)</span>
+                  )}
+                </dd>
+              </>
+            )}
           </dl>
           <details class="mt-3">
             <summary class="cursor-pointer text-theme-xs text-gray-500">URL public</summary>
             <div class="mt-2 space-y-1 text-theme-xs font-mono text-gray-600 break-all">
-              <div><span class="text-gray-400">gốc:</span> {v.src}</div>
-              {v.src_medium && <div><span class="text-gray-400">800w:</span> {v.src_medium}</div>}
-              {v.src_thumb && <div><span class="text-gray-400">320w:</span> {v.src_thumb}</div>}
+              <div><span class="text-gray-400">{isVideo ? "video:" : "gốc:"}</span> {v.src}</div>
+              {v.src_medium && (
+                <div><span class="text-gray-400">{isVideo ? "poster:" : "800w:"}</span> {v.src_medium}</div>
+              )}
+              {v.src_thumb && (
+                <div><span class="text-gray-400">{isVideo ? "thumb:" : "320w:"}</span> {v.src_thumb}</div>
+              )}
             </div>
           </details>
         </div>

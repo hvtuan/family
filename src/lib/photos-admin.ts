@@ -1,6 +1,9 @@
 import { supabaseAdmin } from "./supabase/admin";
 import { replaceM2M, readM2M } from "./m2m";
-import { processImage, extForMime, type ProcessedImage } from "./exif";
+import {
+  processImage, processMedia, detectKind, extForMime,
+  type ProcessedImage, type MediaKind,
+} from "./exif";
 
 const STORAGE_BUCKET = "family-photos";
 
@@ -18,6 +21,7 @@ const MAX_BYTES_LEGACY = 8 * 1024 * 1024; // 8 MB — kept for non-v2 attachment
 // ───────────────────────── media v2: uploadPhotoMedia ──────────────────────
 
 export type UploadedMedia = {
+  kind: MediaKind;
   src: string;
   src_thumb: string | null;
   src_medium: string | null;
@@ -25,6 +29,8 @@ export type UploadedMedia = {
   height: number;
   bytes: number;
   mime: string;
+  /** Only set for kind='video' uploads where the caller supplied a poster. */
+  duration_seconds?: number | null;
 };
 
 async function putObject(path: string, body: Buffer | File, contentType: string): Promise<string> {
@@ -36,33 +42,94 @@ async function putObject(path: string, body: Buffer | File, contentType: string)
 }
 
 /**
- * Process + upload an image with all 3 variants under
- * `media/<photoId>/{original.<ext>, medium.webp, thumb.webp}` and
- * return the metadata + URLs the caller writes to the photos row.
+ * Process + upload media (image or video) under `media/<photoId>/`.
+ *
+ * Image path: 3 variants (original.<ext>, medium.webp, thumb.webp).
+ * Video path: 1 video file (original.<ext>) + optional poster image
+ * (poster.webp + thumb-sized poster) supplied by the caller. The
+ * client extracts the poster from a <video> element before upload
+ * because we don't ship ffmpeg server-side.
+ *
+ * For a video without a poster, src_thumb / src_medium stay null and
+ * the UI falls back to a placeholder.
  */
 export async function uploadPhotoMedia(
   file: File,
   photoId: string,
+  opts?: { posterFile?: File | null; durationSeconds?: number | null },
 ): Promise<UploadedMedia> {
-  const processed: ProcessedImage = await processImage(file);
   const folder = `${MEDIA_PREFIX}/${photoId}`;
+  const kind = detectKind(file);
 
-  const originalPath = `${folder}/original.${processed.ext}`;
-  const mediumPath = `${folder}/medium.webp`;
-  const thumbPath = `${folder}/thumb.webp`;
+  if (kind === "video") {
+    const processed = await processMedia(file);
+    const originalUrl = await putObject(
+      `${folder}/original.${processed.ext}`,
+      processed.original,
+      processed.mime,
+    );
 
-  const originalUrl = await putObject(originalPath, processed.original, processed.mime);
+    let posterUrl: string | null = null;
+    let thumbUrl: string | null = null;
+    let posterWidth = 0;
+    let posterHeight = 0;
+    if (opts?.posterFile && opts.posterFile.size > 0) {
+      // Run the poster image through processImage so it's EXIF-stripped
+      // and thumb-sized. We store the medium webp as poster.webp + the
+      // thumb 320 webp as thumb.webp.
+      const poster = await processImage(opts.posterFile);
+      if (poster.medium) {
+        posterUrl = await putObject(`${folder}/poster.webp`, poster.medium, "image/webp");
+      } else {
+        // SVG/GIF/HEIC poster — store original buffer.
+        posterUrl = await putObject(
+          `${folder}/poster.${poster.ext}`,
+          poster.original,
+          poster.mime,
+        );
+      }
+      if (poster.thumb) {
+        thumbUrl = await putObject(`${folder}/thumb.webp`, poster.thumb, "image/webp");
+      } else {
+        thumbUrl = posterUrl;
+      }
+      posterWidth = poster.width;
+      posterHeight = poster.height;
+    }
+
+    return {
+      kind: "video",
+      src: originalUrl,
+      src_thumb: thumbUrl,
+      src_medium: posterUrl,
+      width: posterWidth,
+      height: posterHeight,
+      bytes: processed.bytes,
+      mime: processed.mime,
+      duration_seconds: opts?.durationSeconds ?? null,
+    };
+  }
+
+  // Image path (unchanged from M1).
+  const processed: ProcessedImage = await processImage(file);
+
+  const originalUrl = await putObject(
+    `${folder}/original.${processed.ext}`,
+    processed.original,
+    processed.mime,
+  );
 
   let mediumUrl: string | null = null;
   let thumbUrl: string | null = null;
   if (processed.medium) {
-    mediumUrl = await putObject(mediumPath, processed.medium, "image/webp");
+    mediumUrl = await putObject(`${folder}/medium.webp`, processed.medium, "image/webp");
   }
   if (processed.thumb) {
-    thumbUrl = await putObject(thumbPath, processed.thumb, "image/webp");
+    thumbUrl = await putObject(`${folder}/thumb.webp`, processed.thumb, "image/webp");
   }
 
   return {
+    kind: "image",
     src: originalUrl,
     src_thumb: thumbUrl,
     src_medium: mediumUrl,
@@ -78,11 +145,10 @@ export async function uploadPhotoMedia(
 export async function replacePhotoMedia(
   photoId: string,
   file: File,
+  opts?: { posterFile?: File | null; durationSeconds?: number | null },
 ): Promise<UploadedMedia> {
-  // First clear the folder so that switching ext (jpg → png) doesn't
-  // leave stale blobs alongside the new ones.
   await deletePhotoMedia(photoId).catch(() => undefined);
-  return uploadPhotoMedia(file, photoId);
+  return uploadPhotoMedia(file, photoId, opts);
 }
 
 /** Delete every blob under `media/<photoId>/`. Best-effort. */
@@ -184,6 +250,9 @@ export type PhotoRow = {
   alt_vi?: string | null;
   alt_en?: string | null;
   tags?: string[];
+  // video support (M5)
+  kind?: MediaKind;
+  duration_seconds?: number | null;
 };
 
 export async function listPhotos(): Promise<PhotoRow[]> {

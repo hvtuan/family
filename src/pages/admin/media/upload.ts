@@ -83,9 +83,21 @@ export async function POST({ request, locals }: APIContext): Promise<Response> {
     }
   }
 
+  // Optional poster file (browser extracted a frame from a <video> for us).
+  // Only meaningful when `file` is a video; ignored otherwise.
+  const posterRaw = form.get("poster");
+  const posterFile = posterRaw instanceof File && posterRaw.size > 0 ? posterRaw : null;
+
+  // Optional duration in seconds, derived client-side from the <video>
+  // element's `duration` property.
+  const durationRaw = String(form.get("duration_seconds") ?? "").trim();
+  const durationSeconds = durationRaw && !Number.isNaN(Number(durationRaw))
+    ? Math.round(Number(durationRaw))
+    : null;
+
   let media;
   try {
-    media = await uploadPhotoMedia(file, id);
+    media = await uploadPhotoMedia(file, id, { posterFile, durationSeconds });
   } catch (e) {
     return new Response(
       JSON.stringify({ ok: false, error: e instanceof Error ? e.message : "Upload thất bại." }),
@@ -98,6 +110,7 @@ export async function POST({ request, locals }: APIContext): Promise<Response> {
 
   const { error: insErr } = await supabaseAdmin.from("photos").insert({
     id,
+    kind: media.kind,
     src: media.src,
     src_thumb: media.src_thumb,
     src_medium: media.src_medium,
@@ -105,6 +118,7 @@ export async function POST({ request, locals }: APIContext): Promise<Response> {
     height: media.height,
     bytes: media.bytes,
     mime: media.mime,
+    duration_seconds: media.duration_seconds ?? null,
     caption: captionDefault,
     caption_en: captionDefault,
     featured: false,
@@ -121,11 +135,14 @@ export async function POST({ request, locals }: APIContext): Promise<Response> {
     JSON.stringify({
       ok: true,
       id,
+      kind: media.kind,
       src: media.src,
       src_thumb: media.src_thumb,
+      src_medium: media.src_medium,
       width: media.width,
       height: media.height,
       bytes: media.bytes,
+      duration_seconds: media.duration_seconds ?? null,
       editUrl: `/admin/media/${id}`,
     }),
     { status: 201, headers: { "content-type": "application/json" } },

@@ -31,6 +31,7 @@ const q = (url.searchParams.get("q") ?? "").trim().toLowerCase();
 const year = url.searchParams.get("year") ?? "";
 const tag = url.searchParams.get("tag") ?? "";
 const featuredOnly = url.searchParams.get("featured") === "1";
+const kindFilter = url.searchParams.get("kind") ?? ""; // '' | 'image' | 'video'
 
 const all = await listPhotos();
 
@@ -56,11 +57,22 @@ const rows = all.filter((p) => {
   if (year && String(p.year ?? "") !== year) return false;
   if (tag && !(Array.isArray(p.tags) && p.tags.includes(tag))) return false;
   if (featuredOnly && !p.featured) return false;
+  if (kindFilter && (p.kind ?? "image") !== kindFilter) return false;
   return true;
 });
 
 function thumbFor(p: typeof rows[number]): string {
+  // For video rows the thumb is the poster (src_thumb / src_medium).
+  // The original src is the video itself which can't render as an <img>.
+  if (p.kind === "video") return p.src_thumb || p.src_medium || "";
   return p.src_thumb || p.src_medium || p.src;
+}
+
+function durationLabel(seconds?: number | null): string {
+  if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) return "";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 ---
 
@@ -90,7 +102,8 @@ function thumbFor(p: typeof rows[number]): string {
             class="rounded-lg bg-brand-500 px-4 py-2 text-theme-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">
             + Tải ảnh lên
           </button>
-          <input type="file" data-upload-input multiple accept="image/*,.heic,.heif" class="hidden" />
+          <input type="file" data-upload-input multiple
+            accept="image/*,video/*,.heic,.heif,.mp4,.webm,.mov" class="hidden" />
         </div>
       </header>
 
@@ -98,6 +111,12 @@ function thumbFor(p: typeof rows[number]): string {
         <input type="search" name="q" value={q}
           placeholder="Tìm theo tên, caption, alt, tag, địa điểm…"
           class="h-10 w-full lg:w-72 rounded-lg border border-gray-200 bg-white px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
+
+        <select name="kind" class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10">
+          <option value="">Mọi loại</option>
+          <option value="image" selected={kindFilter === "image"}>Ảnh</option>
+          <option value="video" selected={kindFilter === "video"}>Video</option>
+        </select>
 
         <select name="year" class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10">
           <option value="">Mọi năm</option>
@@ -121,7 +140,7 @@ function thumbFor(p: typeof rows[number]): string {
 
         <div class="flex items-center gap-2 lg:ml-auto">
           <button type="submit" class="h-10 rounded-lg bg-gray-900 px-4 text-theme-sm font-medium text-white hover:bg-gray-800">Lọc</button>
-          {(q || year || tag || featuredOnly) && (
+          {(q || year || tag || featuredOnly || kindFilter) && (
             <a href="/admin/media" class="h-10 inline-flex items-center rounded-lg border border-gray-200 bg-white px-4 text-theme-sm font-medium text-gray-700 hover:bg-gray-50">Xóa lọc</a>
           )}
         </div>
@@ -140,8 +159,28 @@ function thumbFor(p: typeof rows[number]): string {
             {rows.map((p) => (
               <label class="group block cursor-pointer rounded-lg border border-gray-200 bg-white overflow-hidden transition hover:shadow-theme-md has-[:checked]:border-brand-400 has-[:checked]:ring-2 has-[:checked]:ring-brand-500/20">
                 <div class="aspect-square bg-gray-100 relative">
-                  <img src={thumbFor(p)} alt={p.alt_vi ?? p.caption} loading="lazy"
-                    class="absolute inset-0 h-full w-full object-cover" />
+                  {thumbFor(p) ? (
+                    <img src={thumbFor(p)} alt={p.alt_vi ?? p.caption} loading="lazy"
+                      class="absolute inset-0 h-full w-full object-cover" />
+                  ) : (
+                    <div class="absolute inset-0 flex items-center justify-center text-3xl opacity-60">
+                      {p.kind === "video" ? "🎬" : "🖼️"}
+                    </div>
+                  )}
+                  {p.kind === "video" && (
+                    <>
+                      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <span class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-900/60 text-white">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        </span>
+                      </div>
+                      {durationLabel(p.duration_seconds) && (
+                        <span class="absolute bottom-2 right-2 rounded bg-gray-900/70 px-1.5 py-0.5 text-theme-xs font-medium text-white tabular-nums">
+                          {durationLabel(p.duration_seconds)}
+                        </span>
+                      )}
+                    </>
+                  )}
                   <div class="absolute top-2 left-2 flex items-center gap-2">
                     <input type="checkbox" name="ids" value={p.id}
                       data-bulk-checkbox
@@ -151,7 +190,7 @@ function thumbFor(p: typeof rows[number]): string {
                   {p.featured && (
                     <span class="absolute top-2 right-2 rounded bg-warning-50 px-1.5 py-0.5 text-theme-xs font-medium text-warning-600 border border-warning-100" title="Nổi bật">★</span>
                   )}
-                  {!p.src_thumb && (
+                  {p.kind !== "video" && !p.src_thumb && (
                     <span class="absolute bottom-2 left-2 rounded bg-gray-900/60 px-1.5 py-0.5 text-theme-xs font-medium text-white" title="Ảnh chưa có thumbnail (legacy)">legacy</span>
                   )}
                 </div>
@@ -183,8 +222,8 @@ function thumbFor(p: typeof rows[number]): string {
     class="fixed inset-0 z-[60] hidden items-center justify-center bg-brand-500/20 backdrop-blur-sm">
     <div class="rounded-2xl border-4 border-dashed border-brand-500 bg-white px-12 py-10 text-center shadow-theme-lg pointer-events-none">
       <div class="mb-2 text-3xl">📥</div>
-      <div class="text-theme-md font-semibold text-gray-800">Thả ảnh để tải lên</div>
-      <div class="mt-1 text-theme-xs text-gray-500">JPG / PNG / WebP / GIF / HEIC, ≤ 25 MB / ảnh</div>
+      <div class="text-theme-md font-semibold text-gray-800">Thả ảnh hoặc video để tải lên</div>
+      <div class="mt-1 text-theme-xs text-gray-500">Ảnh: JPG/PNG/WebP/GIF/HEIC ≤ 25 MB · Video: MP4/WebM/MOV ≤ 200 MB</div>
     </div>
   </div>
 
@@ -287,7 +326,10 @@ function thumbFor(p: typeof rows[number]): string {
         e.preventDefault();
         dragDepth = 0;
         hideOverlay();
-        const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith("image/") || /\.(heic|heif)$/i.test(f.name));
+        const files = Array.from(e.dataTransfer.files).filter((f) =>
+          f.type.startsWith("image/") || f.type.startsWith("video/") ||
+          /\.(heic|heif|mp4|webm|mov)$/i.test(f.name)
+        );
         if (files.length > 0) startUploads(files);
       });
 
@@ -342,23 +384,92 @@ function thumbFor(p: typeof rows[number]): string {
         }
       }
 
-      function uploadOne(file, li) {
+      // Detect video by mime + extension fallback (Safari iCloud .mov
+      // sometimes reports empty mime).
+      function isVideo(file) {
+        if (file.type && file.type.startsWith("video/")) return true;
+        return /\.(mp4|webm|mov)$/i.test(file.name);
+      }
+
+      // Extract a poster frame from a video file via a hidden <video>
+      // element + canvas. Resolves with { posterFile, durationSeconds }.
+      // Failures resolve with nulls so the upload still succeeds — the
+      // detail page can render without a poster, just less pretty.
+      async function extractPoster(file) {
         return new Promise((resolve) => {
+          const url = URL.createObjectURL(file);
+          const video = document.createElement("video");
+          video.src = url;
+          video.muted = true;
+          video.playsInline = true;
+          video.preload = "metadata";
+
+          const cleanup = () => URL.revokeObjectURL(url);
+          let captured = false;
+
+          function capture() {
+            if (captured) return;
+            captured = true;
+            try {
+              const w = video.videoWidth || 1280;
+              const h = video.videoHeight || 720;
+              const canvas = document.createElement("canvas");
+              canvas.width = w;
+              canvas.height = h;
+              canvas.getContext("2d").drawImage(video, 0, 0, w, h);
+              canvas.toBlob((blob) => {
+                cleanup();
+                if (!blob) {
+                  resolve({ posterFile: null, durationSeconds: video.duration || null });
+                  return;
+                }
+                const posterFile = new File([blob], "poster.jpg", { type: "image/jpeg" });
+                resolve({ posterFile, durationSeconds: Math.round(video.duration) || null });
+              }, "image/jpeg", 0.9);
+            } catch (err) {
+              cleanup();
+              resolve({ posterFile: null, durationSeconds: video.duration || null });
+            }
+          }
+
+          video.addEventListener("loadedmetadata", () => {
+            // Seek to a moment past 0 so iOS doesn't return a black frame.
+            const target = Math.min(1, (video.duration || 1) * 0.1);
+            try { video.currentTime = target; } catch { capture(); }
+          });
+          video.addEventListener("seeked", capture);
+          video.addEventListener("error", () => { cleanup(); resolve({ posterFile: null, durationSeconds: null }); });
+          // Hard timeout so a stuck video doesn't block the queue.
+          setTimeout(() => { if (!captured) { cleanup(); resolve({ posterFile: null, durationSeconds: null }); } }, 8000);
+        });
+      }
+
+      function uploadOne(file, li) {
+        return new Promise(async (resolve) => {
           const fd = new FormData();
           fd.append("file", file);
+
+          let extra = null;
+          if (isVideo(file)) {
+            setRow(li, { status: "Trích frame video…", percent: 5 });
+            extra = await extractPoster(file);
+            if (extra?.posterFile) fd.append("poster", extra.posterFile);
+            if (extra?.durationSeconds) fd.append("duration_seconds", String(extra.durationSeconds));
+          }
 
           const xhr = new XMLHttpRequest();
           xhr.open("POST", "/admin/media/upload");
           xhr.upload.addEventListener("progress", (e) => {
             if (!e.lengthComputable) return;
-            const pct = Math.round((e.loaded / e.total) * 90); // reserve 10% for server processing
+            const pct = Math.round((e.loaded / e.total) * 90);
             setRow(li, { status: `Đang tải… ${pct}%`, percent: pct });
           });
           xhr.addEventListener("load", () => {
             try {
               const body = JSON.parse(xhr.responseText || "{}");
               if (xhr.status >= 200 && xhr.status < 300 && body.ok) {
-                setRow(li, { status: "Xong", percent: 100, editUrl: body.editUrl, src: body.src_thumb || body.src });
+                const status = body.kind === "video" ? "Xong (video)" : "Xong";
+                setRow(li, { status, percent: 100, editUrl: body.editUrl, src: body.src_thumb || body.src_medium });
               } else {
                 setRow(li, { status: body.error || `Lỗi (${xhr.status})`, error: true, percent: 100 });
               }
