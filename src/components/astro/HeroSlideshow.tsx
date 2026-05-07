@@ -22,6 +22,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
+import Fade from "embla-carousel-fade";
 
 export type HeroSlide = {
   id: number;
@@ -52,9 +53,13 @@ export default function HeroSlideshow({ slides, height = "70vh" }: Props) {
   const delay = slides[0].durationMs > 0 ? slides[0].durationMs : 6000;
   const autoplay = slides.length > 1 && slides[0].durationMs > 0;
 
+  const plugins = [
+    Fade(),
+    ...(autoplay ? [Autoplay({ delay, stopOnInteraction: false, stopOnMouseEnter: true })] : []),
+  ];
   const [emblaRef, emblaApi] = useEmblaCarousel(
-    { loop: true, align: "start" },
-    autoplay ? [Autoplay({ delay, stopOnInteraction: false, stopOnMouseEnter: true })] : [],
+    { loop: true, align: "start", duration: 30 },
+    plugins,
   );
   const [current, setCurrent] = useState(0);
 
