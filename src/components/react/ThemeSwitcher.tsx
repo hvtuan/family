@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useStore } from "@nanostores/react";
 import { $theme } from "@/stores/ui";
 import type { Theme } from "@/data/site";
@@ -9,7 +10,14 @@ const THEMES: { id: Theme; vi: string; en: string; swatch: string }[] = [
 ];
 
 export default function ThemeSwitcher() {
-  const current = useStore($theme);
+  // The store is hydrated from localStorage at module load on the
+  // client, so reading it during the first render causes a hydration
+  // mismatch with the server (which always renders "classic"). Defer
+  // showing the actual selected theme until after the first commit.
+  const stored = useStore($theme);
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const current: Theme = hydrated ? stored : "classic";
 
   return (
     <div

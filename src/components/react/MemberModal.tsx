@@ -37,7 +37,14 @@ export default function MemberModal({
   locationLookup = {},
   googleMapsApiKey,
 }: Props) {
-  const id = useStore($modalMember);
+  const storedId = useStore($modalMember);
+  // The store reads ?member= from URL at module load on the client, so
+  // a deep link would render an open modal during the first React
+  // render — but SSR rendered with the modal closed. Defer to post-
+  // mount to avoid a hydration mismatch.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  const id = hydrated ? storedId : null;
 
   const byId = useMemo(() => {
     const m = new Map<string, ClientMember>();
