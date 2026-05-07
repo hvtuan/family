@@ -1,8 +1,8 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
-import MemberPicker from "@/components/admin/MemberPicker.astro";
 import PhotoEditorInput from "@/components/admin/PhotoEditorInput.astro";
 import ToastBanner from "@/components/admin/ToastBanner.tsx";
+import MediaDetailSidebar from "@/components/admin/MediaDetailSidebar.tsx";
 import {
   getPhoto, getPhotoMembers, upsertPhoto, parsePhotoForm,
   replacePhotoMedia, deletePhoto,
@@ -93,16 +93,31 @@ const v = values as PhotoRow;
 const isVideo = v.kind === "video";
 const previewSrc = isVideo ? v.src : (v.src_medium || v.src);
 const posterSrc = isVideo ? (v.src_medium || v.src_thumb || "") : "";
-const tagsCsv = Array.isArray(v.tags) ? v.tags.join(", ") : "";
-const linkedMembers = refs.filter((r) => selectedMembers.includes(r.id));
 const altMissing = !v.alt_vi || !v.alt_vi.trim();
 
-function formatDuration(seconds?: number | null): string {
-  if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) return "—";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
+// Shape for the React island — strip nullable types we don't want there.
+const sidebarPhoto = {
+  id: v.id,
+  kind: (v.kind ?? "image") as "image" | "video",
+  src: v.src,
+  src_thumb: v.src_thumb ?? null,
+  src_medium: v.src_medium ?? null,
+  caption: v.caption,
+  caption_en: v.caption_en,
+  alt_vi: v.alt_vi ?? null,
+  alt_en: v.alt_en ?? null,
+  year: v.year ?? null,
+  date: v.date ?? null,
+  location: v.location ?? null,
+  album: v.album ?? null,
+  featured: v.featured,
+  width: v.width ?? null,
+  height: v.height ?? null,
+  bytes: v.bytes ?? null,
+  mime: v.mime ?? null,
+  duration_seconds: v.duration_seconds ?? null,
+  tags: Array.isArray(v.tags) ? v.tags : [],
+};
 ---
 
 <AdminLayout title={v.alt_vi ?? v.caption ?? id}
@@ -174,185 +189,15 @@ function formatDuration(seconds?: number | null): string {
           </p>
         </div>
 
-        <!-- Metadata block -->
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
-          <h3 class="mb-3 text-theme-sm font-semibold text-gray-800">Thông tin file</h3>
-          <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-theme-sm">
-            <dt class="text-gray-500">Loại</dt>
-            <dd class="text-gray-800">{isVideo ? "🎬 Video" : "🖼️ Ảnh"}</dd>
-            <dt class="text-gray-500">Kích thước</dt>
-            <dd class="text-gray-800">{v.width && v.height ? `${v.width} × ${v.height} px` : "—"}</dd>
-            <dt class="text-gray-500">Dung lượng</dt>
-            <dd class="text-gray-800">
-              {v.bytes ? (
-                v.bytes >= 1024 * 1024
-                  ? `${(v.bytes / 1024 / 1024).toFixed(1)} MB`
-                  : `${(v.bytes / 1024).toFixed(1)} KB`
-              ) : "—"}
-            </dd>
-            <dt class="text-gray-500">Định dạng</dt>
-            <dd class="text-gray-800">{v.mime ?? "—"}</dd>
-            {isVideo && (
-              <>
-                <dt class="text-gray-500">Thời lượng</dt>
-                <dd class="text-gray-800 tabular-nums">{formatDuration(v.duration_seconds)}</dd>
-                <dt class="text-gray-500">Poster</dt>
-                <dd class="text-gray-800">{v.src_medium ? "✓ có" : <span class="text-warning-600">chưa có</span>}</dd>
-              </>
-            )}
-            {!isVideo && (
-              <>
-                <dt class="text-gray-500">EXIF</dt>
-                <dd class="text-gray-800">{v.bytes ? "đã xóa" : "—"}</dd>
-                <dt class="text-gray-500">Variants</dt>
-                <dd class="text-gray-800">
-                  {v.src_thumb && v.src_medium ? "✓ thumb + medium" : (
-                    <span class="text-warning-600">chỉ có gốc (legacy)</span>
-                  )}
-                </dd>
-              </>
-            )}
-          </dl>
-          <details class="mt-3">
-            <summary class="cursor-pointer text-theme-xs text-gray-500">URL public</summary>
-            <div class="mt-2 space-y-1.5 text-theme-xs font-mono text-gray-600">
-              <div class="flex items-start gap-2">
-                <span class="shrink-0 text-gray-400 not-italic">{isVideo ? "video:" : "gốc:"}</span>
-                <span class="break-all flex-1">{v.src}</span>
-                <button type="button" data-copy-url={v.src}
-                  class="shrink-0 rounded border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] font-medium text-gray-600 hover:bg-gray-50 font-sans">Copy</button>
-              </div>
-              {v.src_medium && (
-                <div class="flex items-start gap-2">
-                  <span class="shrink-0 text-gray-400">{isVideo ? "poster:" : "800w:"}</span>
-                  <span class="break-all flex-1">{v.src_medium}</span>
-                  <button type="button" data-copy-url={v.src_medium}
-                    class="shrink-0 rounded border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] font-medium text-gray-600 hover:bg-gray-50 font-sans">Copy</button>
-                </div>
-              )}
-              {v.src_thumb && (
-                <div class="flex items-start gap-2">
-                  <span class="shrink-0 text-gray-400">{isVideo ? "thumb:" : "320w:"}</span>
-                  <span class="break-all flex-1">{v.src_thumb}</span>
-                  <button type="button" data-copy-url={v.src_thumb}
-                    class="shrink-0 rounded border border-gray-200 bg-white px-1.5 py-0.5 text-[11px] font-medium text-gray-600 hover:bg-gray-50 font-sans">Copy</button>
-                </div>
-              )}
-            </div>
-          </details>
-
-          <script is:inline>
-            document.addEventListener("click", (e) => {
-              const btn = e.target.closest("[data-copy-url]");
-              if (!btn) return;
-              const url = btn.getAttribute("data-copy-url");
-              navigator.clipboard.writeText(url).then(() => {
-                const orig = btn.textContent;
-                btn.textContent = "✓ Copied";
-                setTimeout(() => { btn.textContent = orig; }, 1200);
-              }).catch(() => {});
-            });
-          </script>
-        </div>
       </section>
 
-      <!-- Sidebar: metadata edit form -->
-      <aside class="space-y-4">
-        <form method="post" class="space-y-4">
-          <input type="hidden" name="action" value="save" />
-          <input type="hidden" name="id" value={v.id} />
-
-          <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs space-y-3">
-            <legend class="px-2 text-theme-sm font-semibold text-gray-800">Mô tả & alt text</legend>
-            <div>
-              <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Caption (vi) *</label>
-              <input type="text" name="caption" required value={v.caption ?? ""}
-                class="h-10 w-full rounded-lg border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
-            </div>
-            <div>
-              <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Caption (en) *</label>
-              <input type="text" name="caption_en" required value={v.caption_en ?? ""}
-                class="h-10 w-full rounded-lg border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
-            </div>
-            <div>
-              <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
-                Alt text (vi) <span class="text-warning-600 font-normal text-theme-xs">— khuyên có để hỗ trợ trình đọc màn hình</span>
-              </label>
-              <input type="text" name="alt_vi" value={v.alt_vi ?? ""}
-                placeholder="Mô tả ngắn cho người không thấy ảnh"
-                class="h-10 w-full rounded-lg border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
-            </div>
-            <div>
-              <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Alt text (en)</label>
-              <input type="text" name="alt_en" value={v.alt_en ?? ""}
-                class="h-10 w-full rounded-lg border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
-            </div>
-          </fieldset>
-
-          <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs space-y-3">
-            <legend class="px-2 text-theme-sm font-semibold text-gray-800">Thông tin ảnh</legend>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Năm</label>
-                <input type="number" name="year" value={v.year ?? ""}
-                  class="h-10 w-full rounded-lg border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
-              </div>
-              <div>
-                <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Ngày</label>
-                <input type="text" name="date" value={v.date ?? ""} placeholder="YYYY-MM-DD"
-                  class="h-10 w-full rounded-lg border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
-              </div>
-            </div>
-            <div>
-              <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Địa điểm chụp</label>
-              <input type="text" name="location" value={v.location ?? ""}
-                class="h-10 w-full rounded-lg border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
-            </div>
-            <div>
-              <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Album / sự kiện</label>
-              <input type="text" name="album" value={v.album ?? ""}
-                class="h-10 w-full rounded-lg border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
-            </div>
-            <div>
-              <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">Tags (CSV)</label>
-              <input type="text" name="tags" value={tagsCsv} placeholder="tết, đám-cưới, 2024"
-                class="h-10 w-full rounded-lg border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10" />
-              <p class="mt-1 text-theme-xs text-gray-500">Tag cách nhau bằng dấu phẩy. Dùng để lọc ở thư viện.</p>
-            </div>
-            <label class="flex items-center gap-2 text-theme-sm text-gray-700">
-              <input type="checkbox" name="featured" value="1" checked={v.featured}
-                class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500/20" />
-              Ảnh nổi bật (xếp đầu)
-            </label>
-          </fieldset>
-
-          <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
-            <legend class="px-2 text-theme-sm font-semibold text-gray-800">Thành viên trong ảnh</legend>
-            <MemberPicker name="members" label="" refs={refs} selected={selectedMembers}
-              hint="Tích chọn ai có mặt trong ảnh." />
-            {linkedMembers.length > 0 && (
-              <p class="mt-3 text-theme-xs text-gray-500">
-                Hiện liên kết với: {linkedMembers.map((m) => m.name).join(", ")}
-              </p>
-            )}
-          </fieldset>
-
-          <button type="submit" class="block w-full rounded-lg bg-brand-500 px-5 py-2.5 text-theme-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">
-            Lưu thay đổi
-          </button>
-        </form>
-
-        <form method="post" onsubmit="return confirm('Xóa ảnh này? Tất cả liên kết với thành viên / sự kiện cũng bị gỡ.');"
-          class="rounded-2xl border border-error-100 bg-error-50 p-4">
-          <input type="hidden" name="action" value="delete" />
-          <button type="submit" class="block w-full rounded-lg border border-error-200 bg-white px-4 py-2 text-theme-sm font-medium text-error-700 hover:bg-error-50">
-            Xóa ảnh
-          </button>
-          <p class="mt-2 text-theme-xs text-error-600">
-            Xóa cả file gốc + các phiên bản (thumb/medium) khỏi Storage.
-          </p>
-        </form>
-      </aside>
+      <!-- Sidebar: tabbed metadata island (shadcn Tabs + Cards). -->
+      <MediaDetailSidebar
+        client:load
+        photo={sidebarPhoto}
+        members={refs}
+        selectedMembers={selectedMembers}
+      />
     </div>
   </div>
 </AdminLayout>
