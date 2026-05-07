@@ -47,30 +47,18 @@ const mapsLink = `https://www.google.com/maps?q=${loc.coords.lat},${loc.coords.l
     </p>
   )}
 
-  <dl class="grid grid-cols-2 gap-3 m-0 p-3 bg-paper-2/60 rounded-md border border-line">
-    <div class="flex flex-col gap-0.5">
-      <dt
-        class="text-gold-2 uppercase font-semibold"
-        style="font-size: var(--text-2xs); letter-spacing: var(--tracking-wide);"
-      >
-        Tọa độ
-      </dt>
-      <dd class="m-0">
-        <code class="font-mono text-ink tabular-nums" style="font-size: var(--text-sm);">
-          {loc.coords.lat.toFixed(4)}, {loc.coords.lng.toFixed(4)}
-        </code>
-      </dd>
-    </div>
-    <div class="flex flex-col gap-0.5">
-      <dt
-        class="text-gold-2 uppercase font-semibold"
-        style="font-size: var(--text-2xs); letter-spacing: var(--tracking-wide);"
-      >
-        Thành viên
-      </dt>
-      <dd class="m-0 font-semibold text-ink tabular-nums">{loc.members.length}</dd>
-    </div>
-  </dl>
+  <div
+    class="flex items-baseline gap-2 m-0 px-3 py-2 bg-paper-2/60 rounded-md border border-line"
+  >
+    <span
+      class="text-gold-2 uppercase font-semibold"
+      style="font-size: var(--text-2xs); letter-spacing: var(--tracking-wide);"
+    >
+      Thành viên
+    </span>
+    <span class="font-semibold text-ink tabular-nums">{loc.members.length}</span>
+    <span class="text-ink-3" style="font-size: var(--text-sm);">người gắn với nơi này</span>
+  </div>
 
   {memberNames.length > 0 && (
     <p class="text-ink-2 leading-snug" style="font-size: var(--text-sm);">

@@ -2,6 +2,7 @@
 export const prerender = false;
 import Base from "@/layouts/Base.astro";
 import BlossomDivider from "@/components/astro/BlossomDivider.astro";
+import Lotus from "@/components/astro/Lotus.astro";
 import MemberCard from "@/components/astro/MemberCard.astro";
 import QuoteCard from "@/components/astro/QuoteCard.astro";
 import { SITE } from "@/data/site";
@@ -32,25 +33,13 @@ const yearsSince = new Date().getFullYear() - SITE.established;
 
 <Base pageKey="home">
   <!-- ─── HERO ────────────────────────────────────────────────
-       Calligraphic 族 anchor + brand name + motto. Single dramatic
-       column. No stats, no English subtitle dance. -->
+       Lotus motif anchor + brand name + motto. Single dramatic
+       centered column with stats line. -->
   <section class="relative overflow-hidden u-paper-texture">
     <div class="max-w-[880px] mx-auto px-5 pt-20 pb-16 md:pt-28 md:pb-20 text-center">
-      <!-- Calligraphic seal — the dominant visual element -->
-      <div class="relative inline-block mb-8">
-        <span
-          aria-hidden="true"
-          class="block font-display font-bold text-vermilion select-none"
-          style="font-size: clamp(8rem, 18vw, 13rem); line-height: 0.9; letter-spacing: -0.04em;"
-        >
-          族
-        </span>
-        <!-- Subtle ornamental ring around the calligraphy -->
-        <span
-          aria-hidden="true"
-          class="absolute inset-0 m-auto block rounded-full border border-gold-2/30"
-          style="width: 75%; height: 75%; top: 12%;"
-        ></span>
+      <!-- Lotus seal — Vietnamese cultural motif as the visual anchor -->
+      <div class="relative inline-block mb-6">
+        <Lotus size={140} ring />
       </div>
 
       <p class="text-xs tracking-wider uppercase font-semibold text-gold-2 mb-3">

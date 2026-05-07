@@ -262,12 +262,17 @@ h1, h2, h3, h4 {
 
 p { margin: 0; line-height: 1.6; }
 
-a {
-  color: var(--color-ink-2);
-  text-decoration: none;
-  transition: color 160ms ease;
+@layer base {
+  /* Default anchor styles for content links. Wrapped in @layer base so
+     utility-layer button classes (.u-btn-primary etc.) can override
+     hover color without specificity gymnastics. */
+  a {
+    color: var(--color-ink-2);
+    text-decoration: none;
+    transition: color 160ms ease;
+  }
+  a:hover { color: var(--color-vermilion); }
 }
-a:hover { color: var(--color-vermilion); }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {

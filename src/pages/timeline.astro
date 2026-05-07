@@ -32,21 +32,23 @@ const memberIndex = new Map(
         </p>
       </div>
     ) : (
-      <ol class="list-none m-0 p-0 relative">
-        <!-- Center spine — gold gradient that fades at top/bottom -->
+      <ol class="list-none m-0 p-0 relative pt-12 pb-12">
+        <!-- Center spine — gold gradient that fades at top/bottom.
+             Ends short of the blossoms (top-10 / bottom-10) so the
+             line doesn't visually pass through the flower. -->
         <span
           aria-hidden="true"
-          class="absolute left-14 top-0 bottom-0 w-px mobile:left-6"
-          style="background: linear-gradient(to bottom, transparent 0, var(--color-gold-2) 60px, var(--color-gold-2) calc(100% - 60px), transparent 100%);"
+          class="absolute left-14 w-px mobile:left-6"
+          style="top: 2.75rem; bottom: 2.75rem; background: linear-gradient(to bottom, transparent 0, var(--color-gold-2) 24px, var(--color-gold-2) calc(100% - 24px), transparent 100%);"
         ></span>
-        <!-- Top + bottom blossom anchors -->
+        <!-- Top + bottom blossom anchors with breathing room -->
         <span
           aria-hidden="true"
-          class="absolute left-14 -translate-x-1/2 -top-1 text-vermilion text-xl mobile:left-6"
+          class="absolute left-14 -translate-x-1/2 top-2 text-vermilion text-2xl mobile:left-6"
         >❀</span>
         <span
           aria-hidden="true"
-          class="absolute left-14 -translate-x-1/2 -bottom-1 text-vermilion text-xl mobile:left-6"
+          class="absolute left-14 -translate-x-1/2 bottom-2 text-vermilion text-2xl mobile:left-6"
         >❀</span>
 
         {events.map((e) => {
