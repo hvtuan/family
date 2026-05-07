@@ -1,5 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
+import TraditionsList, { type TraditionRow } from "@/components/admin/TraditionsList.tsx";
+import ToastBanner from "@/components/admin/ToastBanner.tsx";
 import { listTraditions, deleteTradition } from "@/lib/traditions-admin";
 
 export const prerender = false;
@@ -20,70 +22,36 @@ if (Astro.request.method === "POST") {
 }
 
 const rows = await listTraditions();
-
-const catLabel: Record<string, string> = {
-  food: "Ẩm thực",
-  festival: "Lễ hội",
-  ceremony: "Nghi lễ",
-  craft: "Nghề",
-};
+const items: TraditionRow[] = rows.map((t) => ({
+  id: t.id,
+  name: t.name,
+  name_en: t.name_en,
+  category: t.category,
+  icon: t.icon,
+  image: t.image ?? null,
+  tags: Array.isArray(t.tags) ? (t.tags as string[]) : [],
+}));
 ---
 
 <AdminLayout title="Truyền thống" crumbs={[{ label: "Truyền thống" }]}>
-  <div class="space-y-6">
-    {banner && (
-      <div class:list={[
-        "rounded-lg border px-4 py-3 text-theme-sm",
-        banner.kind === "ok"
-          ? "border-success-100 bg-success-50 text-success-700"
-          : "border-error-100 bg-error-50 text-error-700",
-      ]}>{banner.text}</div>
-    )}
+  {banner && <ToastBanner client:load kind={banner.kind} text={banner.text} />}
 
-    <section class="rounded-2xl border border-gray-200 bg-white shadow-theme-xs">
-      <header class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-        <h2 class="text-theme-sm font-semibold text-gray-800">Truyền thống ({rows.length})</h2>
-        <a href="/admin/traditions/new" class="rounded-lg bg-brand-500 px-4 py-2 text-theme-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">+ Tạo mới</a>
-      </header>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-theme-sm">
-          <thead class="bg-gray-50 text-theme-xs uppercase text-gray-500">
-            <tr>
-              <th class="px-5 py-3 font-medium">Tên</th>
-              <th class="px-5 py-3 font-medium">Danh mục</th>
-              <th class="px-5 py-3 font-medium">Icon</th>
-              <th class="px-5 py-3 font-medium">Tags</th>
-              <th class="px-5 py-3 font-medium text-right">Hành động</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            {rows.length === 0 && (
-              <tr><td colspan="5" class="px-5 py-8 text-center text-gray-500">Chưa có truyền thống nào.</td></tr>
-            )}
-            {rows.map((t) => (
-              <tr class="hover:bg-gray-50">
-                <td class="px-5 py-3">
-                  <div class="font-medium text-gray-800">{t.name}</div>
-                  <div class="text-theme-xs text-gray-500">{t.name_en}</div>
-                </td>
-                <td class="px-5 py-3 text-gray-700">{catLabel[t.category] ?? t.category}</td>
-                <td class="px-5 py-3 text-gray-700">{t.icon}</td>
-                <td class="px-5 py-3 text-theme-xs text-gray-500">{t.tags.join(", ") || "—"}</td>
-                <td class="px-5 py-3 text-right">
-                  <div class="flex justify-end gap-2">
-                    <a href={`/admin/traditions/${t.id}`} class="rounded-md border border-gray-200 px-3 py-1 text-theme-xs font-medium text-gray-700 hover:bg-gray-50">Sửa</a>
-                    <form method="post" class="inline" onsubmit={`return confirm('Xóa ${t.name}?');`}>
-                      <input type="hidden" name="action" value="delete" />
-                      <input type="hidden" name="id" value={t.id} />
-                      <button type="submit" class="rounded-md border border-error-100 px-3 py-1 text-theme-xs font-medium text-error-700 hover:bg-error-50">Xóa</button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+  <div class="space-y-6">
+    <header class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <h1 class="text-xl font-semibold text-foreground">Truyền thống gia tộc</h1>
+        <p class="mt-0.5 text-sm text-muted-foreground">
+          Món ăn, lễ hội, nghi lễ, nghề — những giá trị văn hóa của gia tộc.
+        </p>
       </div>
-    </section>
+      <a
+        href="/admin/traditions/new"
+        class="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-theme-xs hover:bg-brand-600"
+      >
+        + Tạo mới
+      </a>
+    </header>
+
+    <TraditionsList client:load items={items} />
   </div>
 </AdminLayout>

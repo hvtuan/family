@@ -1,19 +1,21 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
+import DashboardHero from "@/components/admin/DashboardHero.tsx";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const prerender = false;
 
 const tables = [
-  { id: "members", label: "Thành viên", href: "/admin/members" },
-  { id: "timeline", label: "Niên đại", href: "/admin/timeline" },
-  { id: "traditions", label: "Truyền thống", href: "/admin/traditions" },
-  { id: "photos", label: "Ảnh", href: "/admin/photos" },
-  { id: "quotes", label: "Câu nói", href: "/admin/quotes" },
-  { id: "dates", label: "Ngày lễ", href: "/admin/dates" },
-  { id: "locations", label: "Địa điểm", href: "/admin/locations" },
+  { id: "members", label: "Thành viên", href: "/admin/members", iconKey: "users" },
+  { id: "timeline", label: "Niên đại", href: "/admin/timeline", iconKey: "calendar" },
+  { id: "traditions", label: "Truyền thống", href: "/admin/traditions", iconKey: "scroll" },
+  { id: "photos", label: "Thư viện", href: "/admin/media", iconKey: "image" },
+  { id: "quotes", label: "Câu nói", href: "/admin/quotes", iconKey: "quote" },
+  { id: "dates", label: "Ngày lễ", href: "/admin/dates", iconKey: "calendarDays" },
+  { id: "locations", label: "Địa điểm", href: "/admin/locations", iconKey: "map" },
 ] as const;
 
+// Counts per content table.
 const counts = await Promise.all(
   tables.map(async (t) => {
     const { count } = await supabaseAdmin
@@ -23,62 +25,58 @@ const counts = await Promise.all(
   }),
 );
 
+// Pending users (admin-only). Falls back to 0.
 const { count: pendingCount } = await supabaseAdmin
   .from("app_users")
   .select("*", { count: "exact", head: true })
   .eq("status", "pending");
 
-const isAdmin = Astro.locals.user?.role === "admin";
+// Last 8 audit log entries — joined with app_users via actor_id when set.
+const { data: auditRows } = await supabaseAdmin
+  .from("audit_log")
+  .select("id, action, entity_type, entity_id, actor_id, created_at")
+  .order("created_at", { ascending: false })
+  .limit(8);
+
+// Last 6 photos by created_at (will become media gallery on dashboard).
+const { data: recentMedia } = await supabaseAdmin
+  .from("photos")
+  .select("id, kind, src, src_thumb, alt_vi, caption, year, created_at")
+  .order("created_at", { ascending: false })
+  .limit(6);
+
+const user = Astro.locals.user!;
+const isAdmin = user.role === "admin";
 ---
 
 <AdminLayout title="Tổng quan">
-  <div class="space-y-6">
-    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 xl:grid-cols-4">
-      {counts.map((t) => (
-        <a
-          href={t.href}
-          class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs transition-shadow hover:shadow-theme-sm"
-        >
-          <div class="mt-2 flex items-end justify-between">
-            <div>
-              <span class="text-theme-sm text-gray-500">{t.label}</span>
-              <h4 class="mt-1 font-bold text-gray-800 text-title-sm">{t.count}</h4>
-            </div>
-            <span class="rounded-md bg-brand-50 px-2 py-1 text-theme-xs font-medium text-brand-600">
-              Tổng
-            </span>
-          </div>
-        </a>
-      ))}
-    </div>
-
-    {isAdmin && (
-      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <a
-          href="/admin/users"
-          class="rounded-2xl border border-warning-100 bg-warning-50 p-5 transition-shadow hover:shadow-theme-sm"
-        >
-          <div class="flex items-end justify-between">
-            <div>
-              <span class="text-theme-sm text-warning-600">Người dùng chờ duyệt</span>
-              <h4 class="mt-1 font-bold text-gray-800 text-title-sm">{pendingCount ?? 0}</h4>
-            </div>
-            <span class="rounded-md bg-warning-100 px-2 py-1 text-theme-xs font-medium text-warning-600">
-              Cần xử lý
-            </span>
-          </div>
-        </a>
-
-        <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
-          <h3 class="text-theme-sm font-semibold text-gray-800">Cập nhật tức thời</h3>
-          <p class="mt-1 text-theme-xs text-gray-500 leading-relaxed">
-            Trang công khai
-            <a href="https://family.huynhvantuan.net" class="text-brand-500 hover:text-brand-600">family.huynhvantuan.net</a>
-            đang chạy SSR — mọi thay đổi ở admin xuất hiện ngay khi anh refresh trang đó.
-            Không cần build lại.
-          </p>
-        </div>
-      </div>
-    )}
-  </div>
+  <DashboardHero
+    client:load
+    userEmail={user.email}
+    userRole={user.role}
+    stats={counts.map((c) => ({
+      key: c.id,
+      label: c.label,
+      href: c.href,
+      count: c.count,
+      iconKey: c.iconKey,
+    }))}
+    pendingUsers={isAdmin ? (pendingCount ?? 0) : null}
+    recentAudit={(auditRows ?? []).map((r) => ({
+      id: r.id as number,
+      action: r.action as string,
+      entity_type: r.entity_type as string,
+      entity_id: (r.entity_id as string | null) ?? null,
+      created_at: r.created_at as string,
+    }))}
+    recentMedia={(recentMedia ?? []).map((m) => ({
+      id: m.id as string,
+      kind: ((m.kind as string) ?? "image") as "image" | "video",
+      src: m.src as string,
+      src_thumb: (m.src_thumb as string | null) ?? null,
+      alt_vi: (m.alt_vi as string | null) ?? null,
+      caption: (m.caption as string) ?? "",
+      year: (m.year as number | null) ?? null,
+    }))}
+  />
 </AdminLayout>
