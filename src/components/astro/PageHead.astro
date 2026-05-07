@@ -5,9 +5,17 @@ interface Props {
   subtitle?: string;
   subtitleEn?: string;
   align?: "center" | "left";
+  /** Optional motif slot rendered above the kicker. */
+  motif?: "lotus" | "blossom" | "vietnam" | null;
 }
 
-const { kicker, title, subtitle, subtitleEn, align = "center" } = Astro.props;
+const {
+  kicker,
+  title,
+  subtitle,
+  subtitleEn,
+  align = "center",
+} = Astro.props;
 const alignClasses =
   align === "left"
     ? "text-left items-start"
@@ -16,25 +24,35 @@ const alignClasses =
 
 <header
   class:list={[
-    "max-w-[1240px] mx-auto px-5 pt-12 pb-6 flex flex-col gap-1.5",
+    "max-w-[1240px] mx-auto px-5 pt-16 pb-8 flex flex-col gap-2",
     alignClasses,
   ]}
 >
   {kicker && <p class="u-kicker">{kicker}</p>}
-  <h1 class="text-[clamp(2rem,5vw,3.4rem)] leading-[1.1] text-ink">{title}</h1>
-  {
-    subtitle && (
-      <p class="text-ink-2 text-[1.05rem] max-w-[60ch]">{subtitle}</p>
-    )
-  }
-  {
-    subtitleEn && (
-      <p
-        class="text-ink-3 text-[0.78rem] tracking-[0.18em] uppercase max-w-[70ch]"
-        lang="en"
-      >
-        {subtitleEn}
-      </p>
-    )
-  }
+  <h1
+    class="font-display font-bold leading-[1.1] tracking-tight text-ink m-0"
+    style="font-size: var(--text-4xl);"
+  >
+    {title}
+  </h1>
+  {subtitle && (
+    <p class="text-lg text-ink-2 max-w-[60ch] leading-relaxed m-0 mt-1">
+      {subtitle}
+    </p>
+  )}
+  {subtitleEn && (
+    <p
+      class="text-2xs tracking-wider uppercase text-ink-3 max-w-[70ch] m-0"
+      lang="en"
+    >
+      {subtitleEn}
+    </p>
+  )}
+
+  <!-- Decorative under-line: short gold rule + blossom -->
+  <div class="mt-4 flex items-center gap-2.5" aria-hidden="true">
+    <span class="h-px w-10 bg-gold-2/60"></span>
+    <span class="text-vermilion text-base">❀</span>
+    <span class="h-px w-10 bg-gold-2/60"></span>
+  </div>
 </header>

@@ -43,6 +43,40 @@
   /* === Custom animations (used by MemberModal Radix Dialog) === */
   --animate-mm-fade: mm-fade-in 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --animate-mm-slide: mm-slide-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* ============================================================
+   Design system: type / tracking / spacing / radius
+   ============================================================ */
+
+  /* Type scale — 10 sizes for the public site. Replaces the ~12
+     arbitrary text-[0.X]rem values that were sprinkled across pages. */
+  --text-2xs: 0.6875rem;   /* 11px — tiny meta / monospace */
+  --text-xs: 0.78rem;      /* 12.5px — kicker, captions */
+  --text-sm: 0.875rem;     /* 14px — secondary text */
+  --text-base: 1rem;       /* 16px — body */
+  --text-lg: 1.125rem;     /* 18px — emphasized body / sub-heading */
+  --text-xl: 1.35rem;      /* 21.6px — small heading */
+  --text-2xl: 1.625rem;    /* 26px — card heading */
+  --text-3xl: 2.125rem;    /* 34px — section heading */
+  --text-4xl: 2.75rem;     /* 44px — page heading */
+  --text-5xl: 3.5rem;      /* 56px — hero */
+  --text-6xl: clamp(3rem, 8vw, 5.5rem); /* responsive hero display */
+
+  /* Letter-spacing scale — was 6 arbitrary values, now 4 */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.16em;
+  --tracking-wider: 0.22em;
+
+  /* Section spacing — 3 levels for vertical rhythm */
+  --space-section-sm: 2.5rem;  /* 40px */
+  --space-section: 4rem;       /* 64px */
+  --space-section-lg: 6rem;    /* 96px */
+
+  /* Border radius — 3 levels (was 7+) */
+  --radius-sm: 0.5rem;     /* 8px — pills, small chips */
+  --radius-md: 0.875rem;   /* 14px — cards (matches existing u-card) */
+  --radius-lg: 1.25rem;    /* 20px — large feature cards */
 }
 
 @keyframes mm-fade-in {
@@ -332,4 +366,123 @@ a:hover { color: var(--color-vermilion); }
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
   }
+
+  /* ─── Button system (public) ────────────────────────────────────
+     3 variants × 2 sizes. Use on <a>/<button> for consistent CTAs.
+     Replaces ad-hoc rounded-full / rounded-lg button classes that
+     varied page-by-page. */
+  .u-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.125rem;
+    border-radius: 999px;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1;
+    text-decoration: none;
+    transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease, color 150ms ease, border-color 150ms ease;
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .u-btn:hover { transform: translateY(-1px); }
+  .u-btn:focus-visible {
+    outline: 2px solid var(--color-gold-2);
+    outline-offset: 2px;
+  }
+
+  .u-btn-primary {
+    background: var(--color-vermilion);
+    color: var(--color-paper);
+    box-shadow: var(--shadow-paper-1);
+  }
+  .u-btn-primary:hover {
+    background: var(--color-vermilion-2);
+    color: var(--color-paper);
+    box-shadow: var(--shadow-paper-2);
+  }
+
+  .u-btn-secondary {
+    background: var(--color-paper-2);
+    color: var(--color-ink);
+    border-color: var(--color-line-strong);
+  }
+  .u-btn-secondary:hover {
+    background: var(--color-paper-3);
+    color: var(--color-ink);
+  }
+
+  .u-btn-ghost {
+    background: transparent;
+    color: var(--color-ink-2);
+    border-color: var(--color-line);
+  }
+  .u-btn-ghost:hover {
+    background: var(--color-paper-2);
+    color: var(--color-ink);
+  }
+
+  .u-btn-sm {
+    padding: 0.4rem 0.85rem;
+    font-size: 0.82rem;
+  }
+
+  .u-btn-lg {
+    padding: 0.85rem 1.5rem;
+    font-size: 1.025rem;
+  }
+
+  /* ─── Drop cap — first letter of bio paragraphs ─────────────── */
+  .u-drop-cap::first-letter {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 3.4em;
+    line-height: 1;
+    float: left;
+    padding: 0.05em 0.18em 0 0;
+    color: var(--color-vermilion);
+  }
+
+  /* ─── Decorative corner accents ─────────────────────────────── */
+  .u-corner-frame {
+    position: relative;
+  }
+  .u-corner-frame::before,
+  .u-corner-frame::after {
+    content: "";
+    position: absolute;
+    width: 1.2rem;
+    height: 1.2rem;
+    border: 2px solid var(--color-gold-2);
+    pointer-events: none;
+    opacity: 0.6;
+  }
+  .u-corner-frame::before {
+    top: 0.5rem;
+    left: 0.5rem;
+    border-right: none;
+    border-bottom: none;
+  }
+  .u-corner-frame::after {
+    bottom: 0.5rem;
+    right: 0.5rem;
+    border-left: none;
+    border-top: none;
+  }
+
+  /* ─── Subtle paper texture overlay ──────────────────────────── */
+  .u-paper-texture {
+    background-image:
+      repeating-linear-gradient(45deg, transparent 0, transparent 22px, rgba(168, 133, 63, 0.025) 22px, rgba(168, 133, 63, 0.025) 23px),
+      radial-gradient(ellipse at top left, rgba(201, 163, 90, 0.08), transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(139, 42, 31, 0.04), transparent 60%);
+  }
+
+  /* ─── Section spacing helpers ────────────────────────────────── */
+  .u-section { padding-top: var(--space-section); padding-bottom: var(--space-section); }
+  .u-section-sm { padding-top: var(--space-section-sm); padding-bottom: var(--space-section-sm); }
+  .u-section-lg { padding-top: var(--space-section-lg); padding-bottom: var(--space-section-lg); }
 }

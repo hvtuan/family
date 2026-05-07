@@ -62,6 +62,9 @@ export type ClientMember = {
   /** Only present if frontmatter `contactPublic === true`. */
   contact?: ClientMemberContact;
 
+  /** Avatar URL (members.photo). Optional — falls back to initial. */
+  photo?: string;
+
   photos: ClientPhoto[];
 };
 
@@ -124,6 +127,8 @@ export function toClientMember(m: MemberEntry): ClientMember {
 
     pattern: d.pattern,
     tags: d.tags,
+
+    photo: d.photo,
 
     photos: d.photos.map((p) => ({
       src: p.src,

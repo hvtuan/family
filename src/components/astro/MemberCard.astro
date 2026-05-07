@@ -3,7 +3,7 @@ import type { ClientMember } from "@/lib/members-client";
 
 interface Props {
   member: ClientMember;
-  /** When true (default), render an <a> link to the member modal; otherwise a plain div. */
+  /** When true (default), render an <a> link to the member modal. */
   link?: boolean;
   /** Show tag chips beneath the bio. */
   showTags?: boolean;
@@ -11,9 +11,9 @@ interface Props {
 
 const { member: m, link = true, showTags = false } = Astro.props;
 
-function yearRange(m: ClientMember): string {
-  const b = m.born?.slice(0, 4);
-  const d = m.died?.slice(0, 4);
+function yearRange(member: ClientMember): string {
+  const b = member.born?.slice(0, 4);
+  const d = member.died?.slice(0, 4);
   if (!b) return "";
   return d ? `${b} – ${d}` : `${b} – nay`;
 }
@@ -21,50 +21,99 @@ function yearRange(m: ClientMember): string {
 const initial = m.name.split(" ").slice(-1)[0]?.charAt(0) ?? "?";
 const Tag = link ? "a" : "div";
 const tagProps = link ? { href: `/members?member=${m.id}` } : {};
+const yr = yearRange(m);
 ---
 
 <Tag
   {...tagProps}
   class:list={[
-    "u-card flex flex-col overflow-hidden text-ink no-underline transition-transform duration-150",
+    "u-card group flex flex-col overflow-hidden text-ink no-underline transition-all duration-200",
     link && "hover:-translate-y-0.5 hover:shadow-paper-2",
   ]}
   data-pattern={m.pattern}
 >
-  <div
-    class="h-[180px] flex items-center justify-center border-b border-line bg-paper-3 [background:radial-gradient(circle_at_30%_30%,rgba(201,163,90,0.25),transparent_60%),var(--color-paper-3)]"
-    aria-hidden="true"
-  >
-    <span class="font-display font-bold text-7xl text-vermilion opacity-85">
-      {initial}
-    </span>
-  </div>
-  <div class="p-5 flex flex-col gap-1.5 flex-1">
-    <p class="text-[0.7rem] tracking-[0.18em] uppercase text-gold-2">
-      Đời thứ {m.gen}
-      <span lang="en">· Gen {m.gen}</span>
-    </p>
-    <h3 class="font-display font-bold text-2xl m-0 leading-tight text-ink">{m.name}</h3>
-    <p class="text-[0.95rem] text-ink-2">{m.role}</p>
-    <p class="text-[0.82rem] text-ink-3 [font-feature-settings:'tnum'_1]">{yearRange(m)}</p>
-    <p class="text-[0.92rem] text-ink-2 leading-[1.55] mt-1">{m.bio}</p>
-    {
-      showTags && m.tags.length > 0 && (
-        <ul class="list-none m-0 p-0 flex flex-wrap gap-1 mt-2">
-          {m.tags.map((t) => (
-            <li class="font-mono text-[0.72rem] px-2 py-0.5 bg-paper-2 text-ink-2 rounded-full">
-              #{t}
-            </li>
-          ))}
-        </ul>
-      )
-    }
-    {
-      link && (
-        <span class="mt-auto pt-3 font-semibold text-vermilion text-[0.9rem]">
-          Xem chi tiết →
+  <!-- Portrait area: real photo when set, otherwise an initial-letter
+       seal on a textured paper background. Aspect 4:5 for a more
+       portrait-like, archival feel (vs the previous 16:9-ish 180px). -->
+  <div class="relative aspect-[4/5] overflow-hidden bg-paper-3" aria-hidden={!m.photo}>
+    {m.photo ? (
+      <>
+        <img
+          src={m.photo}
+          alt={m.name}
+          loading="lazy"
+          decoding="async"
+          class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+          style="filter: sepia(8%) saturate(0.92);"
+        />
+        <!-- Subtle vignette + bottom gradient for legibility of the role
+             hover label below the image edge. -->
+        <div
+          class="absolute inset-0 pointer-events-none"
+          style="box-shadow: inset 0 -40px 60px -30px rgba(26, 18, 10, 0.22);"
+        />
+      </>
+    ) : (
+      <div
+        class="absolute inset-0 flex items-center justify-center [background:radial-gradient(circle_at_30%_25%,rgba(201,163,90,0.30),transparent_60%),var(--color-paper-3)]"
+      >
+        <span
+          class="font-display font-bold text-ink/85"
+          style="font-size: clamp(3.5rem, 9vw, 5.25rem); line-height: 1;"
+        >
+          {initial}
         </span>
-      )
-    }
+      </div>
+    )}
+
+    <!-- Generation marker — small seal-style chip in upper-left -->
+    <span
+      class="absolute top-3 left-3 inline-flex flex-col items-center justify-center rounded-md border border-gold-2/60 bg-paper/85 px-2 py-1 backdrop-blur-sm leading-none"
+      title={`Đời ${m.gen}`}
+    >
+      <span class="text-[0.55rem] tracking-[0.18em] uppercase text-gold-2">Đời</span>
+      <span class="font-display font-bold text-base text-ink">{m.gen}</span>
+    </span>
+
+    {m.isFamilyHead && (
+      <span
+        class="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-vermilion/95 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-paper backdrop-blur-sm"
+        title="Tộc trưởng"
+      >
+        ★ Tộc trưởng
+      </span>
+    )}
+  </div>
+
+  <div class="p-5 flex flex-col gap-1.5 flex-1">
+    <h3 class="font-display font-bold text-2xl m-0 leading-tight text-ink">
+      {m.name}
+    </h3>
+    <p class="text-base text-ink-2">{m.role}</p>
+    {yr && (
+      <p class="text-xs text-ink-3 [font-feature-settings:'tnum'_1] tabular-nums">
+        {yr}
+      </p>
+    )}
+    {m.bio && (
+      <p class="text-sm text-ink-2 leading-relaxed mt-1 line-clamp-3">
+        {m.bio}
+      </p>
+    )}
+    {showTags && m.tags.length > 0 && (
+      <ul class="list-none m-0 p-0 flex flex-wrap gap-1 mt-2">
+        {m.tags.map((t) => (
+          <li class="font-mono text-2xs px-2 py-0.5 bg-paper-2 text-ink-2 rounded-full">
+            #{t}
+          </li>
+        ))}
+      </ul>
+    )}
+    {link && (
+      <span class="mt-auto pt-3 inline-flex items-center gap-1 text-sm font-semibold text-jade group-hover:text-vermilion transition-colors">
+        Xem chi tiết
+        <span aria-hidden="true" class="transition-transform group-hover:translate-x-0.5">→</span>
+      </span>
+    )}
   </div>
 </Tag>

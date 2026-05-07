@@ -123,17 +123,16 @@ const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
                   <li>
                     <a
                       href={link.href}
+                      title={link.en}
                       aria-current={active ? "page" : undefined}
                       class:list={[
-                        "inline-flex flex-col items-center px-2.5 py-1.5 rounded-lg leading-tight hover:bg-paper-2",
-                        active &&
-                          "bg-paper-2 [box-shadow:inset_0_-2px_0_var(--color-vermilion)]",
+                        "inline-flex items-center px-3 py-1.5 rounded-md text-sm transition-colors",
+                        active
+                          ? "bg-paper-2 text-ink [box-shadow:inset_0_-2px_0_var(--color-vermilion)]"
+                          : "text-ink-2 hover:bg-paper-2 hover:text-ink",
                       ]}
                     >
-                      <span class="text-[0.92rem] text-ink">{link.vi}</span>
-                      <span class="text-[0.62rem] tracking-[0.14em] uppercase text-ink-3">
-                        {link.en}
-                      </span>
+                      {link.vi}
                     </a>
                   </li>
                 );
@@ -157,24 +156,67 @@ const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
       googleMapsApiKey={googleMapsApiKey}
     />
 
-    <footer class="mt-16 border-t border-line bg-paper-2">
-      <div class="max-w-[1240px] mx-auto px-5 py-10 grid gap-3 text-center text-ink-2">
-        <div class="flex flex-col gap-1 text-2xl">
-          <span class="u-script">{SITE.motto}</span>
-          <span class="text-[0.78rem] tracking-[0.18em] uppercase text-ink-3">
-            {SITE.mottoEn}
-          </span>
+    <footer class="mt-24 border-t border-line bg-paper-2 u-paper-texture">
+      <div class="max-w-[1240px] mx-auto px-5 py-14">
+        <!-- Top: motto in script, centered, with blossom marks. -->
+        <div class="flex items-center justify-center gap-4 mb-10">
+          <span aria-hidden="true" class="h-px w-16 bg-line-strong"></span>
+          <span aria-hidden="true" class="text-vermilion text-xl">❀</span>
+          <p class="font-script italic text-2xl text-jade m-0">"{SITE.motto}"</p>
+          <span aria-hidden="true" class="text-vermilion text-xl">❀</span>
+          <span aria-hidden="true" class="h-px w-16 bg-line-strong"></span>
         </div>
-        <div class="inline-flex gap-2 justify-center flex-wrap text-ink-3 text-[0.85rem]">
-          <span>{SITE.hometown}</span>
-          <span aria-hidden="true">•</span>
-          <span>Thành lập {SITE.established}</span>
+
+        <!-- 3-col grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 text-center sm:text-left">
+          <!-- Brand -->
+          <div class="flex flex-col items-center sm:items-start gap-3">
+            <span class="inline-flex items-center justify-center w-14 h-14 rounded-md border-2 border-vermilion text-vermilion bg-vermilion/[0.04] font-display font-bold text-xs tracking-wider">
+              {SITE.monogram}
+            </span>
+            <div>
+              <p class="font-display font-bold text-lg text-ink m-0 leading-tight">
+                {SITE.brand.vi}
+              </p>
+              <p class="text-2xs tracking-wider uppercase text-ink-3 mt-1" lang="en">
+                {SITE.brand.en}
+              </p>
+            </div>
+          </div>
+
+          <!-- Place -->
+          <div class="flex flex-col items-center sm:items-start gap-2">
+            <p class="u-kicker">Quê hương</p>
+            <p class="text-base text-ink leading-relaxed m-0">
+              {SITE.hometown}
+            </p>
+            <p class="text-sm text-ink-3 tabular-nums m-0">
+              Thành lập năm <span class="text-ink font-semibold">{SITE.established}</span>
+            </p>
+          </div>
+
+          <!-- Nav columns -->
+          <div class="flex flex-col items-center sm:items-start gap-2">
+            <p class="u-kicker">Liên kết</p>
+            <ul class="list-none m-0 p-0 flex flex-col gap-1.5 text-sm">
+              <li><a href="/family-tree" class="text-ink-2 hover:text-vermilion">Cây gia phả</a></li>
+              <li><a href="/members" class="text-ink-2 hover:text-vermilion">Thành viên</a></li>
+              <li><a href="/album" class="text-ink-2 hover:text-vermilion">Album</a></li>
+              <li><a href="/timeline" class="text-ink-2 hover:text-vermilion">Mốc thời gian</a></li>
+              <li><a href="/admin/login" class="text-ink-3 hover:text-vermilion text-xs">· Admin</a></li>
+            </ul>
+          </div>
         </div>
-        <p class="text-[0.72rem] text-ink-3 opacity-85">
-          Trang gia phả riêng tư — không công khai chỉ mục.
-          <br />
-          <span lang="en">Private genealogy site — not indexed.</span>
-        </p>
+
+        <!-- Bottom: privacy note -->
+        <div class="mt-12 pt-6 border-t border-line text-center">
+          <p class="text-2xs tracking-wider uppercase text-ink-3 opacity-90 m-0">
+            Trang gia phả riêng tư — không công khai chỉ mục
+          </p>
+          <p class="text-2xs text-ink-3 opacity-60 mt-1" lang="en">
+            Private genealogy site, not indexed
+          </p>
+        </div>
       </div>
     </footer>
   </body>

@@ -2,7 +2,6 @@
 export const prerender = false;
 import Base from "@/layouts/Base.astro";
 import BlossomDivider from "@/components/astro/BlossomDivider.astro";
-import Stamp from "@/components/astro/Stamp.astro";
 import MemberCard from "@/components/astro/MemberCard.astro";
 import QuoteCard from "@/components/astro/QuoteCard.astro";
 import { SITE } from "@/data/site";
@@ -28,85 +27,94 @@ const featuredMembers = clientMembers
   .slice(0, 3);
 
 const generations = new Set(clientMembers.map((m) => m.gen)).size;
-const stats = [
-  { label: "Thành viên", labelEn: "Members", value: clientMembers.length },
-  { label: "Thế hệ", labelEn: "Generations", value: generations },
-  { label: "Kỷ niệm", labelEn: "Milestones", value: timeline.length },
-  { label: "Năm khởi tổ", labelEn: "Established", value: SITE.established },
-];
+const yearsSince = new Date().getFullYear() - SITE.established;
 ---
 
 <Base pageKey="home">
-  <section class="max-w-[1240px] mx-auto px-5 pt-16 pb-10">
-    <div class="flex flex-col gap-5 items-center text-center">
-      <p class="u-kicker">Gia phả • Genealogy</p>
-      <h1 class="flex flex-col gap-1">
-        <span class="font-display font-bold text-[clamp(2.4rem,6vw,4.5rem)] leading-[1.05] tracking-[-0.02em] text-ink">
-          {SITE.brand.vi}
+  <!-- ─── HERO ────────────────────────────────────────────────
+       Calligraphic 族 anchor + brand name + motto. Single dramatic
+       column. No stats, no English subtitle dance. -->
+  <section class="relative overflow-hidden u-paper-texture">
+    <div class="max-w-[880px] mx-auto px-5 pt-20 pb-16 md:pt-28 md:pb-20 text-center">
+      <!-- Calligraphic seal — the dominant visual element -->
+      <div class="relative inline-block mb-8">
+        <span
+          aria-hidden="true"
+          class="block font-display font-bold text-vermilion select-none"
+          style="font-size: clamp(8rem, 18vw, 13rem); line-height: 0.9; letter-spacing: -0.04em;"
+        >
+          族
         </span>
-        <span class="text-[0.85rem] tracking-[0.3em] uppercase text-ink-3">
-          {SITE.brand.en}
-        </span>
-      </h1>
-      <p class="text-[1.05rem] text-ink-2">
-        {SITE.hometown} • <span lang="en">{SITE.hometownEn}</span>
+        <!-- Subtle ornamental ring around the calligraphy -->
+        <span
+          aria-hidden="true"
+          class="absolute inset-0 m-auto block rounded-full border border-gold-2/30"
+          style="width: 75%; height: 75%; top: 12%;"
+        ></span>
+      </div>
+
+      <p class="text-xs tracking-wider uppercase font-semibold text-gold-2 mb-3">
+        {SITE.brand.en}
       </p>
-      <div class="flex gap-6 items-center mt-4 flex-wrap justify-center">
-        <Stamp text={SITE.monogram} />
-        <div class="flex flex-col gap-1 text-2xl text-left">
-          <span class="u-script">{SITE.motto}</span>
-          <span class="text-[0.7rem] tracking-[0.2em] uppercase text-ink-3">
-            {SITE.mottoEn}
-          </span>
-        </div>
+
+      <h1 class="font-display font-bold leading-[1.05] tracking-tight text-ink m-0">
+        <span style="font-size: var(--text-6xl);">{SITE.brand.vi}</span>
+      </h1>
+
+      <p class="mt-4 text-lg text-ink-2 leading-relaxed">
+        {SITE.hometown}
+      </p>
+
+      <!-- Motto in script — restrained, single line, jade not vermilion -->
+      <p class="mt-8 font-script italic text-2xl text-jade">
+        "{SITE.motto}"
+      </p>
+
+      <!-- Inline stats line — heritage tone, not dashboard -->
+      <p class="mt-10 text-sm text-ink-3 tabular-nums">
+        <span class="text-ink font-semibold">{clientMembers.length}</span> thành viên
+        <span class="mx-2 text-line-strong">·</span>
+        <span class="text-ink font-semibold">{generations}</span> thế hệ
+        <span class="mx-2 text-line-strong">·</span>
+        <span class="text-ink font-semibold">{timeline.length}</span> dấu mốc
+        <span class="mx-2 text-line-strong">·</span>
+        từ năm <span class="text-ink font-semibold">{SITE.established}</span>
+        <span class="text-ink-3"> ({yearsSince} năm)</span>
+      </p>
+
+      <div class="mt-10 flex justify-center gap-3 flex-wrap">
+        <a href="/family-tree" class="u-btn u-btn-primary u-btn-lg">
+          Xem cây gia phả
+        </a>
+        <a href="/members" class="u-btn u-btn-secondary u-btn-lg">
+          Tất cả thành viên
+        </a>
       </div>
     </div>
   </section>
 
-  {
-    heroQuote && (
-      <section class="max-w-[720px] mx-auto px-5 py-6">
-        <QuoteCard
-          quote={heroQuote.data}
-          authorHref={heroAuthorRef ? `/members?member=${heroAuthorRef.id}` : undefined}
-          variant="compact"
-        />
-      </section>
-    )
-  }
-
-  <section class="max-w-[1240px] mx-auto px-5 py-6">
-    <div class="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3">
-      {
-        stats.map((s) => (
-          <div class="bg-paper-2 border border-line rounded-xl p-5 text-center">
-            <div class="font-display font-bold text-[2.2rem] text-vermilion leading-none">
-              {s.value}
-            </div>
-            <div class="mt-2 text-[0.92rem] text-ink">{s.label}</div>
-            <div lang="en" class="text-[0.65rem] tracking-[0.16em] uppercase text-ink-3">
-              {s.labelEn}
-            </div>
-          </div>
-        ))
-      }
-    </div>
-  </section>
+  {heroQuote && (
+    <section class="max-w-[720px] mx-auto px-5 py-12">
+      <QuoteCard
+        quote={heroQuote.data}
+        authorHref={heroAuthorRef ? `/members?member=${heroAuthorRef.id}` : undefined}
+        variant="compact"
+      />
+    </section>
+  )}
 
   <BlossomDivider />
 
-  <section class="max-w-[1240px] mx-auto px-5 pt-4 pb-16">
-    <header class="text-center mb-8">
-      <p class="u-kicker">Thành viên • Members</p>
-      <h2 class="text-[clamp(1.6rem,3vw,2.4rem)] my-2">
+  <!-- ─── FEATURED MEMBERS ─────────────────────────────────── -->
+  <section class="max-w-[1240px] mx-auto px-5 pt-6 pb-20">
+    <header class="text-center mb-10">
+      <p class="u-kicker">Members</p>
+      <h2 class="font-display font-bold text-ink m-0 mt-2 leading-tight" style="font-size: var(--text-3xl);">
         Những người dựng nên gia đình
       </h2>
-      <p class="text-[0.85rem] tracking-[0.16em] uppercase text-ink-3" lang="en">
-        The people who built our family
-      </p>
     </header>
 
-    <ul class="list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-5">
+    <ul class="list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {featuredMembers.map((m) => (
         <li>
           <MemberCard member={m} />
@@ -114,18 +122,9 @@ const stats = [
       ))}
     </ul>
 
-    <div class="flex justify-center gap-3 mt-10 flex-wrap">
-      <a
-        href="/members"
-        class="inline-flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-[0.95rem] bg-vermilion text-paper shadow-paper-1 transition-all duration-150 hover:-translate-y-px hover:shadow-paper-2 hover:text-paper"
-      >
-        Xem tất cả thành viên
-      </a>
-      <a
-        href="/family-tree"
-        class="inline-flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-[0.95rem] bg-paper-2 text-ink border border-line-strong hover:bg-paper-3 hover:text-ink"
-      >
-        Cây gia phả
+    <div class="flex justify-center gap-3 mt-12 flex-wrap">
+      <a href="/members" class="u-btn u-btn-primary">
+        Xem tất cả thành viên →
       </a>
     </div>
   </section>
