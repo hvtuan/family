@@ -141,6 +141,13 @@ export type PhotoData = {
   album?: string;
   featured: boolean;
   related: Ref[];
+  // media v2
+  kind?: "image" | "video";
+  thumb?: string;
+  poster?: string;
+  altVi?: string;
+  altEn?: string;
+  durationSeconds?: number;
 };
 
 export type PhotoEntry = { id: string; data: PhotoData };
@@ -366,25 +373,31 @@ export async function getMembers(
     fetchAllRows<{
       id: string;
       src: string;
+      src_thumb: string | null;
       caption: string;
       caption_en: string;
       year: number | null;
       featured: boolean;
-    }>("photos", "id, src, caption, caption_en, year, featured").then(
-      (list) => new Map(list.map((p) => [p.id, p])),
-    ),
+      kind: "image" | "video" | null;
+    }>(
+      "photos",
+      "id, src, src_thumb, caption, caption_en, year, featured, kind",
+    ).then((list) => new Map(list.map((p) => [p.id, p]))),
   ]);
   const all = rows.map((r) => {
     const linkedIds = (photosByMember.get(r.id) ?? []) as string[];
     const linked: LinkedPhoto[] = linkedIds
       .map((pid) => photoById.get(pid))
       .filter((p): p is NonNullable<typeof p> => Boolean(p))
+      // Per-member modal carousel is image-only; videos surface via the
+      // public /album page where the <video> element can render them.
+      .filter((p) => (p.kind ?? "image") === "image")
       .sort((a, b) => {
         if (a.featured !== b.featured) return a.featured ? -1 : 1;
         return (b.year ?? 0) - (a.year ?? 0);
       })
       .map((p) => ({
-        src: p.src,
+        src: p.src_thumb ?? p.src,
         caption: p.caption,
         captionEn: p.caption_en,
         year: p.year ?? undefined,
@@ -480,6 +493,13 @@ type PhotoRow = {
   location: string | null;
   album: string | null;
   featured: boolean;
+  // media v2
+  kind?: "image" | "video" | null;
+  src_thumb?: string | null;
+  src_medium?: string | null;
+  alt_vi?: string | null;
+  alt_en?: string | null;
+  duration_seconds?: number | null;
 };
 
 export async function getPhotos(): Promise<PhotoEntry[]> {
@@ -496,6 +516,12 @@ export async function getPhotos(): Promise<PhotoEntry[]> {
       location: row.location ?? undefined,
       album: row.album ?? undefined,
       featured: row.featured,
+      kind: row.kind ?? "image",
+      thumb: row.src_thumb ?? undefined,
+      poster: row.src_medium ?? undefined,
+      altVi: row.alt_vi ?? undefined,
+      altEn: row.alt_en ?? undefined,
+      durationSeconds: row.duration_seconds ?? undefined,
       related: (m2m.get(row.id) ?? []).map((id) => ({
         collection: "members",
         id,

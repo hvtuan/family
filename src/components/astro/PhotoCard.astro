@@ -6,18 +6,52 @@ interface Props {
 }
 
 const { photo: p } = Astro.props;
+const isVideo = p.kind === "video";
+
+// For images: use medium URL when present, fall back to original src.
+// For videos: use the original src on <video>; the poster comes from
+// `poster` (admin-side: src_medium) so the card is visually identical
+// to a photo card until the user hits play.
+const imgSrc = isVideo ? (p.poster ?? p.thumb ?? "") : (p.thumb ?? p.src);
+const altText = p.altVi ?? p.caption;
+
+function formatDuration(seconds?: number): string {
+  if (!seconds || !Number.isFinite(seconds) || seconds <= 0) return "";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+const dur = formatDuration(p.durationSeconds);
 ---
 
 <li class="">
   <figure class="m-0 bg-cream border border-line rounded-xl overflow-hidden shadow-paper-1">
-    <div class="aspect-[4/3] bg-paper-3">
-      <img
-        src={p.src}
-        alt={p.caption}
-        class="w-full h-full object-cover block"
-        loading="lazy"
-        decoding="async"
-      />
+    <div class="aspect-[4/3] bg-paper-3 relative">
+      {isVideo ? (
+        <video
+          src={p.src}
+          poster={imgSrc || undefined}
+          controls
+          preload="metadata"
+          playsinline
+          class="w-full h-full object-cover block bg-black"
+        >
+          {altText}
+        </video>
+      ) : (
+        <img
+          src={imgSrc}
+          alt={altText}
+          class="w-full h-full object-cover block"
+          loading="lazy"
+          decoding="async"
+        />
+      )}
+      {isVideo && dur && (
+        <span class="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[0.72rem] font-medium text-white tabular-nums">
+          {dur}
+        </span>
+      )}
     </div>
     <figcaption class="p-4 flex flex-col gap-0.5">
       <p>{p.caption}</p>

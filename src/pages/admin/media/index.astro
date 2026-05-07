@@ -340,6 +340,25 @@ function durationLabel(seconds?: number | null): string {
         if (files.length > 0) startUploads(files);
       });
 
+      // Clipboard paste — Cmd/Ctrl+V an image (e.g. screenshot) anywhere
+      // on the page triggers an upload. Skip if the focus is in a text
+      // input so we don't hijack normal pasting.
+      document.addEventListener("paste", (e) => {
+        const target = e.target;
+        if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+          return;
+        }
+        const items = Array.from(e.clipboardData?.items || []);
+        const fileItems = items.filter((it) => it.kind === "file");
+        const files = fileItems.map((it) => it.getAsFile()).filter(Boolean).filter((f) =>
+          f.type.startsWith("image/") || f.type.startsWith("video/")
+        );
+        if (files.length > 0) {
+          e.preventDefault();
+          startUploads(files);
+        }
+      });
+
       closeBtn?.addEventListener("click", () => {
         panel.classList.add("hidden");
         list.innerHTML = "";
