@@ -18,7 +18,8 @@
     "db:seed:dry": "node --env-file=.env.local scripts/migrate-content-to-db.mjs --dry-run",
     "db:seed": "node --env-file=.env.local scripts/migrate-content-to-db.mjs --apply",
     "admin:seed": "node --env-file=.env.local scripts/admin-seed.mjs",
-    "db:migrate-embedded": "node --env-file=.env.local scripts/migrate-embedded-photos.mjs"
+    "db:migrate-embedded": "node --env-file=.env.local scripts/migrate-embedded-photos.mjs",
+    "db:migrate-cover": "node --env-file=.env.local scripts/migrate-image-to-photo.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^10.0.6",
