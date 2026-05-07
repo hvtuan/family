@@ -3,25 +3,26 @@
  * Single-image attachment for forms where one record holds one image
  * URL — member avatar, timeline event image, tradition image.
  *
- * Renders:
- *   - a thumbnail of the current value (if any) so the admin sees what's
- *     already attached without leaving the page
- *   - a PhotoEditorInput (Cropper.js) for upload + crop/rotate/flip/resize
- *   - a collapsed <details> with a plain URL input for the case the
- *     admin wants to paste an external URL instead
+ * Renders three ways to set the URL:
+ *   1. "Chọn từ thư viện" — opens MediaPicker modal, on select fills
+ *      the URL input + updates the thumb in place.
+ *   2. PhotoEditorInput (Cropper.js) for a brand-new file upload.
+ *   3. Collapsed <details> with a plain URL input for external paste.
  *
  * Field naming convention so the page handler can disambiguate:
  *   - `<urlFieldName>`        the actual URL stored in the row
  *   - `<urlFieldName>_file`   the new file (if any) — page handler
  *                              uploads + overwrites the URL field
+ *
+ * The `data-attachment-*` data attributes let MediaPicker live-update
+ * the thumb + filename indicator after the user picks from library.
  */
 
 import PhotoEditorInput from "./PhotoEditorInput.astro";
+import MediaPicker from "./MediaPicker.astro";
 
 interface Props {
-  /** Form field name for the URL column (e.g. "photo", "image"). */
   urlFieldName: string;
-  /** Current value to render as a thumbnail + as the URL fallback default. */
   currentUrl?: string | null;
   label?: string;
   required?: boolean;
@@ -31,28 +32,48 @@ const { urlFieldName, currentUrl, label, required = false } = Astro.props;
 const fileFieldName = `${urlFieldName}_file`;
 ---
 
-<div class="space-y-3">
+<div class="space-y-3" data-attachment-input={urlFieldName}>
   {label && (
     <label class="block text-theme-sm font-medium text-gray-700">
       {label}
     </label>
   )}
 
-  {currentUrl && (
-    <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-      <img
-        src={currentUrl}
-        alt=""
-        class="h-20 w-20 rounded-md object-cover bg-white border border-gray-200"
-      />
-      <div class="min-w-0 flex-1">
-        <p class="text-theme-xs text-gray-500">Ảnh hiện tại</p>
-        <p class="text-theme-xs text-gray-400 truncate font-mono" title={currentUrl}>
-          {currentUrl.split("/").pop()}
-        </p>
-      </div>
+  <!-- "Filled" state: thumbnail + filename. Hidden when no current URL. -->
+  <div
+    data-attachment-filled
+    class:list={[
+      "flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3",
+      !currentUrl && "hidden",
+    ]}
+  >
+    <img
+      data-attachment-current
+      src={currentUrl ?? ""}
+      alt=""
+      class="h-20 w-20 rounded-md object-cover bg-white border border-gray-200"
+    />
+    <div class="min-w-0 flex-1">
+      <p class="text-theme-xs text-gray-500">Ảnh hiện tại</p>
+      <p data-attachment-name class="text-theme-xs text-gray-400 truncate font-mono">
+        {currentUrl ? currentUrl.split("/").pop() : ""}
+      </p>
     </div>
-  )}
+  </div>
+
+  <!-- "Empty" state hint. Shown when no URL yet. -->
+  <p
+    data-attachment-empty
+    class:list={["text-theme-xs text-gray-500", currentUrl && "hidden"]}
+  >
+    Chưa có ảnh. Chọn từ thư viện đã có hoặc tải mới bên dưới.
+  </p>
+
+  <!-- Action row: pick from library | upload new -->
+  <div class="flex flex-wrap items-center gap-2">
+    <MediaPicker targetUrlField={urlFieldName} label="Chọn từ thư viện" />
+    <span class="text-theme-xs text-gray-400">hoặc tải lên mới ↓</span>
+  </div>
 
   <PhotoEditorInput name={fileFieldName} required={required && !currentUrl} />
 
@@ -68,7 +89,7 @@ const fileFieldName = `${urlFieldName}_file`;
       class="mt-2 h-10 w-full rounded-md border border-gray-300 px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
     />
     <p class="mt-1 text-theme-xs text-gray-400">
-      Nếu chọn file ở trên, file mới sẽ ghi đè URL này khi lưu.
+      Thư viện hoặc file mới sẽ ghi đè URL này khi lưu.
     </p>
   </details>
 </div>

@@ -1,0 +1,261 @@
+---
+/**
+ * MediaPicker — opens a modal grid of every photo in the library and
+ * writes the chosen photo's URL into a target form input.
+ *
+ * Usage:
+ *   <MediaPicker
+ *     targetUrlField="photo"        // name attribute of the URL <input>
+ *     targetThumbId="photo-thumb"   // optional <img> id to update too
+ *   />
+ *
+ * Renders a small "Chọn từ thư viện" button. The modal markup is
+ * inlined and identified by a unique generated id so multiple pickers
+ * can coexist on the page (rare; member form has 1 only).
+ *
+ * The modal lazy-fetches /admin/media/list.json on first open and
+ * caches the result in the picker instance.
+ */
+interface Props {
+  /** Form field name (the `name` attribute) of the URL input we'll fill. */
+  targetUrlField: string;
+  /** Optional id of an <img> element to update when a photo is picked. */
+  targetThumbId?: string;
+  /** Button label override. */
+  label?: string;
+}
+
+const { targetUrlField, targetThumbId, label = "Chọn từ thư viện" } = Astro.props;
+
+// Unique-ish id per instance — enough to disambiguate when
+// MultipleAttachment fields share a page.
+const instanceId = `mp-${Math.random().toString(36).slice(2, 9)}`;
+---
+
+<div
+  class="inline-block"
+  data-media-picker
+  data-instance-id={instanceId}
+  data-target-url-field={targetUrlField}
+  data-target-thumb-id={targetThumbId ?? ""}
+>
+  <button
+    type="button"
+    data-media-picker-open
+    class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-theme-xs font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50"
+  >
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="text-gray-500">
+      <path
+        d="M5.5 3.5A2.25 2.25 0 0 0 3.25 5.75v12.5A2.25 2.25 0 0 0 5.5 20.5h13a2.25 2.25 0 0 0 2.25-2.25V5.75A2.25 2.25 0 0 0 18.5 3.5h-13Zm-.75 2.25c0-.414.336-.75.75-.75h13c.414 0 .75.336.75.75v8.13l-2.97-2.97a.75.75 0 0 0-1.06 0L11 16.13l-2.22-2.22a.75.75 0 0 0-1.06 0L4.75 16.88V5.75ZM8.5 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"
+        fill="currentColor"
+      />
+    </svg>
+    {label}
+  </button>
+</div>
+
+<!-- Shared modal: only rendered once per page even if MediaPicker is
+     used multiple times. The first instance to render wins. -->
+<div
+  id="media-picker-modal"
+  data-media-picker-modal
+  class="fixed inset-0 z-[70] hidden items-center justify-center bg-gray-900/40 p-4"
+>
+  <div class="flex h-full max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-theme-lg">
+    <header class="flex items-center justify-between border-b border-gray-100 px-5 py-3">
+      <h3 class="text-theme-md font-semibold text-gray-800">Chọn ảnh từ thư viện</h3>
+      <button
+        type="button"
+        data-media-picker-close
+        class="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+        aria-label="Đóng"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M6 6 18 18M6 18 18 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+    </header>
+
+    <div class="border-b border-gray-100 px-5 py-3">
+      <input
+        type="search"
+        data-media-picker-search
+        placeholder="Tìm theo tên, caption, alt, tag…"
+        class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3 text-theme-sm shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+      />
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-5 py-4">
+      <div data-media-picker-status class="text-center text-theme-sm text-gray-500 py-8">
+        Đang tải thư viện…
+      </div>
+      <div
+        data-media-picker-grid
+        class="hidden grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6"
+      ></div>
+      <div data-media-picker-empty class="hidden text-center text-theme-sm text-gray-500 py-8">
+        Không có ảnh nào khớp.
+      </div>
+    </div>
+
+    <footer class="flex items-center justify-between border-t border-gray-100 px-5 py-3">
+      <p class="text-theme-xs text-gray-500">
+        Bấm vào ảnh để chọn. Nếu chưa có ảnh phù hợp, dùng nút <em>Tải lên mới</em> bên dưới hoặc <a class="font-medium text-brand-600 hover:underline" href="/admin/media" target="_blank" rel="noreferrer">mở thư viện</a>.
+      </p>
+      <button
+        type="button"
+        data-media-picker-close
+        class="rounded-lg border border-gray-200 px-4 py-1.5 text-theme-sm font-medium text-gray-700 hover:bg-gray-50"
+      >
+        Hủy
+      </button>
+    </footer>
+  </div>
+</div>
+
+<script is:inline>
+  // Singleton: only the first MediaPicker on the page wires up the
+  // modal listeners. Subsequent picker instances reuse the same modal.
+  if (!window.__mediaPickerWired) {
+    window.__mediaPickerWired = true;
+
+    let cachedPhotos = null;
+    let activeTarget = null; // { urlField, thumbId }
+
+    const modal = document.getElementById("media-picker-modal");
+    const grid = modal.querySelector("[data-media-picker-grid]");
+    const status = modal.querySelector("[data-media-picker-status]");
+    const empty = modal.querySelector("[data-media-picker-empty]");
+    const search = modal.querySelector("[data-media-picker-search]");
+
+    function showModal() { modal.classList.remove("hidden"); modal.classList.add("flex"); }
+    function hideModal() { modal.classList.add("hidden"); modal.classList.remove("flex"); search.value = ""; renderGrid(); }
+
+    async function ensurePhotos() {
+      if (cachedPhotos) return cachedPhotos;
+      status.classList.remove("hidden");
+      status.textContent = "Đang tải thư viện…";
+      grid.classList.add("hidden");
+      empty.classList.add("hidden");
+      try {
+        const res = await fetch("/admin/media/list.json", { credentials: "same-origin" });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "Không tải được");
+        cachedPhotos = data.photos;
+      } catch (e) {
+        status.textContent = "Lỗi tải thư viện: " + (e?.message || "không xác định");
+        return [];
+      }
+      return cachedPhotos;
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/[&<>"']/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+      );
+    }
+
+    function renderGrid() {
+      if (!cachedPhotos) return;
+      const q = (search.value || "").trim().toLowerCase();
+      const filtered = q
+        ? cachedPhotos.filter((p) => {
+            const hay = [p.id, p.caption, p.alt_vi || "", String(p.year || ""), ...(p.tags || [])]
+              .join(" ").toLowerCase();
+            return hay.includes(q);
+          })
+        : cachedPhotos;
+
+      status.classList.add("hidden");
+      if (filtered.length === 0) {
+        grid.classList.add("hidden");
+        empty.classList.remove("hidden");
+        return;
+      }
+      empty.classList.add("hidden");
+      grid.classList.remove("hidden");
+      grid.innerHTML = filtered
+        .map(
+          (p) => `
+          <button type="button" data-pick-id="${escapeHtml(p.id)}" data-pick-url="${escapeHtml(p.src)}"
+            class="group relative overflow-hidden rounded-lg border border-gray-200 bg-gray-100 hover:border-brand-400 hover:ring-2 hover:ring-brand-500/20 transition">
+            <div class="aspect-square">
+              <img src="${escapeHtml(p.src_thumb || p.src)}" alt="${escapeHtml(p.alt_vi || p.caption)}" loading="lazy"
+                class="h-full w-full object-cover" />
+            </div>
+            <div class="px-1.5 py-1 text-left">
+              <div class="truncate text-theme-xs font-medium text-gray-700">${escapeHtml(p.alt_vi || p.caption)}</div>
+              <div class="truncate text-theme-xs text-gray-400">${escapeHtml(p.year || "—")}</div>
+            </div>
+          </button>`
+        )
+        .join("");
+    }
+
+    grid.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-pick-id]");
+      if (!btn || !activeTarget) return;
+      const url = btn.getAttribute("data-pick-url");
+
+      // Write to target URL input (every form on the page that uses
+      // the same field name will be set — typical forms have 1).
+      const inputs = document.querySelectorAll(
+        `input[name="${CSS.escape(activeTarget.urlField)}"]`
+      );
+      inputs.forEach((i) => {
+        i.value = url;
+        i.dispatchEvent(new Event("input", { bubbles: true }));
+        i.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+
+      // Update thumb element if provided.
+      if (activeTarget.thumbId) {
+        const t = document.getElementById(activeTarget.thumbId);
+        if (t) t.src = url;
+      }
+
+      // Update the AttachmentInput's "current" indicator if present.
+      const wrap = document.querySelector(
+        `[data-attachment-input="${CSS.escape(activeTarget.urlField)}"]`
+      );
+      if (wrap) {
+        const wrapImg = wrap.querySelector("[data-attachment-current]");
+        const wrapMeta = wrap.querySelector("[data-attachment-name]");
+        if (wrapImg) wrapImg.src = url;
+        if (wrapMeta) wrapMeta.textContent = url.split("/").pop();
+        wrap.querySelector("[data-attachment-empty]")?.classList.add("hidden");
+        wrap.querySelector("[data-attachment-filled]")?.classList.remove("hidden");
+      }
+
+      hideModal();
+    });
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) hideModal();
+    });
+    modal.querySelectorAll("[data-media-picker-close]").forEach((b) =>
+      b.addEventListener("click", hideModal)
+    );
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) hideModal();
+    });
+
+    search.addEventListener("input", () => renderGrid());
+
+    // Open handler delegated to all picker instances on the page.
+    document.addEventListener("click", async (e) => {
+      const trigger = e.target.closest("[data-media-picker-open]");
+      if (!trigger) return;
+      const wrap = trigger.closest("[data-media-picker]");
+      if (!wrap) return;
+      activeTarget = {
+        urlField: wrap.dataset.targetUrlField,
+        thumbId: wrap.dataset.targetThumbId || null,
+      };
+      showModal();
+      await ensurePhotos();
+      renderGrid();
+    });
+  }
+</script>
