@@ -3,6 +3,8 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import PhotoEditorInput from "@/components/admin/PhotoEditorInput.astro";
 import ToastBanner from "@/components/admin/ToastBanner.tsx";
 import MediaDetailSidebar from "@/components/admin/MediaDetailSidebar.tsx";
+import PhotoLocationMap from "@/components/admin/PhotoLocationMap.tsx";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
   getPhoto, getPhotoMembers, upsertPhoto, parsePhotoForm,
   replacePhotoMedia, deletePhoto,
@@ -94,6 +96,32 @@ const isVideo = v.kind === "video";
 const previewSrc = isVideo ? v.src : (v.src_medium || v.src);
 const posterSrc = isVideo ? (v.src_medium || v.src_thumb || "") : "";
 const altMissing = !v.alt_vi || !v.alt_vi.trim();
+
+// If photo.location matches a family.locations row (case-insensitive
+// substring), pull its coords so the detail page can render a mini-map.
+let mappedLocation: { name: string; lat: number; lng: number; province: string | null } | null = null;
+if (v.location && v.location.trim()) {
+  const needle = v.location.toLowerCase();
+  const { data: locs } = await supabaseAdmin
+    .from("locations")
+    .select("name, lat, lng, province")
+    .not("lat", "is", null)
+    .not("lng", "is", null);
+  const match = (locs ?? []).find((l) => {
+    const ln = String(l.name).toLowerCase();
+    return needle.includes(ln) || ln.includes(needle);
+  });
+  if (match) {
+    mappedLocation = {
+      name: String(match.name),
+      lat: Number(match.lat),
+      lng: Number(match.lng),
+      province: (match.province as string | null) ?? null,
+    };
+  }
+}
+
+const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 
 // Shape for the React island — strip nullable types we don't want there.
 const sidebarPhoto = {
@@ -188,6 +216,15 @@ const sidebarPhoto = {
               : "EXIF (GPS, máy ảnh) được tự động xóa. Có thể crop / xoay / resize trước khi lưu. 3 phiên bản (gốc, 800w, 320w) được tạo lại."}
           </p>
         </div>
+
+        {mappedLocation && (
+          <PhotoLocationMap
+            client:only="react"
+            apiKey={googleMapsApiKey}
+            location={mappedLocation}
+            photoCaption={v.caption ?? v.id}
+          />
+        )}
 
       </section>
 
