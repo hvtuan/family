@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import MemberPicker from "@/components/admin/MemberPicker.astro";
+import PhotoEditorInput from "@/components/admin/PhotoEditorInput.astro";
 import {
   getPhoto, getPhotoMembers, upsertPhoto, parsePhotoForm,
   replacePhotoMedia, deletePhoto,
@@ -36,23 +37,26 @@ if (Astro.request.method === "POST") {
     if (file instanceof File && file.size > 0) {
       try {
         const media = await replacePhotoMedia(id, file);
+        const updatePayload: Record<string, unknown> = {
+          src: media.src,
+          src_thumb: media.src_thumb,
+          src_medium: media.src_medium,
+          width: media.width,
+          height: media.height,
+          bytes: media.bytes,
+          mime: media.mime,
+          kind: media.kind,
+          exif_stripped: media.kind === "image",
+        };
+        if (media.duration_seconds != null) {
+          updatePayload.duration_seconds = media.duration_seconds;
+        }
         const { error } = await (await import("@/lib/supabase/admin")).supabaseAdmin
-          .from("photos")
-          .update({
-            src: media.src,
-            src_thumb: media.src_thumb,
-            src_medium: media.src_medium,
-            width: media.width,
-            height: media.height,
-            bytes: media.bytes,
-            mime: media.mime,
-            exif_stripped: true,
-          })
-          .eq("id", id);
+          .from("photos").update(updatePayload).eq("id", id);
         if (error) throw new Error(error.message);
         existing = await getPhoto(id);
         values = existing ?? values;
-        fieldOk = "Đã thay ảnh + cập nhật metadata.";
+        fieldOk = `Đã thay ${media.kind === "video" ? "video" : "ảnh"} + cập nhật metadata.`;
       } catch (e) {
         fieldError = e instanceof Error ? e.message : "Thay ảnh thất bại.";
       }
@@ -141,26 +145,30 @@ function formatDuration(seconds?: number | null): string {
           <h3 class="mb-3 text-theme-sm font-semibold text-gray-800">
             Thay {isVideo ? "video" : "ảnh"} (giữ nguyên ID + liên kết)
           </h3>
-          <form method="post" enctype="multipart/form-data" class="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <form method="post" enctype="multipart/form-data" class="space-y-3">
             <input type="hidden" name="action" value="replace" />
-            <div class="flex-1">
-              <label class="mb-1.5 block text-theme-xs text-gray-500">
-                File mới (
-                {isVideo ? "≤ 200 MB; mp4/webm/mov" : "≤ 25 MB; jpg/png/webp/gif/svg/heic"}
-                )
-              </label>
-              <input type="file" name="file" required
-                accept={isVideo ? "video/*,.mp4,.webm,.mov" : "image/*,.heic,.heif"}
-                class="block w-full text-theme-sm file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-theme-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200" />
+            {isVideo ? (
+              <div>
+                <label class="mb-1.5 block text-theme-xs text-gray-500">File video mới (≤ 200 MB; mp4/webm/mov)</label>
+                <input type="file" name="file" required accept="video/*,.mp4,.webm,.mov"
+                  class="block w-full text-theme-sm file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-theme-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200" />
+              </div>
+            ) : (
+              <div>
+                <label class="mb-1.5 block text-theme-xs text-gray-500">File ảnh mới (≤ 25 MB; jpg/png/webp/gif/heic)</label>
+                <PhotoEditorInput name="file" required={true} />
+              </div>
+            )}
+            <div class="flex items-center justify-end">
+              <button type="submit" class="rounded-lg bg-gray-900 px-4 py-2.5 text-theme-sm font-medium text-white hover:bg-gray-800">
+                Thay {isVideo ? "video" : "ảnh"}
+              </button>
             </div>
-            <button type="submit" class="rounded-lg bg-gray-900 px-4 py-2.5 text-theme-sm font-medium text-white hover:bg-gray-800">
-              Thay {isVideo ? "video" : "ảnh"}
-            </button>
           </form>
           <p class="mt-2 text-theme-xs text-gray-500">
             {isVideo
-              ? "Hiện tại thay video qua đây không tự trích lại poster — bấm vào ô trên để thử trình phát mới."
-              : "EXIF (GPS, máy ảnh) được tự động xóa. 3 phiên bản (gốc, 800w, 320w) được tạo lại."}
+              ? "Thay video không tự trích lại poster — vẫn giữ poster cũ. Để đổi poster, dùng /admin/media/[id] sau khi upload xong."
+              : "EXIF (GPS, máy ảnh) được tự động xóa. Có thể crop / xoay / resize trước khi lưu. 3 phiên bản (gốc, 800w, 320w) được tạo lại."}
           </p>
         </div>
 

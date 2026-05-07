@@ -1,55 +1,7 @@
 ---
-import AdminLayout from "@/layouts/AdminLayout.astro";
-import PhotoForm from "@/components/admin/PhotoForm.astro";
-import { upsertPhoto, parsePhotoForm, uploadPhotoFile } from "@/lib/photos-admin";
-import { listMemberRefs } from "@/lib/members-admin";
-import type { PhotoRow } from "@/lib/photos-admin";
-
+// Legacy /admin/photos/new → /admin/media/new (M2 of media-v2 hub).
+// The new path uses uploadPhotoMedia (3 variants + EXIF strip) instead
+// of the single-blob legacy uploadPhotoFile.
 export const prerender = false;
-
-let fieldError: string | null = null;
-let values: Partial<PhotoRow> = { featured: false };
-let selectedMembers: string[] = [];
-
-if (Astro.request.method === "POST") {
-  const form = await Astro.request.formData();
-  const { input, memberIds, errors } = parsePhotoForm(form);
-  values = input;
-  selectedMembers = memberIds;
-
-  const file = form.get("file");
-  const hasFile = file instanceof File && file.size > 0;
-  if (!input.src && !hasFile) {
-    errors.push("Cần URL ảnh hoặc file upload.");
-  }
-
-  if (errors.length === 0 && hasFile) {
-    try {
-      input.src = await uploadPhotoFile(file as File, input.id);
-      values = input;
-    } catch (e) {
-      errors.push(e instanceof Error ? e.message : "Upload thất bại.");
-    }
-  }
-
-  if (errors.length > 0) {
-    fieldError = errors.join(" ");
-  } else {
-    try {
-      await upsertPhoto(input, memberIds, "create");
-      return Astro.redirect(`/admin/photos/${input.id}?ok=created`);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Lưu thất bại.";
-      fieldError = msg.includes("duplicate") || msg.includes("23505")
-        ? `ID "${input.id}" đã tồn tại.` : msg;
-    }
-  }
-}
-
-const refs = await listMemberRefs();
+return Astro.redirect("/admin/media/new", 301);
 ---
-
-<AdminLayout title="Ảnh mới" crumbs={[{ label: "Album", href: "/admin/photos" }, { label: "Tạo mới" }]}>
-  <PhotoForm mode="create" values={values} refs={refs}
-    selectedMembers={selectedMembers} fieldError={fieldError} />
-</AdminLayout>

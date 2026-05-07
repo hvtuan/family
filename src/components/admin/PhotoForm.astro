@@ -95,13 +95,8 @@ const { mode, values: v, refs, selectedMembers = [], fieldError, fieldOk } = Ast
       hint="Tích chọn ai có mặt trong ảnh." />
   </fieldset>
 
-  <p class="text-theme-xs text-gray-500">
-    Upload ảnh mới: hiện tại mới hỗ trợ URL. Lên ảnh trực tiếp lên Supabase Storage
-    qua Studio (<code>family-photos</code> bucket, public read), sau đó dán URL public vào.
-  </p>
-
   <div class="flex items-center justify-between gap-3">
-    <a href="/admin/photos" class="rounded-lg border border-gray-200 px-5 py-2.5 text-theme-sm font-medium text-gray-700 hover:bg-gray-50">Hủy</a>
+    <a href="/admin/media" class="rounded-lg border border-gray-200 px-5 py-2.5 text-theme-sm font-medium text-gray-700 hover:bg-gray-50">Hủy</a>
     <button type="submit" class="rounded-lg bg-brand-500 px-5 py-2.5 text-theme-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">
       {mode === "create" ? "Tạo ảnh" : "Lưu thay đổi"}
     </button>

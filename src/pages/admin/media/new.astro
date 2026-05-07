@@ -1,0 +1,78 @@
+---
+/**
+ * "Tạo + chỉnh sửa" path — explicit single-photo upload with the full
+ * Cropper.js editor inline. Drag-drop on /admin/media is the quick path
+ * (no editor); this form is the deliberate path where the admin wants
+ * to crop / rotate / resize before saving.
+ *
+ * Uses uploadPhotoMedia (3 variants, EXIF strip) so the resulting row
+ * is identical to a drag-drop upload — no legacy single-blob path here.
+ */
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import PhotoForm from "@/components/admin/PhotoForm.astro";
+import {
+  uploadPhotoMedia, upsertPhoto, parsePhotoForm,
+} from "@/lib/photos-admin";
+import { listMemberRefs } from "@/lib/members-admin";
+import type { PhotoRow } from "@/lib/photos-admin";
+
+export const prerender = false;
+
+let fieldError: string | null = null;
+let values: Partial<PhotoRow> = { featured: false };
+let selectedMembers: string[] = [];
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const { input, memberIds, errors } = parsePhotoForm(form);
+  values = input;
+  selectedMembers = memberIds;
+
+  const file = form.get("file");
+  const hasFile = file instanceof File && file.size > 0;
+  if (!input.src && !hasFile) {
+    errors.push("Cần URL ảnh hoặc file upload.");
+  }
+
+  let mediaPayload: Partial<PhotoRow> = {};
+  if (errors.length === 0 && hasFile) {
+    try {
+      const media = await uploadPhotoMedia(file as File, input.id);
+      mediaPayload = {
+        src: media.src,
+        src_thumb: media.src_thumb,
+        src_medium: media.src_medium,
+        width: media.width,
+        height: media.height,
+        bytes: media.bytes,
+        mime: media.mime,
+        kind: media.kind,
+      };
+      values = { ...input, ...mediaPayload };
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : "Upload thất bại.");
+    }
+  }
+
+  if (errors.length > 0) {
+    fieldError = errors.join(" ");
+  } else {
+    try {
+      await upsertPhoto({ ...input, ...mediaPayload }, memberIds, "create");
+      return Astro.redirect(`/admin/media/${input.id}?ok=created`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Lưu thất bại.";
+      fieldError = msg.includes("duplicate") || msg.includes("23505")
+        ? `ID "${input.id}" đã tồn tại.` : msg;
+    }
+  }
+}
+
+const refs = await listMemberRefs();
+---
+
+<AdminLayout title="Tải ảnh + chỉnh sửa"
+  crumbs={[{ label: "Thư viện ảnh", href: "/admin/media" }, { label: "Tải + chỉnh sửa" }]}>
+  <PhotoForm mode="create" values={values} refs={refs}
+    selectedMembers={selectedMembers} fieldError={fieldError} />
+</AdminLayout>

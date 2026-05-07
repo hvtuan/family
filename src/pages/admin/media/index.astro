@@ -97,10 +97,15 @@ function durationLabel(seconds?: number | null): string {
             Toàn bộ ảnh dùng chung cho thành viên, niên đại, truyền thống.
           </p>
         </div>
-        <div class="flex items-center gap-2">
-          <button type="button" data-upload-trigger
+        <div class="flex flex-wrap items-center gap-2">
+          <a href="/admin/media/new"
             class="rounded-lg bg-brand-500 px-4 py-2 text-theme-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">
-            + Tải ảnh lên
+            + Tải + chỉnh sửa
+          </a>
+          <button type="button" data-upload-trigger
+            class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50"
+            title="Kéo thả nhiều file, không có editor">
+            ⚡ Tải nhanh nhiều file
           </button>
           <input type="file" data-upload-input multiple
             accept="image/*,video/*,.heic,.heif,.mp4,.webm,.mov" class="hidden" />
@@ -157,59 +162,67 @@ function durationLabel(seconds?: number | null): string {
           <input type="hidden" name="action" value="bulk-delete" />
           <div class="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {rows.map((p) => (
-              <label class="group block cursor-pointer rounded-lg border border-gray-200 bg-white overflow-hidden transition hover:shadow-theme-md has-[:checked]:border-brand-400 has-[:checked]:ring-2 has-[:checked]:ring-brand-500/20">
-                <div class="aspect-square bg-gray-100 relative">
-                  {thumbFor(p) ? (
-                    <img src={thumbFor(p)} alt={p.alt_vi ?? p.caption} loading="lazy"
-                      class="absolute inset-0 h-full w-full object-cover" />
-                  ) : (
-                    <div class="absolute inset-0 flex items-center justify-center text-3xl opacity-60">
-                      {p.kind === "video" ? "🎬" : "🖼️"}
-                    </div>
-                  )}
-                  {p.kind === "video" && (
-                    <>
-                      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <span class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-900/60 text-white">
-                          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                        </span>
+              <div class="group relative rounded-lg border border-gray-200 bg-white overflow-hidden transition hover:shadow-theme-md has-[:checked]:border-brand-400 has-[:checked]:ring-2 has-[:checked]:ring-brand-500/20">
+                {/* Whole card is a link to detail; checkbox + featured
+                    badge are absolutely positioned siblings so clicks
+                    on them don't navigate. */}
+                <a href={`/admin/media/${p.id}`} class="block">
+                  <div class="aspect-square bg-gray-100 relative">
+                    {thumbFor(p) ? (
+                      <img src={thumbFor(p)} alt={p.alt_vi ?? p.caption} loading="lazy"
+                        class="absolute inset-0 h-full w-full object-cover" />
+                    ) : (
+                      <div class="absolute inset-0 flex items-center justify-center text-3xl opacity-60">
+                        {p.kind === "video" ? "🎬" : "🖼️"}
                       </div>
-                      {durationLabel(p.duration_seconds) && (
-                        <span class="absolute bottom-2 right-2 rounded bg-gray-900/70 px-1.5 py-0.5 text-theme-xs font-medium text-white tabular-nums">
-                          {durationLabel(p.duration_seconds)}
-                        </span>
-                      )}
-                    </>
-                  )}
-                  <div class="absolute top-2 left-2 flex items-center gap-2">
-                    <input type="checkbox" name="ids" value={p.id}
-                      data-bulk-checkbox
-                      class="h-5 w-5 rounded border-white bg-white/90 text-brand-500 shadow-sm focus:ring-brand-500"
-                      onclick="event.stopPropagation();" />
+                    )}
+                    {p.kind === "video" && (
+                      <>
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <span class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-900/60 text-white">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                          </span>
+                        </div>
+                        {durationLabel(p.duration_seconds) && (
+                          <span class="absolute bottom-2 right-2 rounded bg-gray-900/70 px-1.5 py-0.5 text-theme-xs font-medium text-white tabular-nums">
+                            {durationLabel(p.duration_seconds)}
+                          </span>
+                        )}
+                      </>
+                    )}
+                    {p.kind !== "video" && !p.src_thumb && (
+                      <span class="absolute bottom-2 left-2 rounded bg-gray-900/60 px-1.5 py-0.5 text-theme-xs font-medium text-white" title="Ảnh chưa có thumbnail (legacy)">legacy</span>
+                    )}
                   </div>
-                  {p.featured && (
-                    <span class="absolute top-2 right-2 rounded bg-warning-50 px-1.5 py-0.5 text-theme-xs font-medium text-warning-600 border border-warning-100" title="Nổi bật">★</span>
-                  )}
-                  {p.kind !== "video" && !p.src_thumb && (
-                    <span class="absolute bottom-2 left-2 rounded bg-gray-900/60 px-1.5 py-0.5 text-theme-xs font-medium text-white" title="Ảnh chưa có thumbnail (legacy)">legacy</span>
-                  )}
-                </div>
-                <a href={`/admin/media/${p.id}`} class="block p-2.5">
-                  <div class="text-theme-sm font-medium text-gray-800 line-clamp-1">
-                    {p.alt_vi ?? p.caption}
-                  </div>
-                  <div class="text-theme-xs text-gray-500 line-clamp-1">
-                    {p.year ?? "—"}{p.location ? ` · ${p.location}` : ""}
-                  </div>
-                  {Array.isArray(p.tags) && p.tags.length > 0 && (
-                    <div class="mt-1.5 flex flex-wrap gap-1">
-                      {p.tags.slice(0, 3).map((t) => (
-                        <span class="rounded bg-gray-100 px-1.5 py-0.5 text-theme-xs text-gray-600">{t}</span>
-                      ))}
+                  <div class="p-2.5">
+                    <div class="text-theme-sm font-medium text-gray-800 line-clamp-1">
+                      {p.alt_vi ?? p.caption}
                     </div>
-                  )}
+                    <div class="text-theme-xs text-gray-500 line-clamp-1">
+                      {p.year ?? "—"}{p.location ? ` · ${p.location}` : ""}
+                    </div>
+                    {Array.isArray(p.tags) && p.tags.length > 0 && (
+                      <div class="mt-1.5 flex flex-wrap gap-1">
+                        {p.tags.slice(0, 3).map((t) => (
+                          <span class="rounded bg-gray-100 px-1.5 py-0.5 text-theme-xs text-gray-600">{t}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </a>
-              </label>
+
+                {/* Checkbox overlay — its own label so the click target
+                    is just the box, not the whole card. */}
+                <label class="absolute top-2 left-2 z-10 flex h-7 w-7 cursor-pointer items-center justify-center rounded bg-white/80 shadow-sm hover:bg-white">
+                  <input type="checkbox" name="ids" value={p.id} form="bulk-form"
+                    data-bulk-checkbox
+                    class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500" />
+                </label>
+
+                {p.featured && (
+                  <span class="pointer-events-none absolute top-2 right-2 rounded bg-warning-50 px-1.5 py-0.5 text-theme-xs font-medium text-warning-600 border border-warning-100 z-10" title="Nổi bật">★</span>
+                )}
+              </div>
             ))}
           </div>
         </form>
