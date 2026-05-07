@@ -1,98 +1,168 @@
 import { supabaseAdmin } from "./supabase/admin";
 import { replaceM2M, readM2M } from "./m2m";
+import { processImage, extForMime, type ProcessedImage } from "./exif";
 
 const STORAGE_BUCKET = "family-photos";
-/** Files uploaded via the admin form land in this prefix. The seed
- *  migration script uses `seed/` for its own assets so the two don't
- *  step on each other. */
-const STORAGE_PREFIX = "uploads/";
 
-const ALLOWED_MIME = new Set([
+/** Legacy prefix for /admin/photos uploads (single variant, pre-v2). */
+const LEGACY_PHOTOS_PREFIX = "uploads/";
+
+/** Media v2 layout: media/<id>/{original.<ext>, medium.webp, thumb.webp} */
+const MEDIA_PREFIX = "media";
+
+const ALLOWED_MIME_LEGACY = new Set([
   "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml",
 ]);
-const MAX_BYTES = 8 * 1024 * 1024; // 8 MB
+const MAX_BYTES_LEGACY = 8 * 1024 * 1024; // 8 MB — kept for non-v2 attachments
 
-function extFromFile(file: File): string {
-  const fromName = file.name.split(".").pop()?.toLowerCase();
-  if (fromName && /^[a-z0-9]{1,5}$/.test(fromName)) return fromName;
-  // Fall back to mime → ext
-  const map: Record<string, string> = {
-    "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp",
-    "image/gif": "gif", "image/svg+xml": "svg",
-  };
-  return map[file.type] ?? "bin";
+// ───────────────────────── media v2: uploadPhotoMedia ──────────────────────
+
+export type UploadedMedia = {
+  src: string;
+  src_thumb: string | null;
+  src_medium: string | null;
+  width: number;
+  height: number;
+  bytes: number;
+  mime: string;
+};
+
+async function putObject(path: string, body: Buffer | File, contentType: string): Promise<string> {
+  const { error } = await supabaseAdmin.storage
+    .from(STORAGE_BUCKET)
+    .upload(path, body, { contentType, upsert: true });
+  if (error) throw new Error(`storage upload ${path}: ${error.message}`);
+  return supabaseAdmin.storage.from(STORAGE_BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
-/** Upload a file to family-photos/uploads/<photoId>.<ext>, overwrite on
- *  edit. Returns the public URL the row's `src` column should hold. */
+/**
+ * Process + upload an image with all 3 variants under
+ * `media/<photoId>/{original.<ext>, medium.webp, thumb.webp}` and
+ * return the metadata + URLs the caller writes to the photos row.
+ */
+export async function uploadPhotoMedia(
+  file: File,
+  photoId: string,
+): Promise<UploadedMedia> {
+  const processed: ProcessedImage = await processImage(file);
+  const folder = `${MEDIA_PREFIX}/${photoId}`;
+
+  const originalPath = `${folder}/original.${processed.ext}`;
+  const mediumPath = `${folder}/medium.webp`;
+  const thumbPath = `${folder}/thumb.webp`;
+
+  const originalUrl = await putObject(originalPath, processed.original, processed.mime);
+
+  let mediumUrl: string | null = null;
+  let thumbUrl: string | null = null;
+  if (processed.medium) {
+    mediumUrl = await putObject(mediumPath, processed.medium, "image/webp");
+  }
+  if (processed.thumb) {
+    thumbUrl = await putObject(thumbPath, processed.thumb, "image/webp");
+  }
+
+  return {
+    src: originalUrl,
+    src_thumb: thumbUrl,
+    src_medium: mediumUrl,
+    width: processed.width,
+    height: processed.height,
+    bytes: processed.bytes,
+    mime: processed.mime,
+  };
+}
+
+/** Replace an existing photo's blobs in-place. Returns new metadata; caller
+ *  must update the row's media columns + bump updated_at. */
+export async function replacePhotoMedia(
+  photoId: string,
+  file: File,
+): Promise<UploadedMedia> {
+  // First clear the folder so that switching ext (jpg → png) doesn't
+  // leave stale blobs alongside the new ones.
+  await deletePhotoMedia(photoId).catch(() => undefined);
+  return uploadPhotoMedia(file, photoId);
+}
+
+/** Delete every blob under `media/<photoId>/`. Best-effort. */
+export async function deletePhotoMedia(photoId: string): Promise<void> {
+  const folder = `${MEDIA_PREFIX}/${photoId}`;
+  const { data } = await supabaseAdmin.storage
+    .from(STORAGE_BUCKET)
+    .list(folder, { limit: 100 });
+  if (!data || data.length === 0) return;
+  const paths = data.map((f) => `${folder}/${f.name}`);
+  await supabaseAdmin.storage.from(STORAGE_BUCKET).remove(paths);
+}
+
+// ───────────────────── legacy uploads (with EXIF strip retrofit) ───────────
+
+/**
+ * Legacy single-blob upload to `uploads/<photoId>.<ext>`. Pre-v2 callers
+ * still call this; the EXIF strip is now applied transparently so iCloud
+ * GPS data doesn't leak even from older code paths.
+ */
 export async function uploadPhotoFile(
   file: File,
   photoId: string,
 ): Promise<string> {
-  if (!ALLOWED_MIME.has(file.type)) {
-    throw new Error(`Định dạng không hỗ trợ: ${file.type}. Dùng jpg/png/webp/gif/svg.`);
-  }
-  if (file.size > MAX_BYTES) {
-    throw new Error(`File ${(file.size / 1024 / 1024).toFixed(1)} MB vượt giới hạn 8 MB.`);
-  }
-  const path = `${STORAGE_PREFIX}${photoId}.${extFromFile(file)}`;
-  const { error } = await supabaseAdmin.storage
-    .from(STORAGE_BUCKET)
-    .upload(path, file, {
-      contentType: file.type,
-      upsert: true,
-    });
-  if (error) throw new Error(`uploadPhotoFile: ${error.message}`);
-
-  const { data } = supabaseAdmin.storage.from(STORAGE_BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  validateLegacy(file);
+  const stripped = await stripIfRaster(file);
+  const path = `${LEGACY_PHOTOS_PREFIX}${photoId}.${extForMime(stripped.mime)}`;
+  return putObject(path, stripped.body, stripped.mime);
 }
 
-/** Upload an attachment for a non-photos record (member avatar,
- *  timeline event image, tradition image, etc.) into
- *  family-photos/<prefix>/<id>.<ext>. Returns the public URL.
- *
- *  Different prefix from `uploads/` (which is for /admin/photos rows)
- *  so a member with id="g3-1" doesn't collide with a photos row with
- *  id="g3-1". */
+/**
+ * Legacy attachment upload (member avatar, timeline image, tradition
+ * image) to `<prefix>/<id>.<ext>`. EXIF stripped transparently.
+ */
 export async function uploadAttachment(
   file: File,
   prefix: string,
   id: string,
 ): Promise<string> {
-  if (!ALLOWED_MIME.has(file.type)) {
-    throw new Error(`Định dạng không hỗ trợ: ${file.type}.`);
-  }
-  if (file.size > MAX_BYTES) {
-    throw new Error(`File ${(file.size / 1024 / 1024).toFixed(1)} MB vượt giới hạn 8 MB.`);
-  }
-  const path = `${prefix}/${id}.${extFromFile(file)}`;
-  const { error } = await supabaseAdmin.storage
-    .from(STORAGE_BUCKET)
-    .upload(path, file, {
-      contentType: file.type,
-      upsert: true,
-    });
-  if (error) throw new Error(`uploadAttachment: ${error.message}`);
-  const { data } = supabaseAdmin.storage.from(STORAGE_BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  validateLegacy(file);
+  const stripped = await stripIfRaster(file);
+  const path = `${prefix}/${id}.${extForMime(stripped.mime)}`;
+  return putObject(path, stripped.body, stripped.mime);
 }
 
-/** Delete every uploaded variant of a photo id (different extensions
- *  may exist if the admin re-uploaded with a different format).
- *  Best-effort — orphans don't break anything. */
+function validateLegacy(file: File): void {
+  if (!ALLOWED_MIME_LEGACY.has(file.type)) {
+    throw new Error(`Định dạng không hỗ trợ: ${file.type}. Dùng jpg/png/webp/gif/svg.`);
+  }
+  if (file.size > MAX_BYTES_LEGACY) {
+    throw new Error(`File ${(file.size / 1024 / 1024).toFixed(1)} MB vượt giới hạn 8 MB.`);
+  }
+}
+
+/** Run the file through processImage to strip EXIF, but return only the
+ *  `original` buffer (single-variant legacy contract). SVG/GIF skip
+ *  processing and the raw file is uploaded unchanged. */
+async function stripIfRaster(file: File): Promise<{ body: Buffer | File; mime: string }> {
+  if (file.type === "image/svg+xml" || file.type === "image/gif") {
+    return { body: file, mime: file.type };
+  }
+  const processed = await processImage(file);
+  return { body: processed.original, mime: processed.mime };
+}
+
+/** Delete legacy `uploads/<photoId>.*` blobs (any extension). Best-effort. */
 export async function deletePhotoFiles(photoId: string): Promise<void> {
   const { data } = await supabaseAdmin.storage
     .from(STORAGE_BUCKET)
-    .list(STORAGE_PREFIX, { limit: 100, search: photoId });
+    .list(LEGACY_PHOTOS_PREFIX, { limit: 100, search: photoId });
   if (!data) return;
   const paths = data
     .filter((f) => f.name === photoId || f.name.startsWith(`${photoId}.`))
-    .map((f) => `${STORAGE_PREFIX}${f.name}`);
+    .map((f) => `${LEGACY_PHOTOS_PREFIX}${f.name}`);
   if (paths.length > 0) {
     await supabaseAdmin.storage.from(STORAGE_BUCKET).remove(paths);
   }
 }
+
+// ─────────────────────────── photos table CRUD ─────────────────────────────
 
 export type PhotoRow = {
   id: string;
@@ -104,6 +174,16 @@ export type PhotoRow = {
   location: string | null;
   album: string | null;
   featured: boolean;
+  // media v2 fields (all optional for backward compat)
+  src_thumb?: string | null;
+  src_medium?: string | null;
+  width?: number | null;
+  height?: number | null;
+  bytes?: number | null;
+  mime?: string | null;
+  alt_vi?: string | null;
+  alt_en?: string | null;
+  tags?: string[];
 };
 
 export async function listPhotos(): Promise<PhotoRow[]> {
@@ -131,7 +211,6 @@ export async function getPhotoMembers(id: string): Promise<string[]> {
   });
 }
 
-/** Photos already linked to this member, newest first. */
 export async function listPhotosForMember(memberId: string): Promise<PhotoRow[]> {
   const { data: links, error: e1 } = await supabaseAdmin
     .from("photo_members")
@@ -150,9 +229,6 @@ export async function listPhotosForMember(memberId: string): Promise<PhotoRow[]>
   return (data ?? []) as PhotoRow[];
 }
 
-/** Existing photos that this member is *not* linked to yet, for the
- *  "link existing" picker. Filtered client-side because the dataset is
- *  small and `not in (…)` syntax is awkward in supabase-js. */
 export async function listPhotosNotLinkedTo(memberId: string): Promise<PhotoRow[]> {
   const [all, linked] = await Promise.all([
     listPhotos(),
@@ -169,7 +245,6 @@ export async function linkPhotoToMember(
   const { error } = await supabaseAdmin
     .from("photo_members")
     .insert({ photo_id: photoId, member_id: memberId });
-  // Composite-PK race: another concurrent click is fine, swallow.
   if (error && !error.message.includes("duplicate") && !error.message.includes("23505")) {
     throw new Error(`linkPhotoToMember: ${error.message}`);
   }
@@ -190,11 +265,12 @@ export async function unlinkPhotoFromMember(
 export async function deletePhoto(id: string): Promise<void> {
   const { error } = await supabaseAdmin.from("photos").delete().eq("id", id);
   if (error) throw new Error(`deletePhoto: ${error.message}`);
-  // Best-effort cleanup of the uploaded file. Errors are swallowed
-  // because the row is already gone and the storage object is just bytes.
-  await deletePhotoFiles(id).catch((e) =>
-    console.error(`[photos] file cleanup failed for ${id}:`, e),
-  );
+  // Clean up both the legacy single blob (uploads/<id>.<ext>) AND the
+  // media-v2 folder (media/<id>/*). Either may be empty for a given row.
+  await Promise.allSettled([
+    deletePhotoFiles(id),
+    deletePhotoMedia(id),
+  ]);
 }
 
 export async function upsertPhoto(
@@ -228,9 +304,6 @@ export function parsePhotoForm(form: FormData): {
   const id = get("id").toLowerCase();
   if (!SLUG_RE.test(id)) errors.push("ID phải là chữ thường + số + . _ -");
 
-  // src is optional here because an uploaded file (handled by the page
-  // handler, not this parser) may set src after upload. The page-level
-  // validation rejects the case where both are empty.
   if (!get("caption")) errors.push("Caption (vi) không được để trống.");
   if (!get("caption_en")) errors.push("Caption (en) không được để trống.");
 
@@ -239,6 +312,12 @@ export function parsePhotoForm(form: FormData): {
   if (year !== null && !Number.isInteger(year)) errors.push("Năm phải là số nguyên.");
 
   const memberIds = form.getAll("members").map((v) => String(v)).filter(Boolean);
+
+  // alt + tags optional in legacy form; M2 picker form supplies them.
+  const tagsCsv = get("tags");
+  const tags = tagsCsv
+    ? tagsCsv.split(",").map((t) => t.trim()).filter(Boolean)
+    : undefined;
 
   return {
     input: {
@@ -251,6 +330,9 @@ export function parsePhotoForm(form: FormData): {
       location: getOpt("location"),
       album: getOpt("album"),
       featured: Boolean(form.get("featured")),
+      alt_vi: getOpt("alt_vi"),
+      alt_en: getOpt("alt_en"),
+      ...(tags ? { tags } : {}),
     },
     memberIds,
     errors,
