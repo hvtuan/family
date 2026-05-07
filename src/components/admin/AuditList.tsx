@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 
+import ClientDate from "@/components/admin/ClientDate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -52,12 +53,7 @@ const ACTION_LABEL: Record<string, string> = {
   revoke: "Thu hồi",
 };
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleString("vi-VN", {
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
-  });
-}
+// Date formatting moved to <ClientDate /> for SSR-safe hydration.
 
 export default function AuditList({ events, entities }: Props) {
   const [q, setQ] = useState("");
@@ -177,7 +173,7 @@ export default function AuditList({ events, entities }: Props) {
                 return (
                   <TableRow key={e.id}>
                     <TableCell className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-                      {fmtDate(e.at)}
+                      <ClientDate iso={e.at} />
                     </TableCell>
                     <TableCell className="text-xs text-foreground">{e.actor}</TableCell>
                     <TableCell>

@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { Search, X } from "lucide-react";
 
+import ClientDate from "@/components/admin/ClientDate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -57,12 +58,7 @@ const STATUS_LABEL: Record<UserRow["status"], string> = {
   revoked: "Đã thu hồi",
 };
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleString("vi-VN", {
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit",
-  });
-}
+// Date formatting moved to <ClientDate /> — see component for rationale.
 
 export default function UsersList({ users }: Props) {
   const [q, setQ] = useState("");
@@ -180,7 +176,7 @@ export default function UsersList({ users }: Props) {
                     </Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-xs text-muted-foreground tabular-nums">
-                    {fmtDate(u.created_at)}
+                    <ClientDate iso={u.created_at} />
                   </TableCell>
                   <TableCell className="text-right">
                     {!u.is_me && (
