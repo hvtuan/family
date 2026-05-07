@@ -2,17 +2,37 @@
 export const prerender = false;
 import Base from "@/layouts/Base.astro";
 import BlossomDivider from "@/components/astro/BlossomDivider.astro";
+import HeroSlideshow, { type HeroSlide } from "@/components/astro/HeroSlideshow.tsx";
 import Lotus from "@/components/astro/Lotus.astro";
 import MemberCard from "@/components/astro/MemberCard.astro";
 import QuoteCard from "@/components/astro/QuoteCard.astro";
 import { SITE } from "@/data/site";
 import { getMembers, getQuotes, getTimeline } from "@/lib/content";
 import { toClientMember } from "@/lib/members-client";
+import { listHeroSlides } from "@/lib/hero-admin";
 
 const allMembers = await getMembers((entry) => entry.data.status === "published");
 const clientMembers = allMembers.map(toClientMember);
 const quotes = await getQuotes();
 const timeline = await getTimeline();
+
+// Active hero slides — when any exist the slideshow renders ABOVE the
+// static Lotus hero block. When 0, only the Lotus block shows.
+const heroSlideRows = await listHeroSlides(false);
+const heroSlides: HeroSlide[] = heroSlideRows.map((s) => ({
+  id: s.id,
+  kind: s.photo.kind,
+  src: s.photo.src,
+  poster: s.photo.src_medium ?? s.photo.src_thumb,
+  thumb: s.photo.src_thumb,
+  caption: s.photo.caption,
+  altVi: s.photo.alt_vi,
+  headlineVi: s.headline_vi,
+  headlineEn: s.headline_en,
+  ctaLabel: s.cta_label,
+  ctaHref: s.cta_href,
+  durationMs: s.duration_ms,
+}));
 
 const heroQuote = quotes[0];
 const heroAuthorRef = heroQuote?.data.authorRef
@@ -32,9 +52,13 @@ const yearsSince = new Date().getFullYear() - SITE.established;
 ---
 
 <Base pageKey="home">
+  {heroSlides.length > 0 && (
+    <HeroSlideshow client:load slides={heroSlides} height="70vh" />
+  )}
+
   <!-- ─── HERO ────────────────────────────────────────────────
-       Lotus motif anchor + brand name + motto. Single dramatic
-       centered column with stats line. -->
+       Lotus motif + brand name + motto. Acts as sub-hero when the
+       slideshow is on, or the only hero when no slides configured. -->
   <section class="relative overflow-hidden u-paper-texture">
     <div class="max-w-[880px] mx-auto px-5 pt-20 pb-16 md:pt-28 md:pb-20 text-center">
       <!-- Lotus seal — Vietnamese cultural motif as the visual anchor -->
