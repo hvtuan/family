@@ -93,7 +93,6 @@ const LABEL_OVERRIDES: Record<string, string> = {
   "hero.height": "Chiều cao hero",
   "appearance.default_theme": "Theme mặc định",
   "privacy.show_admin_link_in_footer": "Hiện link Admin ở footer",
-  "privacy.show_theme_switcher": "Hiện nút đổi giao diện",
   "privacy.lunar_calendar_first": "Ưu tiên âm lịch",
 };
 

@@ -119,32 +119,10 @@
 }
 
 /* ============================================================
-   Theme variants via [data-theme] attribute on <html>
+   Theme variants — managed in /admin/themes, injected by Base.astro
+   as a <style> block (one rule per row in family.themes plus :root
+   for the default). Edit the colours in the admin panel, not here.
    ============================================================ */
-[data-theme="scroll"] {
-  --color-paper: #efe0c1;
-  --color-paper-2: #e5d3af;
-  --color-paper-3: #d9c497;
-  --color-cream: #f7ebcf;
-  --color-ink: #2c1c0a;
-  --color-ink-2: #4a2e14;
-  --color-vermilion: #9a2a20;
-  --color-gold: #b88a3d;
-  --color-gold-2: #8e6420;
-}
-
-[data-theme="modern"] {
-  --color-paper: #f4f1e8;
-  --color-paper-2: #eae6d9;
-  --color-paper-3: #ddd8c8;
-  --color-cream: #ffffff;
-  --color-ink: #151311;
-  --color-ink-2: #2a2520;
-  --color-ink-3: #60574c;
-  --color-gold: #9a7d3a;
-  --color-gold-2: #6e5820;
-  --color-vermilion: #6b1f17;
-}
 
 /* ============================================================
    Self-hosted fonts — Latin + Vietnamese subsets per face

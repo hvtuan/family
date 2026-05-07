@@ -1,0 +1,63 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import ThemeForm from "@/components/admin/ThemeForm.tsx";
+import { getThemeById, THEME_VAR_GROUPS, ALL_THEME_KEYS } from "@/lib/themes";
+
+export const prerender = false;
+
+const me = Astro.locals.user;
+if (!me || me.role !== "admin") return Astro.redirect("/admin");
+
+const id = Astro.params.id!;
+const isNew = id === "new";
+
+let initial: any;
+if (isNew) {
+  initial = {
+    id: "",
+    label_vi: "",
+    label_en: "",
+    swatch: "#f5ecd7",
+    vars: {},
+    is_default: false,
+  };
+} else {
+  const row = await getThemeById(id);
+  if (!row) return Astro.redirect("/admin/themes");
+  initial = {
+    id: row.id,
+    label_vi: row.label_vi,
+    label_en: row.label_en,
+    swatch: row.swatch,
+    vars: row.vars,
+    is_default: row.is_default,
+  };
+}
+
+const crumbs = [
+  { label: "Giao diện", href: "/admin/themes" },
+  { label: isNew ? "Tạo mới" : initial.label_vi || initial.id },
+];
+---
+
+<AdminLayout title={isNew ? "Tạo theme mới" : `Sửa: ${initial.label_vi}`} crumbs={crumbs}>
+  <div class="space-y-6">
+    <header>
+      <h1 class="text-xl font-semibold text-foreground">
+        {isNew ? "Tạo theme mới" : `Sửa: ${initial.label_vi}`}
+      </h1>
+      <p class="mt-0.5 text-sm text-muted-foreground">
+        Chỉnh các nhóm màu — preview cập nhật trực tiếp. Lưu khi xong,
+        cập nhật áp dụng cho khách trong vòng 30 giây (cache TTL).
+      </p>
+    </header>
+
+    <ThemeForm
+      client:load
+      mode={isNew ? "create" : "edit"}
+      initial={initial}
+      groups={THEME_VAR_GROUPS}
+      allKeys={ALL_THEME_KEYS}
+    />
+  </div>
+</AdminLayout>

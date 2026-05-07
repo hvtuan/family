@@ -11,7 +11,7 @@ import {
   getAnalyticsConfig,
   getPrivacyToggles,
 } from "@/lib/settings";
-import ThemeSwitcher from "@/components/react/ThemeSwitcher";
+import { listThemes, generateThemeCss } from "@/lib/themes";
 import MemberModal from "@/components/react/MemberModal";
 
 interface Props {
@@ -31,6 +31,13 @@ const seo = await getSeoMeta();
 const social = await getSocialLinks();
 const analytics = await getAnalyticsConfig();
 const privacy = await getPrivacyToggles();
+
+// Themes are admin-managed: site renders with the row marked
+// is_default=true. No client-side picker — when admins want a new
+// look, they edit / add / set-default in /admin/themes.
+const allThemes = await listThemes();
+const defaultThemeId = allThemes.find((t) => t.is_default)?.id ?? "classic";
+const themeCss = generateThemeCss(allThemes);
 
 const pageTitle = title ? `${title} — ${SITE.brand.vi}` : SITE.brand.vi;
 const pageDesc = description ?? seo.defaultDescription
@@ -96,19 +103,13 @@ const robotsContent = seo.indexingEnabled ? "index, follow" : "noindex, nofollow
     <meta name="twitter:card" content={finalOgImage ? "summary_large_image" : "summary"} />
     {seo.twitterHandle && <meta name="twitter:site" content={seo.twitterHandle} />}
 
-    <script is:inline>
-      (() => {
-        try {
-          const t = localStorage.getItem("theme");
-          if (t === "scroll" || t === "modern" || t === "classic") {
-            document.documentElement.dataset.theme = t;
-          } else {
-            document.documentElement.dataset.theme = "classic";
-          }
-        } catch {
-          document.documentElement.dataset.theme = "classic";
-        }
-      })();
+    {/* Theme overrides — generated from family.themes at SSR time */}
+    {themeCss && <style set:html={themeCss}></style>}
+
+    <script is:inline define:vars={{ defaultThemeId }}>
+      // Theme is admin-controlled — set the default on <html> as early
+      // as possible so the right palette paints from the first frame.
+      document.documentElement.dataset.theme = defaultThemeId;
     </script>
 
     {/* Analytics — only inject when configured */}
@@ -198,9 +199,6 @@ const robotsContent = seo.indexingEnabled ? "index, follow" : "noindex, nofollow
           </ul>
         </nav>
 
-        <div class="flex items-center gap-2">
-          {privacy.showThemeSwitcher && <ThemeSwitcher client:load />}
-        </div>
       </div>
     </header>
 

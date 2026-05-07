@@ -1,8 +1,6 @@
 import { atom } from "nanostores";
-import type { Theme } from "@/data/site";
 
 export const $modalMember = atom<string | null>(null);
-export const $theme = atom<Theme>("classic");
 
 if (typeof window !== "undefined") {
   // Initial state from URL (deep-link).
@@ -46,14 +44,5 @@ if (typeof window !== "undefined") {
     suppressSync = true;
     $modalMember.set(id);
     suppressSync = false;
-  });
-
-  const stored = (localStorage.getItem("theme") as Theme | null) ?? "classic";
-  $theme.set(stored);
-  document.documentElement.dataset.theme = stored;
-
-  $theme.subscribe((t) => {
-    localStorage.setItem("theme", t);
-    document.documentElement.dataset.theme = t;
   });
 }

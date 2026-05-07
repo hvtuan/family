@@ -2,7 +2,7 @@
 type IconKey =
   | "dashboard" | "user" | "users" | "calendar" | "bowl" | "image"
   | "chat" | "date" | "map" | "envelope" | "log" | "home" | "help"
-  | "settings";
+  | "settings" | "palette";
 
 interface Props {
   pathname: string;
@@ -26,6 +26,7 @@ const ICONS: Record<IconKey, string> = {
   home: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="fill-current"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.32 2.71a1 1 0 0 1 1.36 0l8.5 8a1 1 0 0 1-1.36 1.46l-.32-.3V19a2.25 2.25 0 0 1-2.25 2.25h-3a.75.75 0 0 1-.75-.75v-4.5h-3v4.5a.75.75 0 0 1-.75.75h-3A2.25 2.25 0 0 1 4.5 19v-7.13l-.32.3a1 1 0 0 1-1.36-1.46l8.5-8Z" fill=""/></svg>`,
   help: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="fill-current"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Zm10-4.25a2 2 0 0 0-1.732 1 .75.75 0 1 1-1.299-.75A3.5 3.5 0 1 1 12.75 13.197V14a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75A2 2 0 1 0 12 7.75ZM12 17.25a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" fill=""/></svg>`,
   settings: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="fill-current"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.5 4.42a.75.75 0 0 1 .73-.92h3.54a.75.75 0 0 1 .73.92l-.34 1.4a7.4 7.4 0 0 1 1.62.94l1.36-.5a.75.75 0 0 1 .9.34l1.77 3.06a.75.75 0 0 1-.16.96l-1.07.94a7.5 7.5 0 0 1 0 1.88l1.07.94a.75.75 0 0 1 .16.96l-1.77 3.06a.75.75 0 0 1-.9.34l-1.36-.5a7.4 7.4 0 0 1-1.62.94l.34 1.4a.75.75 0 0 1-.73.92h-3.54a.75.75 0 0 1-.73-.92l.34-1.4a7.4 7.4 0 0 1-1.62-.94l-1.36.5a.75.75 0 0 1-.9-.34L3.42 14.6a.75.75 0 0 1 .16-.96l1.07-.94a7.5 7.5 0 0 1 0-1.88L3.58 9.88a.75.75 0 0 1-.16-.96l1.77-3.06a.75.75 0 0 1 .9-.34l1.36.5a7.4 7.4 0 0 1 1.62-.94l-.34-1.4ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" fill=""/></svg>`,
+  palette: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="fill-current"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.5a8.5 8.5 0 0 0-8.5 8.5c0 2.485 1.514 4.207 3.793 4.207h.974c.793 0 1.435.643 1.435 1.435 0 .386.005.776.16 1.097.156.32.42.547.812.62l.058.011.058.005c2.31.119 4.59-.787 6.276-2.49 1.687-1.703 2.625-4.005 2.625-6.385 0-3.728-3.022-6.75-6.75-6.75H12Zm-1.043-1.484A10 10 0 0 1 12 2c4.556 0 8.25 3.694 8.25 8.25 0 2.737-1.085 5.428-3.064 7.43-1.974 1.998-4.673 3.073-7.43 2.929-.794-.131-1.518-.658-1.86-1.36-.342-.704-.328-1.49-.328-2.07 0-.022.013-.064-.005-.058-.018.005-.05 0-.107 0H7.293c-3.025 0-5.293-2.314-5.293-5.707A10 10 0 0 1 10.957 2.016ZM7.5 9.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Zm10 1.5a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5ZM6.5 13.5a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5ZM12.5 8a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Z" fill=""/></svg>`,
 };
 
 const sections: {
@@ -49,6 +50,7 @@ const sections: {
     heading: "HỆ THỐNG",
     items: [
       { href: "/admin/hero", label: "Hero homepage", iconKey: "image", adminOnly: true },
+      { href: "/admin/themes", label: "Giao diện", iconKey: "palette", adminOnly: true },
       { href: "/admin/settings", label: "Thiết lập", iconKey: "settings", adminOnly: true },
       { href: "/admin/users", label: "Người dùng", iconKey: "users", adminOnly: true },
       { href: "/admin/audit", label: "Nhật ký", iconKey: "log", adminOnly: true },

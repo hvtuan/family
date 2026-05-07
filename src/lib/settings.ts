@@ -247,14 +247,12 @@ export async function getHeroDefaults(): Promise<HeroDefaults> {
 
 export type PrivacyToggles = {
   showAdminLinkInFooter: boolean;
-  showThemeSwitcher: boolean;
   lunarCalendarFirst: boolean;
 };
 
 export async function getPrivacyToggles(): Promise<PrivacyToggles> {
   return {
     showAdminLinkInFooter: await getBoolean("privacy.show_admin_link_in_footer", true),
-    showThemeSwitcher: await getBoolean("privacy.show_theme_switcher", true),
     lunarCalendarFirst: await getBoolean("privacy.lunar_calendar_first", false),
   };
 }

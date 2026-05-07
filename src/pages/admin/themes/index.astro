@@ -1,0 +1,99 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import ThemesList, { type ThemeListItem } from "@/components/admin/ThemesList.tsx";
+import {
+  listThemes, createTheme, updateTheme, deleteTheme,
+  setDefaultTheme, getThemeById,
+} from "@/lib/themes";
+
+export const prerender = false;
+
+const me = Astro.locals.user;
+if (!me || me.role !== "admin") return Astro.redirect("/admin");
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const action = String(form.get("action") ?? "");
+  try {
+    if (action === "set_default") {
+      await setDefaultTheme(String(form.get("id") ?? ""));
+    } else if (action === "delete") {
+      await deleteTheme(String(form.get("id") ?? ""));
+    } else if (action === "clone") {
+      // Clone an existing theme into a new "<id>-copy" row, then redirect
+      // the client to the edit page so they rename / tweak.
+      const src = await getThemeById(String(form.get("id") ?? ""));
+      if (!src) throw new Error("Theme nguồn không tồn tại");
+      let newId = `${src.id}-copy`;
+      let n = 2;
+      while (await getThemeById(newId)) {
+        newId = `${src.id}-copy-${n++}`;
+      }
+      await createTheme({
+        id: newId,
+        label_vi: `${src.label_vi} (bản sao)`,
+        label_en: `${src.label_en} (copy)`,
+        swatch: src.swatch,
+        vars: src.vars,
+        sort_order: (src.sort_order ?? 100) + 1,
+      });
+      return new Response(JSON.stringify({ ok: true, id: newId }), {
+        status: 200, headers: { "content-type": "application/json" },
+      });
+    } else if (action === "create") {
+      const id = String(form.get("id") ?? "");
+      await createTheme({
+        id,
+        label_vi: String(form.get("label_vi") ?? ""),
+        label_en: String(form.get("label_en") ?? ""),
+        swatch: String(form.get("swatch") ?? "#888888"),
+        vars: JSON.parse(String(form.get("vars") ?? "{}")),
+      });
+    } else if (action === "update") {
+      const id = String(form.get("id") ?? "");
+      await updateTheme(id, {
+        label_vi: String(form.get("label_vi") ?? ""),
+        label_en: String(form.get("label_en") ?? ""),
+        swatch: String(form.get("swatch") ?? "#888888"),
+        vars: JSON.parse(String(form.get("vars") ?? "{}")),
+      });
+    } else {
+      throw new Error(`unknown action: ${action}`);
+    }
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200, headers: { "content-type": "application/json" },
+    });
+  } catch (e) {
+    return new Response(
+      JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e) }),
+      { status: 500, headers: { "content-type": "application/json" } },
+    );
+  }
+}
+
+const rows = await listThemes();
+const items: ThemeListItem[] = rows.map((r) => ({
+  id: r.id,
+  label_vi: r.label_vi,
+  label_en: r.label_en,
+  swatch: r.swatch,
+  vars: r.vars,
+  is_default: r.is_default,
+  sort_order: r.sort_order,
+}));
+---
+
+<AdminLayout title="Giao diện" crumbs={[{ label: "Giao diện" }]}>
+  <div class="space-y-6">
+    <header>
+      <h1 class="text-xl font-semibold text-foreground">Quản lý giao diện</h1>
+      <p class="mt-0.5 text-sm text-muted-foreground">
+        Mỗi theme là một bộ màu áp lên trang công khai. Đặt một theme làm
+        mặc định, hoặc tạo theme mới để thay đổi diện mạo cả site —
+        không cần redeploy.
+      </p>
+    </header>
+
+    <ThemesList client:load initial={items} />
+  </div>
+</AdminLayout>
