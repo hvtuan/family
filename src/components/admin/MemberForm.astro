@@ -34,8 +34,24 @@ const submitLabel = mode === "create" ? "Tạo thành viên" : "Lưu thay đổi
     </div>
   )}
 
+  <!-- Sticky section nav: anchor links + active section highlight via
+       Intersection Observer (vanilla JS at the bottom of this file). -->
+  <nav
+    data-form-toc
+    class="sticky top-16 z-30 -mx-2 flex flex-wrap gap-1 overflow-x-auto rounded-lg border border-border bg-background/95 p-1.5 shadow-theme-xs backdrop-blur-sm"
+    aria-label="Mục trong biểu mẫu"
+  >
+    <a href="#section-identity"  class="form-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">Định danh</a>
+    <a href="#section-dates"     class="form-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">Sinh – mất</a>
+    <a href="#section-relations" class="form-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">Quan hệ</a>
+    <a href="#section-intro"     class="form-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">Giới thiệu</a>
+    <a href="#section-personal"  class="form-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">Cá nhân</a>
+    <a href="#section-contact"   class="form-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">Liên hệ</a>
+    <a href="#section-status"    class="form-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">Trạng thái</a>
+  </nav>
+
   <!-- ─── Identity ─────────────────────────────────────────────── -->
-  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+  <fieldset id="section-identity" class="scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
     <legend class="px-2 text-theme-sm font-semibold text-gray-800">Định danh</legend>
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
@@ -143,7 +159,7 @@ const submitLabel = mode === "create" ? "Tạo thành viên" : "Lưu thay đổi
   </fieldset>
 
   <!-- ─── Dates + places ──────────────────────────────────────── -->
-  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+  <fieldset id="section-dates" class="scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
     <legend class="px-2 text-theme-sm font-semibold text-gray-800">Sinh – mất</legend>
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
@@ -195,7 +211,7 @@ const submitLabel = mode === "create" ? "Tạo thành viên" : "Lưu thay đổi
   </fieldset>
 
   <!-- ─── Relations ───────────────────────────────────────────── -->
-  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+  <fieldset id="section-relations" class="scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
     <legend class="px-2 text-theme-sm font-semibold text-gray-800">Quan hệ</legend>
     <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
       <div>
@@ -244,7 +260,7 @@ const submitLabel = mode === "create" ? "Tạo thành viên" : "Lưu thay đổi
   </fieldset>
 
   <!-- ─── Bio ─────────────────────────────────────────────────── -->
-  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+  <fieldset id="section-intro" class="scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
     <legend class="px-2 text-theme-sm font-semibold text-gray-800">Giới thiệu</legend>
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
@@ -278,7 +294,7 @@ const submitLabel = mode === "create" ? "Tạo thành viên" : "Lưu thay đổi
   </fieldset>
 
   <!-- ─── Other ───────────────────────────────────────────────── -->
-  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+  <fieldset id="section-personal" class="scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
     <legend class="px-2 text-theme-sm font-semibold text-gray-800">Cá nhân khác</legend>
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div>
@@ -346,7 +362,7 @@ const submitLabel = mode === "create" ? "Tạo thành viên" : "Lưu thay đổi
   </fieldset>
 
   <!-- ─── Contact ─────────────────────────────────────────────── -->
-  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+  <fieldset id="section-contact" class="scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
     <legend class="px-2 text-theme-sm font-semibold text-gray-800">Liên hệ</legend>
     <p class="mb-4 text-theme-xs text-gray-500">
       Phone / email / address chỉ hiển thị công khai nếu bật <em>Cho phép hiển thị</em>.
@@ -389,7 +405,7 @@ const submitLabel = mode === "create" ? "Tạo thành viên" : "Lưu thay đổi
   </fieldset>
 
   <!-- ─── Status ──────────────────────────────────────────────── -->
-  <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">
+  <fieldset id="section-status" class="scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
     <legend class="px-2 text-theme-sm font-semibold text-gray-800">Trạng thái</legend>
     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
       <label class="flex items-center gap-2 text-theme-sm text-gray-700">
@@ -410,15 +426,66 @@ const submitLabel = mode === "create" ? "Tạo thành viên" : "Lưu thay đổi
   <div class="flex items-center justify-between gap-3">
     <a
       href="/admin/members"
-      class="rounded-lg border border-gray-200 px-5 py-2.5 text-theme-sm font-medium text-gray-700 hover:bg-gray-50"
+      class="rounded-lg border border-border bg-background px-5 py-2.5 text-sm font-medium text-foreground hover:bg-accent"
     >
       Hủy
     </a>
     <button
       type="submit"
-      class="rounded-lg bg-brand-500 px-5 py-2.5 text-theme-sm font-medium text-white shadow-theme-xs hover:bg-brand-600"
+      class="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-theme-xs hover:bg-brand-600"
     >
       {submitLabel}
     </button>
   </div>
 </form>
+
+<style>
+  .form-toc-link.is-active {
+    background-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+</style>
+
+<script is:inline>
+  // Active-section highlight in the form TOC. Uses IntersectionObserver
+  // to track which fieldset is most in view as the user scrolls.
+  (() => {
+    const links = Array.from(document.querySelectorAll(".form-toc-link"));
+    if (links.length === 0) return;
+    const sections = links
+      .map((a) => {
+        const id = a.getAttribute("href")?.slice(1);
+        return id ? document.getElementById(id) : null;
+      })
+      .filter((s) => Boolean(s));
+    if (sections.length === 0) return;
+
+    const setActive = (id) => {
+      links.forEach((a) => {
+        a.classList.toggle("is-active", a.getAttribute("href") === `#${id}`);
+      });
+    };
+
+    // First section starts active.
+    setActive(sections[0].id);
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        // Pick the entry with the highest intersection ratio that's still
+        // visible. Avoids flicker between adjacent sections.
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible.length === 0) return;
+        setActive(visible[0].target.id);
+      },
+      {
+        // Account for sticky header (~64px) + sticky nav (~56px).
+        rootMargin: "-128px 0px -50% 0px",
+        threshold: [0, 0.25, 0.5, 0.75, 1],
+      },
+    );
+
+    sections.forEach((s) => io.observe(s));
+  })();
+</script>

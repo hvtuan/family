@@ -4,6 +4,7 @@ import Base from "@/layouts/Base.astro";
 import PageHead from "@/components/astro/PageHead.astro";
 import VietnamSVG from "@/components/astro/VietnamSVG.astro";
 import LocationCard from "@/components/astro/LocationCard.astro";
+import PublicMap, { type PublicMarker } from "@/components/astro/PublicMap.tsx";
 import { getLocations, getMembers } from "@/lib/content";
 
 const locations = (await getLocations())
@@ -13,6 +14,23 @@ const memberIndex = new Map(
   (await getMembers()).map((m) => [m.id, m]),
 );
 
+// Markers for the Google Map (only locations with coords).
+const markers: PublicMarker[] = locations
+  .filter((loc) => typeof loc.data.coords?.lat === "number" && typeof loc.data.coords?.lng === "number")
+  .map((loc) => ({
+    id: loc.data.id,
+    name: loc.data.name,
+    nameEn: loc.data.nameEn,
+    isHometown: loc.data.isHometown,
+    lat: loc.data.coords.lat,
+    lng: loc.data.coords.lng,
+    members: loc.data.members.length,
+    memberNames: loc.data.members
+      .map((r) => memberIndex.get(r.id)?.data.name)
+      .filter((n): n is string => !!n),
+  }));
+
+// Same shape for the existing decorative VietnamSVG fallback.
 const mapMarkers = locations.map((loc) => ({
   id: loc.data.id,
   name: loc.data.name,
@@ -22,6 +40,8 @@ const mapMarkers = locations.map((loc) => ({
   lng: loc.data.coords.lng,
   members: loc.data.members.length,
 }));
+
+const apiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
 ---
 
 <Base title="Bản đồ" pageKey="map">
@@ -33,7 +53,11 @@ const mapMarkers = locations.map((loc) => ({
   />
 
   <section class="max-w-[1240px] mx-auto px-5 pt-4 pb-16">
-    <VietnamSVG locations={mapMarkers} />
+    {apiKey && markers.length > 0 ? (
+      <PublicMap client:only="react" apiKey={apiKey} markers={markers} height="60vh" />
+    ) : (
+      <VietnamSVG locations={mapMarkers} />
+    )}
 
     <ul class="list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-5 mt-8">
       {
