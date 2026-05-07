@@ -8,52 +8,87 @@ interface Props {
 
 const { location: loc, memberNames } = Astro.props;
 
-const osmLink = `https://www.openstreetmap.org/?mlat=${loc.coords.lat}&mlon=${loc.coords.lng}#map=12/${loc.coords.lat}/${loc.coords.lng}`;
+// Prefer Google Maps (matches admin / public PublicMap) — falls back
+// to OSM if browser blocks google maps domain.
+const mapsLink = `https://www.google.com/maps?q=${loc.coords.lat},${loc.coords.lng}`;
 ---
 
-<li class:list={["u-card p-6 flex flex-col gap-3", loc.isHometown && "border-2 border-vermilion"]}>
+<li
+  class:list={[
+    "u-card p-6 flex flex-col gap-3 transition-shadow hover:shadow-paper-2",
+    loc.isHometown && "ring-2 ring-vermilion ring-offset-2 ring-offset-paper",
+  ]}
+>
   <header>
-    {
-      loc.isHometown && (
-        <span class="inline-block px-3 py-1 bg-vermilion text-paper rounded-full text-[0.72rem] font-semibold tracking-wide mb-2">
-          Quê tổ • Hometown
-        </span>
-      )
-    }
-    <h2 class="text-[1.5rem] m-0">{loc.name}</h2>
-    {
-      loc.nameEn?.trim() && (
-        <p lang="en" class="text-[0.78rem] tracking-[0.14em] uppercase text-ink-3">
-          {loc.nameEn}
-        </p>
-      )
-    }
-    <p class="text-[0.92rem] text-ink-2 mt-1">{loc.province}</p>
+    {loc.isHometown && (
+      <span
+        class="inline-flex items-center gap-1 px-3 py-1 bg-vermilion text-paper rounded-full font-semibold mb-3"
+        style="font-size: var(--text-xs); letter-spacing: var(--tracking-wide);"
+        title="Hometown"
+      >
+        ★ Quê tổ
+      </span>
+    )}
+    <h2
+      class="font-display font-bold text-ink m-0 leading-tight"
+      style="font-size: var(--text-2xl);"
+      title={loc.nameEn}
+    >
+      {loc.name}
+    </h2>
+    <p class="text-ink-2 mt-1" style="font-size: var(--text-sm);">
+      {loc.province}
+    </p>
   </header>
-  {loc.description && <p class="text-ink-2 leading-[1.55]">{loc.description}</p>}
-  <dl class="grid grid-cols-2 gap-3 m-0 p-3 bg-paper-2 rounded-lg">
+
+  {loc.description && (
+    <p class="text-ink-2 leading-relaxed" style="font-size: var(--text-base);">
+      {loc.description}
+    </p>
+  )}
+
+  <dl class="grid grid-cols-2 gap-3 m-0 p-3 bg-paper-2/60 rounded-md border border-line">
     <div class="flex flex-col gap-0.5">
-      <dt class="text-[0.65rem] tracking-[0.16em] uppercase text-ink-3">Tọa độ</dt>
-      <dd class="m-0 font-semibold text-ink">
-        <code class="font-mono text-[0.82rem] font-normal">
+      <dt
+        class="text-gold-2 uppercase font-semibold"
+        style="font-size: var(--text-2xs); letter-spacing: var(--tracking-wide);"
+      >
+        Tọa độ
+      </dt>
+      <dd class="m-0">
+        <code class="font-mono text-ink tabular-nums" style="font-size: var(--text-sm);">
           {loc.coords.lat.toFixed(4)}, {loc.coords.lng.toFixed(4)}
         </code>
       </dd>
     </div>
     <div class="flex flex-col gap-0.5">
-      <dt class="text-[0.65rem] tracking-[0.16em] uppercase text-ink-3">Thành viên</dt>
-      <dd class="m-0 font-semibold text-ink">{loc.members.length}</dd>
+      <dt
+        class="text-gold-2 uppercase font-semibold"
+        style="font-size: var(--text-2xs); letter-spacing: var(--tracking-wide);"
+      >
+        Thành viên
+      </dt>
+      <dd class="m-0 font-semibold text-ink tabular-nums">{loc.members.length}</dd>
     </div>
   </dl>
+
   {memberNames.length > 0 && (
-    <p class="text-[0.85rem] text-ink-2 leading-snug">{memberNames.join(" • ")}</p>
+    <p class="text-ink-2 leading-snug" style="font-size: var(--text-sm);">
+      {memberNames.slice(0, 6).join(" · ")}
+      {memberNames.length > 6 && (
+        <span class="text-ink-3">{` · và ${memberNames.length - 6} người khác`}</span>
+      )}
+    </p>
   )}
+
   <a
-    href={osmLink}
+    href={mapsLink}
     target="_blank"
     rel="noopener noreferrer"
-    class="mt-auto font-semibold text-vermilion text-[0.9rem]"
+    class="mt-auto font-semibold text-jade hover:text-vermilion transition-colors inline-flex items-center gap-1"
+    style="font-size: var(--text-sm);"
   >
-    Mở trên OpenStreetMap ↗
+    Mở trên Google Maps
+    <span aria-hidden="true">↗</span>
   </a>
 </li>

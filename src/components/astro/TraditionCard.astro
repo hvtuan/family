@@ -32,42 +32,59 @@ const cat = categoryLabel[t.category];
 <li class="u-card p-6 flex flex-col gap-2">
   <header class="flex items-center justify-between gap-4">
     <span class="text-[2.4rem] leading-none" aria-hidden="true">{iconGlyph[t.icon]}</span>
-    <span class="inline-flex flex-col leading-tight px-3 py-1 bg-jade text-paper rounded-full text-[0.78rem] font-semibold">
-      <span>{cat.vi}</span>
-      <span lang="en" class="text-[0.6rem] tracking-[0.16em] uppercase opacity-85">{cat.en}</span>
+    <span
+      class="inline-flex items-center px-3 py-1 bg-jade/10 text-jade border border-jade/25 rounded-full font-semibold"
+      style="font-size: var(--text-xs); letter-spacing: var(--tracking-wide);"
+      title={cat.en}
+    >
+      {cat.vi}
     </span>
   </header>
 
-  <h2 class="text-[1.4rem] m-0">{t.name}</h2>
-  {
-    t.nameEn?.trim() && (
-      <p lang="en" class="text-[0.78rem] tracking-[0.14em] uppercase text-ink-3 -mt-1 mb-1.5">
-        {t.nameEn}
-      </p>
-    )
-  }
-  <p class="text-ink-2 leading-[1.55]">{t.desc}</p>
-  {
-    t.descEn?.trim() && (
-      <p lang="en" class="text-[0.88rem] text-ink-3 leading-normal italic">
-        {t.descEn}
-      </p>
-    )
-  }
-  {
-    t.origin && (
-      <p class="flex gap-2 text-[0.85rem] text-ink-2 items-baseline mt-2">
-        <span class="text-[0.7rem] tracking-[0.16em] uppercase text-gold-2">Nguồn gốc</span>
-        <span>{t.origin}</span>
-      </p>
-    )
-  }
+  <h2
+    class="font-display font-bold text-ink m-0 leading-tight"
+    style="font-size: var(--text-2xl);"
+    title={t.nameEn}
+  >
+    {t.name}
+  </h2>
+
+  <p class="text-ink-2 leading-relaxed" style="font-size: var(--text-base);">
+    {t.desc}
+  </p>
+  {t.descEn?.trim() && (
+    <p
+      lang="en"
+      class="text-ink-3 italic leading-normal"
+      style="font-size: var(--text-sm);"
+    >
+      {t.descEn}
+    </p>
+  )}
+
+  {t.origin && (
+    <p class="flex gap-2 items-baseline mt-2 text-ink-2" style="font-size: var(--text-sm);">
+      <span
+        class="font-semibold text-gold-2 uppercase shrink-0"
+        style="font-size: var(--text-2xs); letter-spacing: var(--tracking-wide);"
+      >
+        Nguồn gốc
+      </span>
+      <span>{t.origin}</span>
+    </p>
+  )}
 
   <details class="tradition-details mt-2">
-    <summary class="cursor-pointer font-semibold text-vermilion list-none py-1.5">
-      Xem chi tiết / Read more
+    <summary
+      class="cursor-pointer font-semibold text-jade hover:text-vermilion list-none py-1.5 transition-colors"
+      style="font-size: var(--text-sm);"
+    >
+      Xem chi tiết
     </summary>
-    <div class="tradition-content pt-3 border-t border-dashed border-line text-ink-2 leading-[1.7]" set:html={bodyHtml} />
+    <div
+      class="tradition-content pt-3 border-t border-dashed border-line text-ink-2 leading-[1.7]"
+      set:html={bodyHtml}
+    />
   </details>
 </li>
 
@@ -85,7 +102,8 @@ const cat = categoryLabel[t.category];
   }
   .tradition-content :global(h2),
   .tradition-content :global(h3) {
-    font-size: 1.05rem;
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
     margin: 1rem 0 0.5rem;
     color: var(--color-vermilion);
   }
@@ -95,7 +113,7 @@ const cat = categoryLabel[t.category];
     margin: 0.5rem 0;
   }
   .tradition-content :global(blockquote) {
-    border-left: 3px solid var(--color-vermilion);
+    border-left: 3px solid var(--color-gold-2);
     padding: 0.25rem 0 0.25rem 1rem;
     margin: 0.75rem 0;
     font-style: italic;

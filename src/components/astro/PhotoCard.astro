@@ -9,9 +9,8 @@ const { photo: p } = Astro.props;
 const isVideo = p.kind === "video";
 
 // For images: use medium URL when present, fall back to original src.
-// For videos: use the original src on <video>; the poster comes from
-// `poster` (admin-side: src_medium) so the card is visually identical
-// to a photo card until the user hits play.
+// For videos: use the poster (admin-side: src_medium) so the card looks
+// identical to a photo card until the user hits play.
 const imgSrc = isVideo ? (p.poster ?? p.thumb ?? "") : (p.thumb ?? p.src);
 const altText = p.altVi ?? p.caption;
 
@@ -24,9 +23,9 @@ function formatDuration(seconds?: number): string {
 const dur = formatDuration(p.durationSeconds);
 ---
 
-<li class="">
-  <figure class="m-0 bg-cream border border-line rounded-xl overflow-hidden shadow-paper-1">
-    <div class="aspect-[4/3] bg-paper-3 relative">
+<li>
+  <figure class="m-0 group u-card overflow-hidden">
+    <div class="aspect-[4/3] bg-paper-3 relative overflow-hidden">
       {isVideo ? (
         <video
           src={p.src}
@@ -34,7 +33,7 @@ const dur = formatDuration(p.durationSeconds);
           controls
           preload="metadata"
           playsinline
-          class="w-full h-full object-cover block bg-black"
+          class="w-full h-full object-cover block bg-ink"
         >
           {altText}
         </video>
@@ -42,25 +41,42 @@ const dur = formatDuration(p.durationSeconds);
         <img
           src={imgSrc}
           alt={altText}
-          class="w-full h-full object-cover block"
+          class="w-full h-full object-cover block transition-transform duration-700 group-hover:scale-[1.03]"
           loading="lazy"
           decoding="async"
         />
       )}
       {isVideo && dur && (
-        <span class="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[0.72rem] font-medium text-white tabular-nums">
+        <span
+          class="absolute bottom-2 right-2 rounded bg-ink/75 px-1.5 py-0.5 font-medium text-paper tabular-nums"
+          style="font-size: var(--text-2xs);"
+        >
           {dur}
         </span>
       )}
     </div>
-    <figcaption class="p-4 flex flex-col gap-0.5">
-      <p>{p.caption}</p>
+    <figcaption class="p-4 flex flex-col gap-1">
+      <p
+        class="font-display text-ink leading-snug m-0"
+        style="font-size: var(--text-base);"
+      >
+        {p.caption}
+      </p>
       {p.captionEn?.trim() && (
-        <p lang="en" class="text-[0.82rem] text-ink-3 italic">{p.captionEn}</p>
+        <p
+          lang="en"
+          class="text-ink-3 italic m-0"
+          style="font-size: var(--text-xs);"
+        >
+          {p.captionEn}
+        </p>
       )}
       {(p.year || p.location) && (
-        <p class="mt-1.5 text-[0.78rem] text-ink-3 tracking-wide">
-          {[p.year, p.location].filter(Boolean).join(" • ")}
+        <p
+          class="mt-2 pt-2 border-t border-dashed border-line text-ink-3 tabular-nums uppercase"
+          style="font-size: var(--text-2xs); letter-spacing: var(--tracking-wide);"
+        >
+          {[p.year, p.location].filter(Boolean).join(" · ")}
         </p>
       )}
     </figcaption>

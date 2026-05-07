@@ -14,18 +14,8 @@ interface Props {
 const { entry: d, member } = Astro.props;
 
 const monthNames = [
-  "Tháng 1",
-  "Tháng 2",
-  "Tháng 3",
-  "Tháng 4",
-  "Tháng 5",
-  "Tháng 6",
-  "Tháng 7",
-  "Tháng 8",
-  "Tháng 9",
-  "Tháng 10",
-  "Tháng 11",
-  "Tháng 12",
+  "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
+  "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12",
 ];
 
 function parseDate(raw: string): { month: number; day: number } | null {
@@ -37,48 +27,72 @@ function parseDate(raw: string): { month: number; day: number } | null {
 }
 
 const parsed = parseDate(d.date);
-const calendarBg = d.calendar === "lunar" ? "bg-vermilion text-paper" : "bg-jade text-paper";
+
+// Calendar tone: lunar = warm gold, solar = cool jade.
+// (Was vermilion+jade, both filled — too saturated. Now both
+// outlined / tinted to feel like calendar marginalia.)
+const calBadge =
+  d.calendar === "lunar"
+    ? "bg-gold-2/15 text-gold-2 border-gold-2/30"
+    : "bg-jade/10 text-jade border-jade/30";
 ---
 
 <li class="u-card grid grid-cols-[110px_1fr] gap-4 p-4 px-5 items-center mobile:grid-cols-[90px_1fr] mobile:gap-3">
-  <div class="flex flex-col items-center gap-1 p-2.5 bg-paper-2 rounded-[10px] text-center">
-    <span class="font-display font-bold text-[2rem] text-vermilion leading-none mobile:text-[1.5rem]">
+  <!-- Day chip — was bright vermilion, now ink for hierarchy + tonal calendar pill -->
+  <div class="flex flex-col items-center gap-1 p-2.5 bg-paper-2 rounded-md text-center">
+    <span
+      class="font-display font-bold text-ink leading-none tabular-nums mobile:text-[1.5rem]"
+      style="font-size: var(--text-3xl);"
+    >
       {parsed ? String(parsed.day).padStart(2, "0") : "—"}
     </span>
-    <span class="text-[0.78rem] text-ink-2">
+    <span class="text-ink-2" style="font-size: var(--text-xs);">
       {parsed ? monthNames[parsed.month - 1] : d.date}
     </span>
-    <span class={`text-[0.6rem] tracking-wide uppercase px-2 py-px rounded-full mt-0.5 ${calendarBg}`}>
+    <span
+      class={`mt-0.5 px-2 py-px rounded-full border ${calBadge}`}
+      style="font-size: var(--text-2xs); letter-spacing: var(--tracking-wide); text-transform: uppercase;"
+    >
       {d.calendar === "lunar" ? "Âm lịch" : "Dương lịch"}
     </span>
   </div>
 
   <div>
-    <h3 class="text-[1.1rem] m-0">{d.name}</h3>
-    {
-      d.nameEn?.trim() && (
-        <p lang="en" class="text-[0.75rem] tracking-[0.14em] uppercase text-ink-3 mb-1.5">
-          {d.nameEn}
-        </p>
-      )
-    }
-    {
-      member && (
-        <p class="text-[0.92rem] text-ink-2">
-          <span class="text-ink-3 text-[0.78rem]">Tưởng nhớ:</span>{" "}
-          <a href={`/members?member=${member.id}`} class="text-vermilion font-semibold">
-            {member.name}
-          </a>
-        </p>
-      )
-    }
-    {d.notes && <p class="mt-2 text-[0.85rem] text-ink-3 leading-[1.55]">{d.notes}</p>}
-    {
-      d.recurring && (
-        <span class="inline-block mt-2 px-2 py-0.5 bg-paper-3 rounded-full text-[0.7rem] text-ink-2">
-          Hằng năm
+    <h3
+      class="font-display font-bold text-ink m-0 leading-tight"
+      style="font-size: var(--text-xl);"
+      title={d.nameEn}
+    >
+      {d.name}
+    </h3>
+    {member && (
+      <p class="mt-1.5 text-ink-2" style="font-size: var(--text-sm);">
+        <span
+          class="text-gold-2 uppercase mr-1.5 font-semibold"
+          style="font-size: var(--text-2xs); letter-spacing: var(--tracking-wide);"
+        >
+          Tưởng nhớ
         </span>
-      )
-    }
+        <a
+          href={`/members?member=${member.id}`}
+          class="text-jade font-semibold hover:text-vermilion transition-colors"
+        >
+          {member.name}
+        </a>
+      </p>
+    )}
+    {d.notes && (
+      <p class="mt-2 text-ink-3 leading-relaxed" style="font-size: var(--text-sm);">
+        {d.notes}
+      </p>
+    )}
+    {d.recurring && (
+      <span
+        class="inline-block mt-2 px-2 py-0.5 bg-paper-3 rounded-full text-ink-2"
+        style="font-size: var(--text-2xs); letter-spacing: var(--tracking-wide); text-transform: uppercase;"
+      >
+        Hằng năm
+      </span>
+    )}
   </div>
 </li>
