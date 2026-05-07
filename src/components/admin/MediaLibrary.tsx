@@ -1,3 +1,4 @@
+/// <reference types="google.maps" />
 /**
  * Pro-grade hub UI for /admin/media. Replaces the SSR Astro grid with a
  * single React island that wires up:
@@ -33,6 +34,9 @@ import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
 import "yet-another-react-lightbox/styles.css";
 import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
+import {
+  AdvancedMarker, APIProvider, InfoWindow, Map as GMap, useMap,
+} from "@vis.gl/react-google-maps";
 import {
   Calendar, Hash, Heart, Image as ImageIcon, Map as MapIcon,
   Search, Sparkles, Star, Trash2, Users, X,
@@ -79,10 +83,22 @@ export type MemberRef = {
   photo: string | null;
 };
 
+export type LocationRef = {
+  id: string;
+  name: string;
+  name_en: string | null;
+  province: string | null;
+  lat: number | null;
+  lng: number | null;
+  is_hometown: boolean;
+};
+
 interface Props {
   items: MediaItem[];
   members?: MemberRef[];
   photoMembers?: Record<string, string[]>; // photoId → memberId[]
+  locations?: LocationRef[];
+  googleMapsApiKey?: string;
   initialBanner?: { kind: "ok" | "err"; text: string } | null;
 }
 
@@ -147,6 +163,8 @@ export default function MediaLibrary({
   items,
   members = [],
   photoMembers = {},
+  locations = [],
+  googleMapsApiKey,
   initialBanner,
 }: Props) {
   const [hydrated, setHydrated] = useState(false);
@@ -490,6 +508,8 @@ export default function MediaLibrary({
       <TabsContent value="map">
         <MapTab
           items={items}
+          locations={locations}
+          apiKey={googleMapsApiKey}
           onSelectLocation={(loc) => {
             setTabAndUrl("library");
             setQ(loc.toLowerCase());
@@ -1271,15 +1291,17 @@ function MemoryRow({
 
 function MapTab({
   items,
+  locations,
+  apiKey,
   onSelectLocation,
 }: {
   items: MediaItem[];
+  locations: LocationRef[];
+  apiKey?: string;
   onSelectLocation: (location: string) => void;
 }) {
-  // Aggregate { location → { count, latestPhoto, kind } }.
-  // Match on the full string to avoid splitting "Quảng Ngãi, Việt Nam" into
-  // two pseudo-locations. Light normalization (trim, lowercase compare).
-  const locations = useMemo(() => {
+  // Aggregate photos by free-text location field for the list view.
+  const locationGroups = useMemo(() => {
     const map = new Map<
       string,
       { name: string; count: number; latest: MediaItem | null; videoCount: number }
@@ -1302,10 +1324,10 @@ function MapTab({
     return Array.from(map.values()).sort((a, b) => b.count - a.count);
   }, [items]);
 
-  const totalWithLocation = locations.reduce((acc, l) => acc + l.count, 0);
+  const totalWithLocation = locationGroups.reduce((acc, l) => acc + l.count, 0);
   const totalWithoutLocation = items.length - totalWithLocation;
 
-  if (locations.length === 0) {
+  if (locationGroups.length === 0 && (locations ?? []).length === 0) {
     return (
       <EmptyState
         icon={<MapIcon />}
@@ -1315,85 +1337,131 @@ function MapTab({
     );
   }
 
+  // Compute pins: curated locations table records that have coords +
+  // at least one photo whose location text matches their name.
+  const pins = useMemo(() => {
+    return (locations ?? [])
+      .filter((l) => typeof l.lat === "number" && typeof l.lng === "number")
+      .map((l) => {
+        const needle = l.name.toLowerCase();
+        let count = 0;
+        let latest: MediaItem | null = null;
+        for (const p of items) {
+          if (!p.location) continue;
+          if (!p.location.toLowerCase().includes(needle)) continue;
+          count++;
+          if (!latest || (p.year ?? 0) > (latest.year ?? 0)) latest = p;
+        }
+        return { ...l, count, latest };
+      })
+      .filter((p) => p.count > 0)
+      .sort((a, b) => b.count - a.count);
+  }, [items, locations]);
+
   return (
     <div className="space-y-6">
-      {/* Decorative Vietnam outline header card */}
-      <div className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-jade/5 via-cream to-paper-2/40 p-5">
-        <div className="flex items-center gap-4">
-          <VietnamOutline className="size-24 shrink-0 text-jade" />
-          <div className="flex-1 min-w-0">
-            <h3 class-name="text-base font-semibold text-foreground">
-              Kỷ niệm trên bản đồ
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              <span className="tabular-nums font-medium text-foreground">
-                {totalWithLocation}
-              </span>{" "}
-              ảnh ở{" "}
-              <span className="tabular-nums font-medium text-foreground">
-                {locations.length}
-              </span>{" "}
-              địa điểm
-              {totalWithoutLocation > 0 && (
-                <span className="text-muted-foreground/80">
-                  {" · "}
-                  {totalWithoutLocation} ảnh chưa ghi địa điểm
-                </span>
+      {/* Header card — Google Map when key set, decorative SVG fallback otherwise */}
+      {apiKey && pins.length > 0 ? (
+        <GoogleMapPanel
+          apiKey={apiKey}
+          pins={pins}
+          totalWithLocation={totalWithLocation}
+          totalWithoutLocation={totalWithoutLocation}
+          locationsCount={locations.length}
+          onSelectLocation={onSelectLocation}
+        />
+      ) : (
+        <div className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-jade/5 via-cream to-paper-2/40 p-5">
+          <div className="flex items-center gap-4">
+            <VietnamOutline className="size-24 shrink-0 text-jade" />
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-semibold text-foreground">
+                Kỷ niệm trên bản đồ
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                <span className="tabular-nums font-medium text-foreground">
+                  {totalWithLocation}
+                </span>{" "}
+                ảnh ở{" "}
+                <span className="tabular-nums font-medium text-foreground">
+                  {locations.length}
+                </span>{" "}
+                địa điểm
+                {totalWithoutLocation > 0 && (
+                  <span className="text-muted-foreground/80">
+                    {" · "}
+                    {totalWithoutLocation} ảnh chưa ghi địa điểm
+                  </span>
+                )}
+              </p>
+              {!apiKey && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  💡 Đặt <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">PUBLIC_GOOGLE_MAPS_API_KEY</code>{" "}
+                  để xem bản đồ Google Maps thực thay vì list này.
+                </p>
               )}
-            </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Location grid */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {locations.map((loc) => {
-          const thumb = loc.latest
-            ? loc.latest.kind === "video"
-              ? (loc.latest.src_thumb || loc.latest.src_medium || "")
-              : (loc.latest.src_thumb || loc.latest.src_medium || loc.latest.src)
-            : "";
-          return (
-            <button
-              key={loc.name}
-              type="button"
-              onClick={() => onSelectLocation(loc.name)}
-              className="group flex items-stretch gap-3 overflow-hidden rounded-xl border border-border bg-card text-left transition-shadow hover:shadow-theme-md"
-            >
-              <div className="relative h-24 w-24 shrink-0 overflow-hidden bg-muted">
-                {thumb ? (
-                  <img
-                    src={thumb}
-                    alt=""
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.05]"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-2xl text-muted-foreground/50">
-                    <MapIcon />
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-1 flex-col justify-between p-3 min-w-0">
-                <div className="min-w-0">
-                  <h4 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                    <MapIcon className="size-3.5 shrink-0 text-jade" />
-                    <span className="truncate">{loc.name}</span>
-                  </h4>
-                  <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-                    {loc.count} ảnh
-                    {loc.videoCount > 0 && ` · ${loc.videoCount} video`}
-                  </p>
+      {/* Location grid (always visible — uses photo.location text aggregation) */}
+      <div>
+        <h4 className="mb-3 text-sm font-semibold text-foreground">
+          Tất cả địa điểm trong ảnh
+          <span className="ml-2 text-xs font-normal text-muted-foreground">
+            ({locationGroups.length})
+          </span>
+        </h4>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {locationGroups.map((loc) => {
+            const thumb = loc.latest
+              ? loc.latest.kind === "video"
+                ? (loc.latest.src_thumb || loc.latest.src_medium || "")
+                : (loc.latest.src_thumb || loc.latest.src_medium || loc.latest.src)
+              : "";
+            return (
+              <button
+                key={loc.name}
+                type="button"
+                onClick={() => onSelectLocation(loc.name)}
+                className="group flex items-stretch gap-3 overflow-hidden rounded-xl border border-border bg-card text-left transition-shadow hover:shadow-theme-md"
+              >
+                <div className="relative h-24 w-24 shrink-0 overflow-hidden bg-muted">
+                  {thumb ? (
+                    <img
+                      src={thumb}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.05]"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-2xl text-muted-foreground/50">
+                      <MapIcon />
+                    </div>
+                  )}
                 </div>
-                {loc.latest?.year && (
-                  <p className="text-xs text-muted-foreground">
-                    Mới nhất: <span className="text-foreground">{loc.latest.year}</span>
-                  </p>
-                )}
-              </div>
-            </button>
-          );
-        })}
+                <div className="flex flex-1 flex-col justify-between p-3 min-w-0">
+                  <div className="min-w-0">
+                    <h4 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                      <MapIcon className="size-3.5 shrink-0 text-jade" />
+                      <span className="truncate">{loc.name}</span>
+                    </h4>
+                    <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+                      {loc.count} ảnh
+                      {loc.videoCount > 0 && ` · ${loc.videoCount} video`}
+                    </p>
+                  </div>
+                  {loc.latest?.year && (
+                    <p className="text-xs text-muted-foreground">
+                      Mới nhất: <span className="text-foreground">{loc.latest.year}</span>
+                    </p>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -1420,4 +1488,194 @@ function VietnamOutline({ className }: { className?: string }) {
       <circle cx="56" cy="115" r="1.5" fill="currentColor" />
     </svg>
   );
+}
+
+// ─── Google Map panel ─────────────────────────────────────────────────────
+
+type MapPin = LocationRef & { count: number; latest: MediaItem | null };
+
+function GoogleMapPanel({
+  apiKey,
+  pins,
+  totalWithLocation,
+  totalWithoutLocation,
+  locationsCount,
+  onSelectLocation,
+}: {
+  apiKey: string;
+  pins: MapPin[];
+  totalWithLocation: number;
+  totalWithoutLocation: number;
+  locationsCount: number;
+  onSelectLocation: (name: string) => void;
+}) {
+  // Defer the import so SSR doesn't try to load the Google bundle.
+  return (
+    <DeferredAPIProvider apiKey={apiKey}>
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-theme-xs">
+        <div className="border-b border-border bg-gradient-to-br from-jade/5 via-cream to-paper-2/40 p-5">
+          <h3 className="text-base font-semibold text-foreground">
+            Kỷ niệm trên bản đồ
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            <span className="tabular-nums font-medium text-foreground">
+              {totalWithLocation}
+            </span>{" "}
+            ảnh ở{" "}
+            <span className="tabular-nums font-medium text-foreground">
+              {pins.length}
+            </span>{" "}
+            địa điểm có pin
+            {locationsCount > pins.length && (
+              <span className="text-muted-foreground/80">
+                {" / "}
+                {locationsCount} đã ghi
+              </span>
+            )}
+            {totalWithoutLocation > 0 && (
+              <span className="text-muted-foreground/80">
+                {" · "}
+                {totalWithoutLocation} ảnh chưa ghi địa điểm
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="h-[420px] w-full">
+          <GMap
+            mapId="DEMO_MAP_ID"
+            defaultCenter={{ lat: 16.05, lng: 108.21 }} // Đà Nẵng — center of VN
+            defaultZoom={6}
+            gestureHandling="greedy"
+            disableDefaultUI={false}
+            mapTypeControl={false}
+            streetViewControl={false}
+            fullscreenControl
+          >
+            <MapMarkers pins={pins} onSelectLocation={onSelectLocation} />
+            <FitBoundsToPins pins={pins} />
+          </GMap>
+        </div>
+      </div>
+    </DeferredAPIProvider>
+  );
+}
+
+/** Wraps APIProvider — only mounts when this map is rendered, so the
+ *  Google Maps script isn't loaded on pages that don't use it. */
+function DeferredAPIProvider({
+  apiKey,
+  children,
+}: {
+  apiKey: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <APIProvider apiKey={apiKey} libraries={["places", "marker"]} language="vi" region="VN">
+      {children}
+    </APIProvider>
+  );
+}
+
+function MapMarkers({
+  pins,
+  onSelectLocation,
+}: {
+  pins: MapPin[];
+  onSelectLocation: (name: string) => void;
+}) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  return (
+    <>
+      {pins.map((p) => (
+        <AdvancedMarker
+          key={p.id}
+          position={{ lat: p.lat!, lng: p.lng! }}
+          onClick={() => setActiveId(p.id)}
+        >
+          <div
+            className={`flex flex-col items-center ${p.is_hometown ? "text-vermilion" : "text-jade"}`}
+          >
+            <div className="relative">
+              <svg width="32" height="40" viewBox="0 0 24 30" fill="currentColor" aria-hidden="true">
+                <path d="M12 0C5.4 0 0 5.4 0 12c0 8.4 12 18 12 18s12-9.6 12-18C24 5.4 18.6 0 12 0z" />
+                <circle cx="12" cy="12" r="5" fill="white" />
+              </svg>
+              {p.count > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground tabular-nums shadow-md">
+                  {p.count}
+                </span>
+              )}
+            </div>
+          </div>
+        </AdvancedMarker>
+      ))}
+      {activeId && (() => {
+        const p = pins.find((x) => x.id === activeId);
+        if (!p || p.lat == null || p.lng == null) return null;
+        const thumb = p.latest
+          ? p.latest.kind === "video"
+            ? (p.latest.src_thumb || p.latest.src_medium || "")
+            : (p.latest.src_thumb || p.latest.src_medium || p.latest.src)
+          : "";
+        return (
+          <InfoWindow
+            position={{ lat: p.lat, lng: p.lng }}
+            onCloseClick={() => setActiveId(null)}
+            pixelOffset={[0, -36]}
+          >
+            <div className="w-56">
+              {thumb && (
+                <img
+                  src={thumb}
+                  alt=""
+                  className="mb-2 h-24 w-full rounded object-cover"
+                  loading="lazy"
+                />
+              )}
+              <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-1.5">
+                {p.is_hometown && <Star className="size-3.5 fill-current text-yellow-500" />}
+                {p.name}
+              </h4>
+              {p.province && (
+                <p className="text-xs text-gray-500">{p.province}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-700 tabular-nums">
+                {p.count} ảnh
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveId(null);
+                  onSelectLocation(p.name);
+                }}
+                className="mt-2 inline-flex w-full items-center justify-center rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground hover:bg-brand-600"
+              >
+                Xem ảnh
+              </button>
+            </div>
+          </InfoWindow>
+        );
+      })()}
+    </>
+  );
+}
+
+function FitBoundsToPins({ pins }: { pins: MapPin[] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!map || pins.length === 0) return;
+    if (pins.length === 1) {
+      map.setCenter({ lat: pins[0].lat!, lng: pins[0].lng! });
+      map.setZoom(12);
+      return;
+    }
+    const bounds = new google.maps.LatLngBounds();
+    for (const p of pins) {
+      if (p.lat != null && p.lng != null) {
+        bounds.extend({ lat: p.lat, lng: p.lng });
+      }
+    }
+    map.fitBounds(bounds, 64);
+  }, [map, pins]);
+  return null;
 }

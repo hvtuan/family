@@ -15,7 +15,9 @@
  */
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import MediaUploaderModal from "@/components/admin/MediaUploaderModal.tsx";
-import MediaLibrary, { type MediaItem, type MemberRef } from "@/components/admin/MediaLibrary.tsx";
+import MediaLibrary, {
+  type MediaItem, type MemberRef, type LocationRef,
+} from "@/components/admin/MediaLibrary.tsx";
 import { listPhotos, deletePhoto } from "@/lib/photos-admin";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -96,8 +98,8 @@ if (Astro.request.method === "POST") {
 
 const all = await listPhotos();
 
-// Fetch members + photo_members M2M for the People discovery tab.
-const [{ data: memberRows }, { data: linkRows }] = await Promise.all([
+// Fetch members + photo_members M2M + locations for discovery tabs.
+const [{ data: memberRows }, { data: linkRows }, { data: locationRows }] = await Promise.all([
   supabaseAdmin
     .from("members")
     .select("id, name, gen, photo")
@@ -106,6 +108,9 @@ const [{ data: memberRows }, { data: linkRows }] = await Promise.all([
   supabaseAdmin
     .from("photo_members")
     .select("photo_id, member_id"),
+  supabaseAdmin
+    .from("locations")
+    .select("id, name, name_en, province, lat, lng, is_hometown"),
 ]);
 
 const members: MemberRef[] = (memberRows ?? []).map((m) => ({
@@ -123,6 +128,18 @@ for (const r of linkRows ?? []) {
   if (!photoMembers[pid]) photoMembers[pid] = [];
   photoMembers[pid].push(mid);
 }
+
+const locations: LocationRef[] = (locationRows ?? []).map((l) => ({
+  id: l.id as string,
+  name: l.name as string,
+  name_en: (l.name_en as string | null) ?? null,
+  province: (l.province as string | null) ?? null,
+  lat: l.lat as number | null,
+  lng: l.lng as number | null,
+  is_hometown: Boolean(l.is_hometown),
+}));
+
+const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 
 // Shape rows for the React island — strip nullables to the props type.
 const items: MediaItem[] = all.map((p) => ({
@@ -171,6 +188,8 @@ const items: MediaItem[] = all.map((p) => ({
       items={items}
       members={members}
       photoMembers={photoMembers}
+      locations={locations}
+      googleMapsApiKey={googleMapsApiKey}
       initialBanner={banner}
     />
   </div>
