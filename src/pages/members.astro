@@ -13,13 +13,13 @@ const totalGens = new Set(clientMembers.map((m) => m.gen)).size;
 
 <Base title="Thành viên" pageKey="members">
   <PageHead
-    kicker="Thành viên • Members"
+    kicker="Members"
     title="Tất cả thành viên"
-    subtitle={`Hiện có ${clientMembers.length} thành viên qua ${totalGens} thế hệ. Tìm kiếm và lọc bên dưới.`}
+    subtitle={`${clientMembers.length} thành viên qua ${totalGens} thế hệ. Tìm kiếm và lọc bên dưới.`}
     subtitleEn={`${clientMembers.length} members across ${totalGens} generations`}
   />
 
-  <section class="max-w-[1240px] mx-auto px-5 pt-4 pb-16">
+  <section class="max-w-[1240px] mx-auto px-5 pt-2 pb-20">
     <MemberFilter members={clientMembers} client:visible />
   </section>
 </Base>

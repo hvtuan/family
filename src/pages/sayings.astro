@@ -9,36 +9,88 @@ const quotes = await getQuotes();
 const memberIndex = new Map(
   (await getMembers()).map((m) => [m.id, m]),
 );
+
+// Decorative pull quote — first quote becomes a hero treatment.
+const featured = quotes[0];
+const rest = quotes.slice(1);
 ---
 
 <Base title="Lời nhắn" pageKey="sayings">
   <PageHead
-    kicker="Lời nhắn • Sayings"
+    kicker="Sayings"
     title="Lời ông bà cha mẹ"
     subtitle="Tinh hoa truyền miệng và những câu nói được giữ trong nhà."
     subtitleEn="Words remembered and repeated across generations"
   />
 
-  <section class="max-w-[1100px] mx-auto px-5 pt-4 pb-16">
-    {
-      quotes.length === 0 ? (
-        <p class="text-center py-16 text-ink-3">Chưa có lời nhắn nào được ghi chép.</p>
-      ) : (
-        <ul class="list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-6">
-          {quotes.map((q) => {
-            const author = q.data.authorRef
-              ? memberIndex.get(q.data.authorRef.id)
-              : undefined;
-            return (
-              <QuoteCard
-                quote={q.data}
-                authorHref={author ? `/members?member=${author.data.id}` : undefined}
-                variant="card"
-              />
-            );
-          })}
-        </ul>
-      )
-    }
+  <section class="max-w-[1100px] mx-auto px-5 pt-2 pb-20">
+    {quotes.length === 0 ? (
+      <div class="rounded-md border border-dashed border-line bg-cream/40 p-12 text-center">
+        <p class="text-base text-ink-3 m-0">Chưa có lời nhắn nào được ghi chép.</p>
+      </div>
+    ) : (
+      <>
+        <!-- Featured pull-quote: huge serif with vermilion drop quote mark -->
+        {featured && (() => {
+          const featuredAuthor = featured.data.authorRef
+            ? memberIndex.get(featured.data.authorRef.id)
+            : undefined;
+          return (
+            <figure class="relative mb-16 mx-auto max-w-[760px] text-center u-paper-texture rounded-md border border-line p-12">
+              <span
+                aria-hidden="true"
+                class="absolute -top-3 left-6 font-display text-vermilion opacity-25 leading-none select-none pointer-events-none"
+                style="font-size: 7rem;"
+              >
+                "
+              </span>
+              <blockquote class="m-0">
+                <p
+                  class="font-display italic text-ink leading-snug m-0"
+                  style="font-size: var(--text-3xl);"
+                >
+                  {featured.data.text}
+                </p>
+                {featured.data.textEn?.trim() && (
+                  <p lang="en" class="mt-3 text-base text-ink-3 italic m-0">
+                    "{featured.data.textEn}"
+                  </p>
+                )}
+                <figcaption class="mt-6 text-sm text-ink-2">
+                  —{" "}
+                  {featuredAuthor ? (
+                    <a
+                      href={`/members?member=${featuredAuthor.data.id}`}
+                      class="text-jade font-semibold hover:text-vermilion transition-colors"
+                    >
+                      {featured.data.author}
+                    </a>
+                  ) : (
+                    <span class="font-semibold">{featured.data.author}</span>
+                  )}
+                </figcaption>
+              </blockquote>
+            </figure>
+          );
+        })()}
+
+        {rest.length > 0 && (
+          <ul class="list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-6">
+            {rest.map((q) => {
+              const author = q.data.authorRef
+                ? memberIndex.get(q.data.authorRef.id)
+                : undefined;
+              return (
+                <QuoteCard
+                  quote={q.data}
+                  authorHref={author ? `/members?member=${author.data.id}` : undefined}
+                  variant="card"
+                />
+              );
+            })}
+          </ul>
+        )}
+      </>
+    )}
   </section>
 </Base>

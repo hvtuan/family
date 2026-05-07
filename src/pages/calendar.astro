@@ -50,50 +50,67 @@ const grouped = typeOrder
 
 <Base title="Lịch" pageKey="calendar">
   <PageHead
-    kicker="Lịch • Calendar"
+    kicker="Calendar"
     title="Những ngày gia đình ghi nhớ"
     subtitle="Giỗ kỵ, sinh nhật, lễ hội — sắp xếp theo ngày trong năm."
     subtitleEn="Memorials, birthdays, festivals — ordered by day of year"
   />
 
-  <section class="max-w-[960px] mx-auto px-5 pt-4 pb-16 flex flex-col gap-10">
-    {
-      grouped.length === 0 ? (
-        <p class="text-center py-16 text-ink-3">Chưa có ngày kỷ niệm nào được ghi.</p>
+  <section
+    class="relative max-w-[960px] mx-auto px-5 pt-2 pb-20 flex flex-col gap-10"
+  >
+    <!-- Decorative calendar grid overlay — very subtle, behind content -->
+    <div
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 opacity-[0.04] -z-0"
+      style="background-image:
+        linear-gradient(to right, var(--color-ink) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--color-ink) 1px, transparent 1px);
+        background-size: 80px 80px;"
+    ></div>
+
+    <div class="relative">
+      {grouped.length === 0 ? (
+        <div class="rounded-md border border-dashed border-line bg-cream/40 p-12 text-center">
+          <p class="text-base text-ink-3 m-0">Chưa có ngày kỷ niệm nào được ghi.</p>
+        </div>
       ) : (
-        grouped.map(({ type, items }) => {
-          const t = typeLabel[type];
-          return (
-            <div class="flex flex-col gap-3.5">
-              <header class="flex items-center gap-3.5 pb-2.5 border-b-2 border-line-strong">
-                <span class="text-[2rem] leading-none" aria-hidden="true">{t.emoji}</span>
-                <div>
-                  <h2 class="text-[1.4rem] m-0">{t.vi}</h2>
-                  <p lang="en" class="text-[0.7rem] tracking-[0.16em] uppercase text-ink-3">
-                    {t.en}
-                  </p>
-                </div>
-                <span class="ml-auto px-3 py-1 bg-paper-2 rounded-full text-[0.85rem] text-ink-2 font-semibold">
-                  {items.length}
-                </span>
-              </header>
-              <ul class="list-none m-0 p-0 flex flex-col gap-3">
-                {items.map((d) => {
-                  const member = d.data.member
-                    ? memberIndex.get(d.data.member.id)
-                    : undefined;
-                  return (
-                    <DateCard
-                      entry={d.data}
-                      member={member ? { id: member.data.id, name: member.data.name } : undefined}
-                    />
-                  );
-                })}
-              </ul>
-            </div>
-          );
-        })
-      )
-    }
+        <div class="flex flex-col gap-12">
+          {grouped.map(({ type, items }) => {
+            const t = typeLabel[type];
+            return (
+              <div class="flex flex-col gap-4">
+                <header class="flex items-center gap-3.5 pb-3 border-b border-gold-2/40">
+                  <span class="text-3xl leading-none" aria-hidden="true">{t.emoji}</span>
+                  <h2
+                    class="font-display font-bold m-0 text-ink leading-tight"
+                    style="font-size: var(--text-xl);"
+                    title={t.en}
+                  >
+                    {t.vi}
+                  </h2>
+                  <span class="ml-auto inline-flex items-center justify-center min-w-7 h-7 px-2 bg-paper-2 border border-line rounded-full text-xs text-ink-2 font-semibold tabular-nums">
+                    {items.length}
+                  </span>
+                </header>
+                <ul class="list-none m-0 p-0 flex flex-col gap-3">
+                  {items.map((d) => {
+                    const member = d.data.member
+                      ? memberIndex.get(d.data.member.id)
+                      : undefined;
+                    return (
+                      <DateCard
+                        entry={d.data}
+                        member={member ? { id: member.data.id, name: member.data.name } : undefined}
+                      />
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   </section>
 </Base>

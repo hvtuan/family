@@ -16,35 +16,47 @@ const memberIndex = new Map(
 
 <Base title="Mốc thời gian" pageKey="timeline">
   <PageHead
-    kicker="Mốc thời gian • Timeline"
+    kicker="Timeline"
     title="Những dấu mốc của gia đình"
-    subtitle="Theo dòng năm tháng, từ ngày khởi tổ đến hôm nay."
+    subtitle={events.length > 0
+      ? `Từ ${events[0].data.year} đến ${events[events.length - 1].data.year} — dòng năm tháng đi qua bao thế hệ.`
+      : "Theo dòng năm tháng, từ ngày khởi tổ đến hôm nay."}
     subtitleEn="From the founding day to the present"
   />
 
-  <section class="max-w-[880px] mx-auto px-5 pt-4 pb-16">
-    <ol class="list-none m-0 p-0 relative">
-      <span
-        aria-hidden="true"
-        class="absolute left-14 top-0 bottom-0 w-0.5 bg-line-strong mobile:left-6"
-      ></span>
-      {
-        events.map((e) => {
+  <section class="max-w-[880px] mx-auto px-5 pt-2 pb-24">
+    {events.length === 0 ? (
+      <div class="rounded-md border border-dashed border-line bg-cream/40 p-12 text-center">
+        <p class="text-base text-ink-3 m-0">
+          Chưa có mốc thời gian nào được ghi lại.
+        </p>
+      </div>
+    ) : (
+      <ol class="list-none m-0 p-0 relative">
+        <!-- Center spine — gold gradient that fades at top/bottom -->
+        <span
+          aria-hidden="true"
+          class="absolute left-14 top-0 bottom-0 w-px mobile:left-6"
+          style="background: linear-gradient(to bottom, transparent 0, var(--color-gold-2) 60px, var(--color-gold-2) calc(100% - 60px), transparent 100%);"
+        ></span>
+        <!-- Top + bottom blossom anchors -->
+        <span
+          aria-hidden="true"
+          class="absolute left-14 -translate-x-1/2 -top-1 text-vermilion text-xl mobile:left-6"
+        >❀</span>
+        <span
+          aria-hidden="true"
+          class="absolute left-14 -translate-x-1/2 -bottom-1 text-vermilion text-xl mobile:left-6"
+        >❀</span>
+
+        {events.map((e) => {
           const related = e.data.related
             .map((r) => memberIndex.get(r.id))
             .filter(Boolean)
             .map((m) => ({ id: m!.data.id, name: m!.data.name }));
           return <TimelineEvent event={e.data} related={related} />;
-        })
-      }
-    </ol>
-
-    {
-      events.length === 0 && (
-        <p class="text-center py-16 text-ink-3">
-          Chưa có mốc thời gian nào được ghi lại.
-        </p>
-      )
-    }
+        })}
+      </ol>
+    )}
   </section>
 </Base>

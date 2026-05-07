@@ -12,12 +12,12 @@ const clientMembers = all.map(toClientMember);
 
 <Base title="Cây gia phả" pageKey="family-tree">
   <PageHead
-    kicker="Cây gia phả • Family Tree"
+    kicker="Family Tree"
     title="Bốn thế hệ họ Nguyễn"
-    subtitle="Kéo để di chuyển, dùng nút phóng to/thu nhỏ hoặc hai ngón tay để thu phóng. Bấm vào mỗi người để mở chi tiết."
-    subtitleEn="Drag to pan, pinch or +/− to zoom, click to open details"
+    subtitle="Kéo để di chuyển · phóng to/thu nhỏ bằng nút hoặc hai ngón tay · bấm vào mỗi người để xem chi tiết."
+    subtitleEn="Drag to pan, pinch or +/− to zoom, click to open"
   />
-  <section class="max-w-[1240px] mx-auto px-5 pt-4 pb-16">
+  <section class="max-w-[1240px] mx-auto px-5 pt-2 pb-20">
     <FamilyTree members={clientMembers} client:load />
   </section>
 </Base>

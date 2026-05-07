@@ -1,12 +1,49 @@
 ---
 interface Props {
   symbol?: string;
+  /** "sm" = compact line · "md" = default · "lg" = full ornate w/ rules */
+  variant?: "sm" | "md" | "lg";
+  /** Color tint of the blossom symbol — default vermilion. */
+  tone?: "vermilion" | "gold" | "jade";
 }
-const { symbol = "❀" } = Astro.props;
+
+const { symbol = "❀", variant = "md", tone = "vermilion" } = Astro.props;
+
+const toneClass =
+  tone === "gold" ? "text-gold-2" : tone === "jade" ? "text-jade" : "text-vermilion";
+
+const py =
+  variant === "sm" ? "py-5" : variant === "lg" ? "py-12" : "py-8";
+
+const sym =
+  variant === "sm" ? "text-base" : variant === "lg" ? "text-2xl" : "text-xl";
 ---
 
-<div class="flex justify-center items-center gap-4 py-8 text-vermilion text-xl opacity-70 select-none" aria-hidden="true">
-  <span>{symbol}</span>
-  <span>•</span>
-  <span>{symbol}</span>
+<div
+  class:list={["flex justify-center items-center gap-4 select-none opacity-80", py, toneClass]}
+  aria-hidden="true"
+>
+  {variant === "lg" ? (
+    <>
+      <span class="h-px w-24 bg-gold-2/40"></span>
+      <span class={sym}>{symbol}</span>
+      <span class="text-base text-ink-3">·</span>
+      <span class={sym}>{symbol}</span>
+      <span class="text-base text-ink-3">·</span>
+      <span class={sym}>{symbol}</span>
+      <span class="h-px w-24 bg-gold-2/40"></span>
+    </>
+  ) : variant === "sm" ? (
+    <>
+      <span class="h-px w-12 bg-gold-2/40"></span>
+      <span class={sym}>{symbol}</span>
+      <span class="h-px w-12 bg-gold-2/40"></span>
+    </>
+  ) : (
+    <>
+      <span class={sym}>{symbol}</span>
+      <span class="text-ink-3">·</span>
+      <span class={sym}>{symbol}</span>
+    </>
+  )}
 </div>
