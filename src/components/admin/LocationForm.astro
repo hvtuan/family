@@ -13,7 +13,9 @@ interface Props {
 }
 const { mode, values: v, refs, selectedMembers = [], fieldError, fieldOk } = Astro.props;
 
-const apiKey = await (await import("@/lib/settings")).getGoogleMapsApiKey();
+const settingsMod = await import("@/lib/settings");
+const apiKey = await settingsMod.getGoogleMapsApiKey();
+const mapsDefaults = await settingsMod.getMapsDefaults();
 ---
 
 <form method="post" class="space-y-6">
@@ -25,6 +27,9 @@ const apiKey = await (await import("@/lib/settings")).getGoogleMapsApiKey();
     apiKey={apiKey}
     initialLat={typeof v.lat === "number" ? v.lat : null}
     initialLng={typeof v.lng === "number" ? v.lng : null}
+    defaultLat={mapsDefaults.lat}
+    defaultLng={mapsDefaults.lng}
+    defaultZoom={mapsDefaults.zoom}
   />
 
   <fieldset class="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs">

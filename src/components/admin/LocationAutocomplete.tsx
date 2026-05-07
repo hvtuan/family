@@ -30,16 +30,29 @@ interface Props {
   /** Initial center for the map (existing row's lat/lng or Vietnam default). */
   initialLat?: number | null;
   initialLng?: number | null;
+  /** Fallback center / zoom when no row is loaded. From admin settings. */
+  defaultLat?: number;
+  defaultLng?: number;
+  defaultZoom?: number;
 }
 
 export default function LocationAutocomplete({
   apiKey,
   initialLat,
   initialLng,
+  defaultLat,
+  defaultLng,
+  defaultZoom,
 }: Props) {
   return (
     <GoogleMapsGate apiKey={apiKey}>
-      <Inner initialLat={initialLat} initialLng={initialLng} />
+      <Inner
+        initialLat={initialLat}
+        initialLng={initialLng}
+        defaultLat={defaultLat}
+        defaultLng={defaultLng}
+        defaultZoom={defaultZoom}
+      />
     </GoogleMapsGate>
   );
 }
@@ -47,9 +60,15 @@ export default function LocationAutocomplete({
 function Inner({
   initialLat,
   initialLng,
+  defaultLat,
+  defaultLng,
+  defaultZoom,
 }: {
   initialLat?: number | null;
   initialLng?: number | null;
+  defaultLat?: number;
+  defaultLng?: number;
+  defaultZoom?: number;
 }) {
   const [picked, setPicked] = useState<{ lat: number; lng: number } | null>(
     typeof initialLat === "number" && typeof initialLng === "number"
@@ -79,7 +98,12 @@ function Inner({
         </p>
       </div>
 
-      <MapPreview picked={picked} onMarkerDrag={(latLng) => {
+      <MapPreview
+        picked={picked}
+        defaultLat={defaultLat}
+        defaultLng={defaultLng}
+        defaultZoom={defaultZoom}
+        onMarkerDrag={(latLng) => {
         setPicked(latLng);
         // Sync just lat/lng (the user is fine-tuning, not re-picking).
         const latEl = document.querySelector<HTMLInputElement>('input[name="lat"]');
@@ -219,16 +243,22 @@ function pickProvince(components: google.maps.GeocoderAddressComponent[]): strin
 /** Map preview that re-centers as picked changes; supports drag-to-fine-tune. */
 function MapPreview({
   picked,
+  defaultLat,
+  defaultLng,
+  defaultZoom,
   onMarkerDrag,
 }: {
   picked: { lat: number; lng: number } | null;
+  defaultLat?: number;
+  defaultLng?: number;
+  defaultZoom?: number;
   onMarkerDrag: (p: { lat: number; lng: number }) => void;
 }) {
   const center = useMemo(
-    () => picked ?? { lat: 15.18, lng: 108.83 }, // Quảng Ngãi default
-    [picked],
+    () => picked ?? { lat: defaultLat ?? 15.18, lng: defaultLng ?? 108.83 },
+    [picked, defaultLat, defaultLng],
   );
-  const zoom = picked ? 14 : 6;
+  const zoom = picked ? 14 : (defaultZoom ?? 6);
 
   return (
     <div className="overflow-hidden rounded-xl border border-border">

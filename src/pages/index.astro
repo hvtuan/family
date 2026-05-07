@@ -10,6 +10,9 @@ import { SITE } from "@/data/site";
 import { getMembers, getQuotes, getTimeline } from "@/lib/content";
 import { toClientMember } from "@/lib/members-client";
 import { isInActiveWindow, listHeroSlides } from "@/lib/hero-admin";
+import { getHeroDefaults } from "@/lib/settings";
+
+const heroDefaults = await getHeroDefaults();
 
 const allMembers = await getMembers((entry) => entry.data.status === "published");
 const clientMembers = allMembers.map(toClientMember);
@@ -61,12 +64,14 @@ const yearsSince = new Date().getFullYear() - SITE.established;
 
 <Base pageKey="home">
   {heroSlides.length > 0 && (
-    <HeroSlideshow client:load slides={heroSlides} height="70vh" />
+    <HeroSlideshow client:load slides={heroSlides} height={heroDefaults.height} />
   )}
 
   <!-- ─── HERO ────────────────────────────────────────────────
        Lotus motif + brand name + motto. Acts as sub-hero when the
-       slideshow is on, or the only hero when no slides configured. -->
+       slideshow is on, or the only hero when no slides configured.
+       Hidden via settings toggle when admin wants slideshow alone. -->
+  {(heroSlides.length === 0 || heroDefaults.showLotusWhenEmpty) && (
   <section class="relative overflow-hidden u-paper-texture">
     <div class="max-w-[880px] mx-auto px-5 pt-20 pb-16 md:pt-28 md:pb-20 text-center">
       <!-- Lotus seal — Vietnamese cultural motif as the visual anchor -->
@@ -113,6 +118,7 @@ const yearsSince = new Date().getFullYear() - SITE.established;
       </div>
     </div>
   </section>
+  )}
 
   {heroQuote && (
     <section class="max-w-[720px] mx-auto px-5 py-12">

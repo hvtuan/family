@@ -112,7 +112,7 @@ export async function createHeroSlide(input: {
       headline_en: input.headline_en ?? null,
       cta_label: input.cta_label ?? null,
       cta_href: input.cta_href ?? null,
-      duration_ms: input.duration_ms ?? 6000,
+      duration_ms: input.duration_ms ?? (await (await import("./settings")).getNumber("hero.default_duration_ms", 6000)),
     })
     .select("*")
     .single();

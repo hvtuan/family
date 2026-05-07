@@ -40,6 +40,8 @@ const items: SettingItem[] = rows.map((r) => ({
   value: r.value ?? "",
   category: r.category,
   description: r.description,
+  field_type: r.field_type,
+  sort_order: r.sort_order,
   updated_at: r.updated_at,
 }));
 ---

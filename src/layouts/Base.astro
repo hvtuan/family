@@ -3,7 +3,14 @@ import "@/styles/global.css";
 import { NAV_LINKS } from "@/data/site";
 import { getLocations, getMembers } from "@/lib/content";
 import { toClientMember } from "@/lib/members-client";
-import { getSiteIdentity } from "@/lib/settings";
+import {
+  getSiteIdentity,
+  getGoogleMapsApiKey,
+  getSeoMeta,
+  getSocialLinks,
+  getAnalyticsConfig,
+  getPrivacyToggles,
+} from "@/lib/settings";
 import ThemeSwitcher from "@/components/react/ThemeSwitcher";
 import MemberModal from "@/components/react/MemberModal";
 
@@ -11,23 +18,30 @@ interface Props {
   title?: string;
   description?: string;
   pageKey?: string;
+  ogImageUrl?: string;
 }
 
-const { title, description, pageKey } = Astro.props;
-// Site identity now lives in family.settings — admin can edit at
+const { title, description, pageKey, ogImageUrl } = Astro.props;
+
+// All site config now comes from family.settings — admin can edit at
 // /admin/settings without rebuilding. SITE constants in data/site.ts
 // kept for NAV_LINKS only.
 const SITE = await getSiteIdentity();
+const seo = await getSeoMeta();
+const social = await getSocialLinks();
+const analytics = await getAnalyticsConfig();
+const privacy = await getPrivacyToggles();
+
 const pageTitle = title ? `${title} — ${SITE.brand.vi}` : SITE.brand.vi;
-const pageDesc =
-  description ?? `${SITE.brand.vi} • ${SITE.hometown} • ${SITE.motto}`;
+const pageDesc = description ?? seo.defaultDescription
+  ?? `${SITE.brand.vi} • ${SITE.hometown} • ${SITE.motto}`;
 const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
+const finalOgImage = ogImageUrl ?? seo.ogImageUrl;
 
 const allMembers = await getMembers((entry) => entry.data.status === "published");
 const clientMembers = allMembers.map(toClientMember);
 
-// Build a name → coords lookup so the MemberModal can show a small map
-// when birthPlace / deathPlace / gravesite text matches a known location.
 const locationEntries = await getLocations();
 type LocationLookupEntry = {
   name: string;
@@ -49,15 +63,14 @@ for (const loc of locationEntries) {
     lng: loc.data.coords.lng,
     province: loc.data.province,
   };
-  // Index by both vi name and en name (lowercase) so substring matches
-  // on either work in the modal.
   locationLookup[loc.data.name.toLowerCase()] = entry;
   if (loc.data.nameEn) {
     locationLookup[loc.data.nameEn.toLowerCase()] = entry;
   }
 }
 
-const googleMapsApiKey = await (await import("@/lib/settings")).getGoogleMapsApiKey();
+const googleMapsApiKey = await getGoogleMapsApiKey();
+const robotsContent = seo.indexingEnabled ? "index, follow" : "noindex, nofollow";
 ---
 
 <!doctype html>
@@ -66,10 +79,22 @@ const googleMapsApiKey = await (await import("@/lib/settings")).getGoogleMapsApi
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light" />
-    <meta name="robots" content="noindex, nofollow" />
+    <meta name="robots" content={robotsContent} />
     <title>{pageTitle}</title>
     <meta name="description" content={pageDesc} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href={SITE.faviconUrl} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    {/* OpenGraph + Twitter — for Facebook / Zalo / X share previews */}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE.brand.vi} />
+    <meta property="og:locale" content="vi_VN" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDesc} />
+    <meta property="og:url" content={canonicalUrl} />
+    {finalOgImage && <meta property="og:image" content={finalOgImage} />}
+    <meta name="twitter:card" content={finalOgImage ? "summary_large_image" : "summary"} />
+    {seo.twitterHandle && <meta name="twitter:site" content={seo.twitterHandle} />}
 
     <script is:inline>
       (() => {
@@ -85,6 +110,33 @@ const googleMapsApiKey = await (await import("@/lib/settings")).getGoogleMapsApi
         }
       })();
     </script>
+
+    {/* Analytics — only inject when configured */}
+    {analytics.umamiUrl && analytics.umamiSiteId && (
+      <script is:inline defer
+        src={analytics.umamiUrl}
+        data-website-id={analytics.umamiSiteId}
+      ></script>
+    )}
+    {analytics.plausibleDomain && (
+      <script is:inline defer
+        data-domain={analytics.plausibleDomain}
+        src="https://plausible.io/js/script.js"
+      ></script>
+    )}
+    {analytics.googleTagId && (
+      <>
+        <script is:inline async
+          src={`https://www.googletagmanager.com/gtag/js?id=${analytics.googleTagId}`}
+        ></script>
+        <script is:inline define:vars={{ tagId: analytics.googleTagId }}>{`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', tagId);
+        `}</script>
+      </>
+    )}
   </head>
 
   <body data-page={pageKey}>
@@ -147,7 +199,7 @@ const googleMapsApiKey = await (await import("@/lib/settings")).getGoogleMapsApi
         </nav>
 
         <div class="flex items-center gap-2">
-          <ThemeSwitcher client:load />
+          {privacy.showThemeSwitcher && <ThemeSwitcher client:load />}
         </div>
       </div>
     </header>
@@ -186,6 +238,11 @@ const googleMapsApiKey = await (await import("@/lib/settings")).getGoogleMapsApi
               <p class="text-2xs tracking-wider uppercase text-ink-3 mt-1" lang="en">
                 {SITE.brand.en}
               </p>
+              {SITE.tagline.vi && (
+                <p class="mt-2 text-sm italic text-ink-2 leading-snug max-w-xs">
+                  {SITE.tagline.vi}
+                </p>
+              )}
             </div>
           </div>
 
@@ -198,6 +255,60 @@ const googleMapsApiKey = await (await import("@/lib/settings")).getGoogleMapsApi
             <p class="text-sm text-ink-3 tabular-nums m-0">
               Thành lập năm <span class="text-ink font-semibold">{SITE.established}</span>
             </p>
+
+            {/* Social row — only when at least one is set */}
+            {(social.facebookUrl || social.youtubeUrl || social.instagramUrl || social.zaloOA) && (
+              <div class="mt-3 flex gap-2.5">
+                {social.facebookUrl && (
+                  <a
+                    href={social.facebookUrl}
+                    target="_blank"
+                    rel="noopener"
+                    class="inline-flex size-9 items-center justify-center rounded-full border border-line bg-paper text-ink-2 hover:border-vermilion hover:text-vermilion transition"
+                    title="Facebook"
+                    aria-label="Facebook"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.563 9.875v-6.984H7.898V12h2.539V9.797c0-2.508 1.493-3.891 3.776-3.891 1.094 0 2.238.195 2.238.195v2.461h-1.26c-1.243 0-1.629.77-1.629 1.563V12h2.773l-.443 2.891H13.56v6.984A10 10 0 0 0 22 12z"/></svg>
+                  </a>
+                )}
+                {social.youtubeUrl && (
+                  <a
+                    href={social.youtubeUrl}
+                    target="_blank"
+                    rel="noopener"
+                    class="inline-flex size-9 items-center justify-center rounded-full border border-line bg-paper text-ink-2 hover:border-vermilion hover:text-vermilion transition"
+                    title="YouTube"
+                    aria-label="YouTube"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.121 2.136c1.872.505 9.377.505 9.377.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.546 15.568V8.432L15.818 12l-6.272 3.568z"/></svg>
+                  </a>
+                )}
+                {social.instagramUrl && (
+                  <a
+                    href={social.instagramUrl}
+                    target="_blank"
+                    rel="noopener"
+                    class="inline-flex size-9 items-center justify-center rounded-full border border-line bg-paper text-ink-2 hover:border-vermilion hover:text-vermilion transition"
+                    title="Instagram"
+                    aria-label="Instagram"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                  </a>
+                )}
+                {social.zaloOA && (
+                  <a
+                    href={social.zaloOA.startsWith("http") ? social.zaloOA : `https://zalo.me/${social.zaloOA}`}
+                    target="_blank"
+                    rel="noopener"
+                    class="inline-flex h-9 items-center justify-center gap-1 rounded-full border border-line bg-paper px-3 text-xs font-semibold text-ink-2 hover:border-vermilion hover:text-vermilion transition"
+                    title="Zalo OA"
+                    aria-label="Zalo OA"
+                  >
+                    Zalo
+                  </a>
+                )}
+              </div>
+            )}
           </div>
 
           <!-- Nav columns -->
@@ -208,7 +319,9 @@ const googleMapsApiKey = await (await import("@/lib/settings")).getGoogleMapsApi
               <li><a href="/members" class="text-ink-2 hover:text-vermilion">Thành viên</a></li>
               <li><a href="/album" class="text-ink-2 hover:text-vermilion">Album</a></li>
               <li><a href="/timeline" class="text-ink-2 hover:text-vermilion">Mốc thời gian</a></li>
-              <li><a href="/admin/login" class="text-ink-3 hover:text-vermilion text-xs">· Admin</a></li>
+              {privacy.showAdminLinkInFooter && (
+                <li><a href="/admin/login" class="text-ink-3 hover:text-vermilion text-xs">· Admin</a></li>
+              )}
             </ul>
           </div>
         </div>
@@ -216,11 +329,15 @@ const googleMapsApiKey = await (await import("@/lib/settings")).getGoogleMapsApi
         <!-- Bottom: privacy note -->
         <div class="mt-12 pt-6 border-t border-line text-center">
           <p class="text-2xs tracking-wider uppercase text-ink-3 opacity-90 m-0">
-            Trang gia phả riêng tư — không công khai chỉ mục
+            {seo.indexingEnabled
+              ? `© ${SITE.brand.vi} — ${SITE.hometown}`
+              : "Trang gia phả riêng tư — không công khai chỉ mục"}
           </p>
-          <p class="text-2xs text-ink-3 opacity-60 mt-1" lang="en">
-            Private genealogy site, not indexed
-          </p>
+          {!seo.indexingEnabled && (
+            <p class="text-2xs text-ink-3 opacity-60 mt-1" lang="en">
+              Private genealogy site, not indexed
+            </p>
+          )}
         </div>
       </div>
     </footer>
