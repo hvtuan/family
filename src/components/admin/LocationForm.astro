@@ -13,7 +13,7 @@ interface Props {
 }
 const { mode, values: v, refs, selectedMembers = [], fieldError, fieldOk } = Astro.props;
 
-const apiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
+const apiKey = await (await import("@/lib/settings")).getGoogleMapsApiKey();
 ---
 
 <form method="post" class="space-y-6">

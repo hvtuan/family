@@ -121,7 +121,7 @@ if (v.location && v.location.trim()) {
   }
 }
 
-const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+const googleMapsApiKey = await (await import("@/lib/settings")).getGoogleMapsApiKey();
 
 // Shape for the React island — strip nullable types we don't want there.
 const sidebarPhoto = {

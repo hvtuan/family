@@ -1,0 +1,59 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import SettingsForm, { type SettingItem } from "@/components/admin/SettingsForm.tsx";
+import { listSettings, setMany } from "@/lib/settings";
+
+export const prerender = false;
+
+const me = Astro.locals.user;
+if (!me || me.role !== "admin") return Astro.redirect("/admin");
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const action = String(form.get("action") ?? "");
+  try {
+    if (action === "save") {
+      const keys = form.getAll("key[]").map((v) => String(v));
+      const vals = form.getAll("value[]").map((v) => String(v));
+      const patch: Record<string, string> = {};
+      for (let i = 0; i < keys.length; i++) {
+        patch[keys[i]] = vals[i] ?? "";
+      }
+      await setMany(patch);
+    } else {
+      throw new Error(`unknown action: ${action}`);
+    }
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200, headers: { "content-type": "application/json" },
+    });
+  } catch (e) {
+    return new Response(
+      JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e) }),
+      { status: 500, headers: { "content-type": "application/json" } },
+    );
+  }
+}
+
+const rows = await listSettings();
+const items: SettingItem[] = rows.map((r) => ({
+  key: r.key,
+  value: r.value ?? "",
+  category: r.category,
+  description: r.description,
+  updated_at: r.updated_at,
+}));
+---
+
+<AdminLayout title="Thiết lập" crumbs={[{ label: "Thiết lập" }]}>
+  <div class="space-y-6">
+    <header>
+      <h1 class="text-xl font-semibold text-foreground">Thiết lập website</h1>
+      <p class="mt-0.5 text-sm text-muted-foreground">
+        Điều chỉnh thông tin dòng họ, liên hệ admin và API key — không cần
+        rebuild code. Thay đổi áp dụng ngay sau khi lưu (cache 30 giây).
+      </p>
+    </header>
+
+    <SettingsForm client:load initial={items} />
+  </div>
+</AdminLayout>

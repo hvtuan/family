@@ -41,7 +41,7 @@ const mapMarkers = locations.map((loc) => ({
   members: loc.data.members.length,
 }));
 
-const apiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY;
+const apiKey = await (await import("@/lib/settings")).getGoogleMapsApiKey();
 ---
 
 <Base title="Bản đồ" pageKey="map">

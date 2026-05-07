@@ -139,7 +139,7 @@ const locations: LocationRef[] = (locationRows ?? []).map((l) => ({
   is_hometown: Boolean(l.is_hometown),
 }));
 
-const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+const googleMapsApiKey = await (await import("@/lib/settings")).getGoogleMapsApiKey();
 
 // Shape rows for the React island — strip nullables to the props type.
 const items: MediaItem[] = all.map((p) => ({

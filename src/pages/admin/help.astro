@@ -1,5 +1,8 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
+import { getAdminEmail } from "@/lib/settings";
+
+const adminEmail = await getAdminEmail();
 ---
 
 <AdminLayout title="Hướng dẫn sử dụng" crumbs={[{ label: "Trợ giúp" }]}>
@@ -52,7 +55,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
         <li>Bấm 👁 ở ô mật khẩu để xem lại nếu sợ gõ sai.</li>
         <li>
           Quên mật khẩu? Liên hệ chú An
-          (<a href="mailto:hvtuan0311@gmail.com" class="text-primary hover:underline">hvtuan0311@gmail.com</a>)
+          (<a href={`mailto:${adminEmail}`} class="text-primary hover:underline">{adminEmail}</a>)
           để được cấp lại — không tự đặt lại được.
         </li>
       </ul>
@@ -170,8 +173,8 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
       <h2 class="mb-2 text-base font-semibold text-foreground">8. Cần giúp đỡ?</h2>
       <p class="text-sm text-foreground">
         Liên hệ chú An:
-        <a href="mailto:hvtuan0311@gmail.com" class="font-medium text-vermilion hover:underline">
-          hvtuan0311@gmail.com
+        <a href={`mailto:${adminEmail}`} class="font-medium text-vermilion hover:underline">
+          {adminEmail}
         </a>
         — gửi ảnh chụp màn hình lỗi nếu có, sẽ hỗ trợ sớm.
       </p>

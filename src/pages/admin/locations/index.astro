@@ -3,6 +3,7 @@ import AdminLayout from "@/layouts/AdminLayout.astro";
 import LocationsList, { type LocationRow } from "@/components/admin/LocationsList.tsx";
 import ToastBanner from "@/components/admin/ToastBanner.tsx";
 import { listLocations, deleteLocation } from "@/lib/locations-admin";
+import { getGoogleMapsApiKey } from "@/lib/settings";
 
 export const prerender = false;
 
@@ -46,6 +47,6 @@ const items: LocationRow[] = rows.map((l) => ({
       </a>
     </header>
 
-    <LocationsList client:load items={items} apiKey={import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY} />
+    <LocationsList client:load items={items} apiKey={await getGoogleMapsApiKey()} />
   </div>
 </AdminLayout>

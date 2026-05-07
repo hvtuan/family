@@ -2,6 +2,10 @@
 import "@/styles/admin.css";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { usernameToEmail, validateUsername } from "@/lib/username";
+import { getAdminEmail, getSiteIdentity } from "@/lib/settings";
+
+const site = await getSiteIdentity();
+const adminEmail = await getAdminEmail();
 
 export const prerender = false;
 
@@ -49,7 +53,7 @@ if (Astro.request.method === "POST") {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Đăng nhập — Gia phả họ Nguyễn</title>
+    <title>Đăng nhập — {site.brand.vi}</title>
   </head>
   <body class="bg-background">
     <div class="grid min-h-screen lg:grid-cols-2">
@@ -150,15 +154,15 @@ if (Astro.request.method === "POST") {
 
           <p class="mt-6 text-xs text-muted-foreground leading-relaxed">
             Quên mật khẩu? Liên hệ
-            <a href="mailto:hvtuan0311@gmail.com" class="font-medium text-primary hover:underline">
-              hvtuan0311@gmail.com
+            <a href={`mailto:${adminEmail}`} class="font-medium text-primary hover:underline">
+              {adminEmail}
             </a>
             để được cấp lại. Tài khoản chỉ dành cho người trong gia tộc.
           </p>
         </div>
 
         <div class="mx-auto w-full max-w-md text-center text-xs text-muted-foreground">
-          © Gia phả họ Nguyễn — Quản trị nội bộ
+          © {site.brand.vi} — Quản trị nội bộ
         </div>
       </div>
 
@@ -183,17 +187,17 @@ if (Astro.request.method === "POST") {
             style="background: #8b2a1f; color: #faf3e0; font-family: 'Lora', 'Be Vietnam Pro', serif; font-size: 1.6rem;"
             aria-hidden="true"
           >
-            N.1928
+            {site.monogram}
           </div>
 
           <h2
             class="mb-3 text-3xl font-semibold tracking-tight"
             style="color: #1a120a; font-family: 'Lora', 'Be Vietnam Pro', serif;"
           >
-            Gia phả họ Nguyễn
+            {site.brand.vi}
           </h2>
           <p class="mb-1 text-sm" style="color: #3a2a1a;">
-            Tịnh Khê · Sơn Tịnh · Quảng Ngãi
+            {site.hometown.split(", ").join(" · ")}
           </p>
 
           <!-- Decorative divider -->

@@ -1,8 +1,9 @@
 ---
 import "@/styles/global.css";
-import { SITE, NAV_LINKS } from "@/data/site";
+import { NAV_LINKS } from "@/data/site";
 import { getLocations, getMembers } from "@/lib/content";
 import { toClientMember } from "@/lib/members-client";
+import { getSiteIdentity } from "@/lib/settings";
 import ThemeSwitcher from "@/components/react/ThemeSwitcher";
 import MemberModal from "@/components/react/MemberModal";
 
@@ -13,6 +14,10 @@ interface Props {
 }
 
 const { title, description, pageKey } = Astro.props;
+// Site identity now lives in family.settings — admin can edit at
+// /admin/settings without rebuilding. SITE constants in data/site.ts
+// kept for NAV_LINKS only.
+const SITE = await getSiteIdentity();
 const pageTitle = title ? `${title} — ${SITE.brand.vi}` : SITE.brand.vi;
 const pageDesc =
   description ?? `${SITE.brand.vi} • ${SITE.hometown} • ${SITE.motto}`;
@@ -52,7 +57,7 @@ for (const loc of locationEntries) {
   }
 }
 
-const googleMapsApiKey = import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+const googleMapsApiKey = await (await import("@/lib/settings")).getGoogleMapsApiKey();
 ---
 
 <!doctype html>
