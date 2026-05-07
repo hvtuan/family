@@ -1,5 +1,6 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
+import MediaUploaderModal from "@/components/admin/MediaUploaderModal.tsx";
 import { listPhotos, deletePhoto } from "@/lib/photos-admin";
 
 export const prerender = false;
@@ -98,17 +99,15 @@ function durationLabel(seconds?: number | null): string {
           </p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <a href="/admin/media/new"
+          <button type="button" data-uppy-trigger
             class="rounded-lg bg-brand-500 px-4 py-2 text-theme-sm font-medium text-white shadow-theme-xs hover:bg-brand-600">
-            + Tải + chỉnh sửa
-          </a>
-          <button type="button" data-upload-trigger
-            class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50"
-            title="Kéo thả nhiều file, không có editor">
-            ⚡ Tải nhanh nhiều file
+            + Tải ảnh / video
           </button>
-          <input type="file" data-upload-input multiple
-            accept="image/*,video/*,.heic,.heif,.mp4,.webm,.mov" class="hidden" />
+          <a href="/admin/media/new"
+            class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50"
+            title="Form đầy đủ với caption + member picker">
+            Tạo có form đầy đủ
+          </a>
         </div>
       </header>
 
@@ -230,29 +229,8 @@ function durationLabel(seconds?: number | null): string {
     </section>
   </div>
 
-  <!-- Drag-and-drop overlay (shown during dragenter on document) -->
-  <div data-drop-overlay
-    class="fixed inset-0 z-[60] hidden items-center justify-center bg-brand-500/20 backdrop-blur-sm">
-    <div class="rounded-2xl border-4 border-dashed border-brand-500 bg-white px-12 py-10 text-center shadow-theme-lg pointer-events-none">
-      <div class="mb-2 text-3xl">📥</div>
-      <div class="text-theme-md font-semibold text-gray-800">Thả ảnh hoặc video để tải lên</div>
-      <div class="mt-1 text-theme-xs text-gray-500">Ảnh: JPG/PNG/WebP/GIF/HEIC ≤ 25 MB · Video: MP4/WebM/MOV ≤ 200 MB</div>
-    </div>
-  </div>
-
-  <!-- Upload progress panel (shown while uploads are in flight or after) -->
-  <div data-upload-panel
-    class="fixed inset-x-0 bottom-0 z-[55] hidden border-t border-gray-200 bg-white shadow-[0_-4px_16px_rgba(0,0,0,.06)]">
-    <div class="mx-auto max-h-[40vh] max-w-screen-2xl overflow-y-auto px-6 py-4">
-      <header class="mb-3 flex items-center justify-between">
-        <h3 class="text-theme-sm font-semibold text-gray-800">
-          Đang tải lên (<span data-upload-summary>0/0</span>)
-        </h3>
-        <button type="button" data-upload-close class="text-theme-xs text-gray-500 hover:text-gray-700">Đóng</button>
-      </header>
-      <ul data-upload-list class="space-y-2"></ul>
-    </div>
-  </div>
+  <!-- Uppy Dashboard mounts itself into <body> when triggered. -->
+  <MediaUploaderModal client:load />
 
   <!-- Sticky bulk action bar (hidden until any checkbox is ticked) -->
   <div data-bulk-bar
@@ -302,256 +280,4 @@ function durationLabel(seconds?: number | null): string {
     })();
   </script>
 
-  <script is:inline>
-    (() => {
-      const trigger = document.querySelector("[data-upload-trigger]");
-      const input = document.querySelector("[data-upload-input]");
-      const overlay = document.querySelector("[data-drop-overlay]");
-      const panel = document.querySelector("[data-upload-panel]");
-      const list = document.querySelector("[data-upload-list]");
-      const summary = document.querySelector("[data-upload-summary]");
-      const closeBtn = document.querySelector("[data-upload-close]");
-      if (!trigger || !input || !overlay || !panel || !list || !summary) return;
-
-      let dragDepth = 0;
-
-      function showOverlay() { overlay.classList.remove("hidden"); overlay.classList.add("flex"); }
-      function hideOverlay() { overlay.classList.add("hidden"); overlay.classList.remove("flex"); }
-      function showPanel() { panel.classList.remove("hidden"); }
-
-      // Document-wide drag-drop. We count enter/leave events because the
-      // browser fires a leave when crossing into a child element.
-      ["dragenter", "dragover"].forEach((evt) => {
-        document.addEventListener(evt, (e) => {
-          if (!e.dataTransfer || !Array.from(e.dataTransfer.types).includes("Files")) return;
-          e.preventDefault();
-          if (evt === "dragenter") dragDepth++;
-          if (dragDepth > 0) showOverlay();
-        });
-      });
-      document.addEventListener("dragleave", (e) => {
-        e.preventDefault();
-        dragDepth = Math.max(0, dragDepth - 1);
-        if (dragDepth === 0) hideOverlay();
-      });
-      document.addEventListener("drop", (e) => {
-        if (!e.dataTransfer) return;
-        e.preventDefault();
-        dragDepth = 0;
-        hideOverlay();
-        const files = Array.from(e.dataTransfer.files).filter((f) =>
-          f.type.startsWith("image/") || f.type.startsWith("video/") ||
-          /\.(heic|heif|mp4|webm|mov)$/i.test(f.name)
-        );
-        if (files.length > 0) startUploads(files);
-      });
-
-      trigger.addEventListener("click", () => input.click());
-      input.addEventListener("change", () => {
-        const files = Array.from(input.files || []);
-        input.value = ""; // allow re-picking the same file
-        if (files.length > 0) startUploads(files);
-      });
-
-      // Clipboard paste — Cmd/Ctrl+V an image (e.g. screenshot) anywhere
-      // on the page triggers an upload. Skip if the focus is in a text
-      // input so we don't hijack normal pasting.
-      document.addEventListener("paste", (e) => {
-        const target = e.target;
-        if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
-          return;
-        }
-        const items = Array.from(e.clipboardData?.items || []);
-        const fileItems = items.filter((it) => it.kind === "file");
-        const files = fileItems.map((it) => it.getAsFile()).filter(Boolean).filter((f) =>
-          f.type.startsWith("image/") || f.type.startsWith("video/")
-        );
-        if (files.length > 0) {
-          e.preventDefault();
-          startUploads(files);
-        }
-      });
-
-      closeBtn?.addEventListener("click", () => {
-        panel.classList.add("hidden");
-        list.innerHTML = "";
-      });
-
-      function rowFor(file) {
-        const li = document.createElement("li");
-        li.className = "flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3";
-        li.innerHTML = `
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-gray-100 text-theme-sm" data-thumb>📷</div>
-          <div class="min-w-0 flex-1">
-            <div class="truncate text-theme-sm font-medium text-gray-800" data-name>${file.name}</div>
-            <div class="text-theme-xs text-gray-500" data-status>Chuẩn bị…</div>
-            <div class="mt-1 h-1.5 w-full overflow-hidden rounded bg-gray-100">
-              <div class="h-full bg-brand-500 transition-[width] duration-150" style="width:0%" data-bar></div>
-            </div>
-          </div>
-          <a class="hidden text-theme-xs font-medium text-brand-600 hover:underline" data-edit>Sửa</a>
-        `;
-        return li;
-      }
-
-      function setRow(li, { status, percent, error, editUrl, src }) {
-        const statusEl = li.querySelector("[data-status]");
-        const bar = li.querySelector("[data-bar]");
-        const edit = li.querySelector("[data-edit]");
-        const thumb = li.querySelector("[data-thumb]");
-        if (typeof percent === "number") bar.style.width = percent + "%";
-        if (status) statusEl.textContent = status;
-        if (error) {
-          statusEl.classList.add("text-error-600");
-          bar.classList.add("bg-error-500");
-        } else {
-          statusEl.classList.remove("text-error-600");
-        }
-        if (editUrl) {
-          edit.href = editUrl;
-          edit.classList.remove("hidden");
-        }
-        if (src) {
-          thumb.innerHTML = `<img src="${src}" alt="" class="h-10 w-10 rounded object-cover" />`;
-        }
-      }
-
-      // Detect video by mime + extension fallback (Safari iCloud .mov
-      // sometimes reports empty mime).
-      function isVideo(file) {
-        if (file.type && file.type.startsWith("video/")) return true;
-        return /\.(mp4|webm|mov)$/i.test(file.name);
-      }
-
-      // Extract a poster frame from a video file via a hidden <video>
-      // element + canvas. Resolves with { posterFile, durationSeconds }.
-      // Failures resolve with nulls so the upload still succeeds — the
-      // detail page can render without a poster, just less pretty.
-      async function extractPoster(file) {
-        return new Promise((resolve) => {
-          const url = URL.createObjectURL(file);
-          const video = document.createElement("video");
-          video.src = url;
-          video.muted = true;
-          video.playsInline = true;
-          video.preload = "metadata";
-
-          const cleanup = () => URL.revokeObjectURL(url);
-          let captured = false;
-
-          function capture() {
-            if (captured) return;
-            captured = true;
-            try {
-              const w = video.videoWidth || 1280;
-              const h = video.videoHeight || 720;
-              const canvas = document.createElement("canvas");
-              canvas.width = w;
-              canvas.height = h;
-              canvas.getContext("2d").drawImage(video, 0, 0, w, h);
-              canvas.toBlob((blob) => {
-                cleanup();
-                if (!blob) {
-                  resolve({ posterFile: null, durationSeconds: video.duration || null });
-                  return;
-                }
-                const posterFile = new File([blob], "poster.jpg", { type: "image/jpeg" });
-                resolve({ posterFile, durationSeconds: Math.round(video.duration) || null });
-              }, "image/jpeg", 0.9);
-            } catch (err) {
-              cleanup();
-              resolve({ posterFile: null, durationSeconds: video.duration || null });
-            }
-          }
-
-          video.addEventListener("loadedmetadata", () => {
-            // Seek to a moment past 0 so iOS doesn't return a black frame.
-            const target = Math.min(1, (video.duration || 1) * 0.1);
-            try { video.currentTime = target; } catch { capture(); }
-          });
-          video.addEventListener("seeked", capture);
-          video.addEventListener("error", () => { cleanup(); resolve({ posterFile: null, durationSeconds: null }); });
-          // Hard timeout so a stuck video doesn't block the queue.
-          setTimeout(() => { if (!captured) { cleanup(); resolve({ posterFile: null, durationSeconds: null }); } }, 8000);
-        });
-      }
-
-      function uploadOne(file, li) {
-        return new Promise(async (resolve) => {
-          const fd = new FormData();
-          fd.append("file", file);
-
-          let extra = null;
-          if (isVideo(file)) {
-            setRow(li, { status: "Trích frame video…", percent: 5 });
-            extra = await extractPoster(file);
-            if (extra?.posterFile) fd.append("poster", extra.posterFile);
-            if (extra?.durationSeconds) fd.append("duration_seconds", String(extra.durationSeconds));
-          }
-
-          const xhr = new XMLHttpRequest();
-          xhr.open("POST", "/admin/media/upload");
-          xhr.upload.addEventListener("progress", (e) => {
-            if (!e.lengthComputable) return;
-            const pct = Math.round((e.loaded / e.total) * 90);
-            setRow(li, { status: `Đang tải… ${pct}%`, percent: pct });
-          });
-          xhr.addEventListener("load", () => {
-            try {
-              const body = JSON.parse(xhr.responseText || "{}");
-              if (xhr.status >= 200 && xhr.status < 300 && body.ok) {
-                const status = body.kind === "video" ? "Xong (video)" : "Xong";
-                setRow(li, { status, percent: 100, editUrl: body.editUrl, src: body.src_thumb || body.src_medium });
-              } else {
-                setRow(li, { status: body.error || `Lỗi (${xhr.status})`, error: true, percent: 100 });
-              }
-            } catch {
-              setRow(li, { status: `Phản hồi không hợp lệ (${xhr.status})`, error: true, percent: 100 });
-            }
-            resolve();
-          });
-          xhr.addEventListener("error", () => {
-            setRow(li, { status: "Lỗi mạng", error: true, percent: 100 });
-            resolve();
-          });
-          setRow(li, { status: "Đang tải… 0%", percent: 0 });
-          xhr.send(fd);
-        });
-      }
-
-      async function startUploads(files) {
-        showPanel();
-        let done = 0;
-        const total = files.length;
-        summary.textContent = `${done}/${total}`;
-
-        // Build all rows up-front so user sees the queue.
-        const rows = files.map((f) => {
-          const li = rowFor(f);
-          list.prepend(li);
-          return { file: f, li };
-        });
-
-        // Limit concurrency to 3 so a 50-photo dump doesn't slam the
-        // server's sharp pipeline. Sequential per-file inside each lane.
-        const lanes = 3;
-        let cursor = 0;
-        async function lane() {
-          while (cursor < rows.length) {
-            const i = cursor++;
-            await uploadOne(rows[i].file, rows[i].li);
-            done++;
-            summary.textContent = `${done}/${total}`;
-          }
-        }
-        await Promise.all(Array.from({ length: lanes }, lane));
-
-        // Refresh the grid in place once all uploads finish so the new
-        // photos appear without reloading.
-        if (done > 0 && done === total) {
-          setTimeout(() => location.reload(), 800);
-        }
-      }
-    })();
-  </script>
 </AdminLayout>

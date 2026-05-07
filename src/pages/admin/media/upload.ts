@@ -83,10 +83,27 @@ export async function POST({ request, locals }: APIContext): Promise<Response> {
     }
   }
 
-  // Optional poster file (browser extracted a frame from a <video> for us).
-  // Only meaningful when `file` is a video; ignored otherwise.
+  // Two ways the client can supply a video poster:
+  //   - `poster` — a real File from a multipart submit (legacy XHR path).
+  //   - `posterDataUrl` — a base64 data URL string (Uppy XHRUpload path,
+  //     because Uppy's allowedMetaFields can only carry strings).
+  // Decode whichever we got.
   const posterRaw = form.get("poster");
-  const posterFile = posterRaw instanceof File && posterRaw.size > 0 ? posterRaw : null;
+  let posterFile: File | null =
+    posterRaw instanceof File && posterRaw.size > 0 ? posterRaw : null;
+
+  if (!posterFile) {
+    const dataUrl = String(form.get("posterDataUrl") ?? "").trim();
+    if (dataUrl.startsWith("data:image/")) {
+      const m = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+      if (m) {
+        const [, mime, b64] = m;
+        const buf = Buffer.from(b64, "base64");
+        const ext = mime.split("/")[1]?.split("+")[0] ?? "jpg";
+        posterFile = new File([buf], `poster.${ext}`, { type: mime });
+      }
+    }
+  }
 
   // Optional duration in seconds, derived client-side from the <video>
   // element's `duration` property.
