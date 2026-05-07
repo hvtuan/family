@@ -15,8 +15,9 @@
  */
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import MediaUploaderModal from "@/components/admin/MediaUploaderModal.tsx";
-import MediaLibrary, { type MediaItem } from "@/components/admin/MediaLibrary.tsx";
+import MediaLibrary, { type MediaItem, type MemberRef } from "@/components/admin/MediaLibrary.tsx";
 import { listPhotos, deletePhoto } from "@/lib/photos-admin";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const prerender = false;
 
@@ -43,6 +44,34 @@ if (Astro.request.method === "POST") {
 }
 
 const all = await listPhotos();
+
+// Fetch members + photo_members M2M for the People discovery tab.
+const [{ data: memberRows }, { data: linkRows }] = await Promise.all([
+  supabaseAdmin
+    .from("members")
+    .select("id, name, gen, photo")
+    .order("gen", { ascending: true })
+    .order("birth_order", { ascending: true, nullsFirst: false }),
+  supabaseAdmin
+    .from("photo_members")
+    .select("photo_id, member_id"),
+]);
+
+const members: MemberRef[] = (memberRows ?? []).map((m) => ({
+  id: m.id as string,
+  name: m.name as string,
+  gen: m.gen as number,
+  photo: (m.photo as string | null) ?? null,
+}));
+
+// Build a Map<photoId, memberId[]> for O(1) lookup in the island.
+const photoMembers: Record<string, string[]> = {};
+for (const r of linkRows ?? []) {
+  const pid = (r as { photo_id: string }).photo_id;
+  const mid = (r as { member_id: string }).member_id;
+  if (!photoMembers[pid]) photoMembers[pid] = [];
+  photoMembers[pid].push(mid);
+}
 
 // Shape rows for the React island — strip nullables to the props type.
 const items: MediaItem[] = all.map((p) => ({
@@ -86,7 +115,13 @@ const items: MediaItem[] = all.map((p) => ({
       </div>
     </header>
 
-    <MediaLibrary client:load items={items} initialBanner={banner} />
+    <MediaLibrary
+      client:load
+      items={items}
+      members={members}
+      photoMembers={photoMembers}
+      initialBanner={banner}
+    />
   </div>
 
   <MediaUploaderModal client:load />

@@ -33,10 +33,15 @@ import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
 import "yet-another-react-lightbox/styles.css";
 import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
-import { Image as ImageIcon, Search, Star, Trash2, X } from "lucide-react";
+import {
+  Calendar, Heart, Image as ImageIcon, Map as MapIcon,
+  Search, Sparkles, Star, Trash2, Users, X,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
@@ -61,8 +66,17 @@ export type MediaItem = {
   duration_seconds: number | null;
 };
 
+export type MemberRef = {
+  id: string;
+  name: string;
+  gen: number;
+  photo: string | null;
+};
+
 interface Props {
   items: MediaItem[];
+  members?: MemberRef[];
+  photoMembers?: Record<string, string[]>; // photoId → memberId[]
   initialBanner?: { kind: "ok" | "err"; text: string } | null;
 }
 
@@ -123,7 +137,12 @@ function pushUrlState(state: ReturnType<typeof readUrlState>) {
 
 // ─── component ────────────────────────────────────────────────────────────
 
-export default function MediaLibrary({ items, initialBanner }: Props) {
+export default function MediaLibrary({
+  items,
+  members = [],
+  photoMembers = {},
+  initialBanner,
+}: Props) {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
 
@@ -289,14 +308,50 @@ export default function MediaLibrary({ items, initialBanner }: Props) {
 
   // ── render ──
 
+  // ── tab state ──
+  const [tab, setTab] = useState<"library" | "people" | "memories" | "map">(() => {
+    if (typeof window === "undefined") return "library";
+    const t = new URL(window.location.href).searchParams.get("tab");
+    return t === "people" || t === "memories" || t === "map" ? t : "library";
+  });
+  const setTabAndUrl = (t: typeof tab) => {
+    setTab(t);
+    const u = new URL(window.location.href);
+    if (t === "library") u.searchParams.delete("tab");
+    else u.searchParams.set("tab", t);
+    history.replaceState(null, "", u.toString());
+  };
+
   // Pre-hydration skeleton that matches the eventual layout.
   if (!hydrated) {
     return <SkeletonGrid />;
   }
 
   return (
-    <div className="space-y-6">
-      <FilterBar
+    <Tabs value={tab} onValueChange={(v) => setTabAndUrl(v as typeof tab)}>
+      <TabsList className="h-auto flex-wrap">
+        <TabsTrigger value="library" className="gap-1.5">
+          <ImageIcon className="size-4" /> Thư viện
+          <span className="ml-1 rounded-full bg-muted px-1.5 py-0 text-[10px] tabular-nums data-[state=active]:bg-primary/10">
+            {items.length}
+          </span>
+        </TabsTrigger>
+        <TabsTrigger value="people" className="gap-1.5">
+          <Users className="size-4" /> Người
+          <span className="ml-1 rounded-full bg-muted px-1.5 py-0 text-[10px] tabular-nums">
+            {members.length}
+          </span>
+        </TabsTrigger>
+        <TabsTrigger value="memories" className="gap-1.5">
+          <Sparkles className="size-4" /> Memories
+        </TabsTrigger>
+        <TabsTrigger value="map" className="gap-1.5">
+          <MapIcon className="size-4" /> Bản đồ
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="library" className="space-y-6">
+        <FilterBar
         q={filters.q}
         setQ={setQ}
         kindFilter={filters.kindFilter as "" | "image" | "video"}
@@ -316,7 +371,7 @@ export default function MediaLibrary({ items, initialBanner }: Props) {
       />
 
       {rows.length === 0 ? (
-        <EmptyState hasFilter={!!hasActiveFilter} clearAll={clearAll} totalCount={items.length} />
+        <LibraryEmptyState hasFilter={!!hasActiveFilter} clearAll={clearAll} totalCount={items.length} />
       ) : (
         <div className="space-y-8">
           {groups.map(([year, groupItems]) => (
@@ -335,8 +390,58 @@ export default function MediaLibrary({ items, initialBanner }: Props) {
         </div>
       )}
 
-      {/* Sticky bulk bar */}
-      {selected.size > 0 && (
+      </TabsContent>
+
+      <TabsContent value="people">
+        <PeopleTab
+          members={members}
+          items={items}
+          photoMembers={photoMembers}
+          onSelectMember={(memberId) => {
+            // Switch to library + filter by linked member through tag-like
+            // approach: filter rows where this member is linked.
+            // Simplest UX: just jump to library + scroll grid to that member's
+            // first photo. Plus set a tag-like filter via member name in q.
+            setTabAndUrl("library");
+            const member = members.find((m) => m.id === memberId);
+            if (member) setQ(member.name.toLowerCase());
+          }}
+        />
+      </TabsContent>
+
+      <TabsContent value="memories">
+        <MemoriesTab items={items} onOpen={(p) => {
+          const idx = rows.findIndex((r) => r.id === p.id);
+          if (idx >= 0) {
+            setTabAndUrl("library");
+            setLightboxIndex(idx);
+          } else {
+            // The photo is filtered out under current filters — clear and open.
+            clearAll();
+            setTabAndUrl("library");
+            setTimeout(() => {
+              const reIdx = items.findIndex((r) => r.id === p.id);
+              setLightboxIndex(reIdx);
+            }, 30);
+          }
+        }} />
+      </TabsContent>
+
+      <TabsContent value="map">
+        <EmptyState
+          icon={<MapIcon />}
+          title="Bản đồ kỷ niệm"
+          description="Sắp ra mắt — sẽ hiển thị các ảnh có địa điểm trên bản đồ Việt Nam."
+          action={
+            <Button variant="outline" onClick={() => setTabAndUrl("library")}>
+              Quay lại Thư viện
+            </Button>
+          }
+        />
+      </TabsContent>
+
+      {/* Sticky bulk bar — only visible when on Library tab. */}
+      {tab === "library" && selected.size > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background shadow-[0_-2px_10px_rgba(0,0,0,.04)]">
           <div className="mx-auto flex max-w-screen-2xl items-center justify-between px-6 py-3">
             <div className="text-sm text-foreground">
@@ -387,7 +492,7 @@ export default function MediaLibrary({ items, initialBanner }: Props) {
           ],
         }}
       />
-    </div>
+    </Tabs>
   );
 }
 
@@ -703,7 +808,7 @@ function PhotoCard({
   );
 }
 
-function EmptyState({
+function LibraryEmptyState({
   hasFilter,
   clearAll,
   totalCount,
@@ -760,6 +865,246 @@ function SkeletonGrid() {
           return <Skeleton key={i} className="rounded-xl" style={{ height: h }} />;
         })}
       </div>
+    </div>
+  );
+}
+
+// ─── People tab ───────────────────────────────────────────────────────────
+
+function PeopleTab({
+  members,
+  items,
+  photoMembers,
+  onSelectMember,
+}: {
+  members: MemberRef[];
+  items: MediaItem[];
+  photoMembers: Record<string, string[]>;
+  onSelectMember: (id: string) => void;
+}) {
+  // Map memberId → { count, latestPhoto }
+  const stats = useMemo(() => {
+    const map = new Map<string, { count: number; latest: MediaItem | null }>();
+    for (const m of members) map.set(m.id, { count: 0, latest: null });
+    for (const p of items) {
+      const linked = photoMembers[p.id] ?? [];
+      for (const mid of linked) {
+        const s = map.get(mid);
+        if (!s) continue;
+        s.count++;
+        if (!s.latest || (p.year ?? 0) > (s.latest.year ?? 0)) s.latest = p;
+      }
+    }
+    return map;
+  }, [members, items, photoMembers]);
+
+  // Group members by generation for visual structure ("Đời 1", "Đời 2", …).
+  const grouped = useMemo(() => {
+    const m = new Map<number, MemberRef[]>();
+    for (const x of members) {
+      if (!m.has(x.gen)) m.set(x.gen, []);
+      m.get(x.gen)!.push(x);
+    }
+    return Array.from(m.entries()).sort(([a], [b]) => a - b);
+  }, [members]);
+
+  if (members.length === 0) {
+    return (
+      <EmptyState
+        icon={<Users />}
+        title="Chưa có thành viên"
+        description="Thêm thành viên rồi gắn ảnh để nhóm theo người."
+        action={
+          <Button asChild variant="outline">
+            <a href="/admin/members/new">+ Thêm thành viên</a>
+          </Button>
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {grouped.map(([gen, gms]) => (
+        <section key={gen}>
+          <h3 className="mb-3 text-sm font-semibold text-foreground">
+            Đời {gen}
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              ({gms.length} người)
+            </span>
+          </h3>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+            {gms.map((m) => {
+              const s = stats.get(m.id) ?? { count: 0, latest: null };
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => onSelectMember(m.id)}
+                  disabled={s.count === 0}
+                  className="group relative overflow-hidden rounded-xl border border-border bg-card text-left transition-shadow hover:shadow-theme-md disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <div className="aspect-square bg-muted">
+                    {(s.latest?.src_thumb ?? s.latest?.src_medium ?? m.photo) ? (
+                      <img
+                        src={s.latest?.src_thumb ?? s.latest?.src_medium ?? m.photo!}
+                        alt={m.name}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-3xl text-muted-foreground/50">
+                        <Users />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <div className="truncate text-sm font-medium text-foreground">{m.name}</div>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <ImageIcon className="size-3" />
+                      <span className="tabular-nums">
+                        {s.count > 0 ? `${s.count} ảnh` : "chưa có ảnh"}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+// ─── Memories tab ─────────────────────────────────────────────────────────
+
+function MemoriesTab({
+  items,
+  onOpen,
+}: {
+  items: MediaItem[];
+  onOpen: (p: MediaItem) => void;
+}) {
+  const currentYear = new Date().getFullYear();
+  // Buckets: 1, 5, 10, 20 năm trước.
+  const buckets = useMemo(() => {
+    const ranges = [1, 5, 10, 20];
+    return ranges
+      .map((n) => ({
+        n,
+        year: currentYear - n,
+        photos: items.filter((p) => p.year === currentYear - n),
+      }))
+      .filter((b) => b.photos.length > 0);
+  }, [items, currentYear]);
+
+  // Featured photos = featured=true, sorted by year DESC, max 8.
+  const featured = useMemo(
+    () =>
+      items
+        .filter((p) => p.featured)
+        .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
+        .slice(0, 8),
+    [items],
+  );
+
+  if (buckets.length === 0 && featured.length === 0) {
+    return (
+      <EmptyState
+        icon={<Sparkles />}
+        title="Chưa có Memories"
+        description="Khi bạn lưu ảnh có ghi năm rõ ràng, Memories sẽ tự đào ra ảnh của các năm cùng kỳ."
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {featured.length > 0 && (
+        <section>
+          <header className="mb-3 flex items-baseline justify-between">
+            <h3 className="text-base font-semibold text-foreground inline-flex items-center gap-2">
+              <Star className="size-4 text-yellow-500 fill-current" />
+              Khoảnh khắc nổi bật
+            </h3>
+            <span className="text-xs text-muted-foreground">{featured.length} ảnh</span>
+          </header>
+          <MemoryRow photos={featured} onOpen={onOpen} />
+        </section>
+      )}
+
+      {buckets.map(({ n, year, photos }) => (
+        <section key={n}>
+          <header className="mb-3 flex items-baseline justify-between">
+            <h3 className="text-base font-semibold text-foreground inline-flex items-center gap-2">
+              <Calendar className="size-4 text-primary" />
+              {n} năm trước · <span className="text-muted-foreground">{year}</span>
+            </h3>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {photos.length} ảnh
+            </span>
+          </header>
+          <MemoryRow photos={photos} onOpen={onOpen} />
+        </section>
+      ))}
+
+      <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-5 text-center text-sm text-muted-foreground">
+        <Heart className="mx-auto mb-2 size-5 text-vermilion" />
+        Memories sẽ phong phú hơn khi mỗi ảnh có ghi năm. Hãy bổ sung năm cho các ảnh cũ.
+      </div>
+    </div>
+  );
+}
+
+function MemoryRow({
+  photos,
+  onOpen,
+}: {
+  photos: MediaItem[];
+  onOpen: (p: MediaItem) => void;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+      {photos.slice(0, 12).map((p) => {
+        const thumb = p.kind === "video"
+          ? (p.src_thumb || p.src_medium || "")
+          : (p.src_thumb || p.src_medium || p.src);
+        return (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => onOpen(p)}
+            className="group relative aspect-square overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-theme-md"
+            title={p.alt_vi ?? p.caption}
+          >
+            {thumb ? (
+              <img
+                src={thumb}
+                alt={p.alt_vi ?? p.caption}
+                loading="lazy"
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-3xl opacity-60">
+                {p.kind === "video" ? "🎬" : "🖼️"}
+              </div>
+            )}
+            {p.kind === "video" && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </span>
+              </div>
+            )}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
+              <p className="truncate text-xs text-white">{p.caption}</p>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
