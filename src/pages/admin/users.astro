@@ -1,5 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
+import UsersList, { type UserRow as UserCardRow } from "@/components/admin/UsersList.tsx";
+import ToastBanner from "@/components/admin/ToastBanner.tsx";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { usernameToEmail, emailToUsername, validateUsername } from "@/lib/username";
 
@@ -110,56 +112,41 @@ const { data: users } = await supabaseAdmin
 
 const rows = (users ?? []) as UserRow[];
 
-const roleLabel: Record<Role, string> = {
-  admin: "Quản trị",
-  editor: "Biên tập viên",
-  branch_editor: "Biên tập theo nhánh",
-};
-const branchLabel: Record<Branch, string> = {
-  noi: "Nội",
-  ngoai: "Ngoại",
-  both: "Cả hai",
-};
-const statusLabel: Record<Status, { text: string; cls: string }> = {
-  approved: { text: "Đã duyệt", cls: "bg-success-50 text-success-700 border-success-100" },
-  pending: { text: "Chờ duyệt", cls: "bg-warning-50 text-warning-600 border-warning-100" },
-  revoked: { text: "Đã thu hồi", cls: "bg-error-50 text-error-700 border-error-100" },
-};
-
-function fmtDate(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleString("vi-VN", {
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit",
-  });
-}
+const userItems: UserCardRow[] = rows.map((u) => ({
+  id: u.id,
+  username: emailToUsername(u.email),
+  role: u.role,
+  branch: u.branch,
+  status: u.status,
+  created_at: u.created_at,
+  is_me: u.id === me.id,
+}));
 ---
 
 <AdminLayout title="Người dùng" crumbs={[{ label: "Người dùng" }]}>
-  <div class="space-y-6">
-    {formError && (
-      <div class="rounded-lg border border-error-100 bg-error-50 px-4 py-3 text-theme-sm text-error-700">
-        {formError}
-      </div>
-    )}
-    {formOk && (
-      <div class="rounded-lg border border-success-100 bg-success-50 px-4 py-3 text-theme-sm text-success-700">
-        {formOk}
-      </div>
-    )}
+  {formError && <ToastBanner client:load kind="err" text={formError} />}
+  {formOk && <ToastBanner client:load kind="ok" text={formOk} />}
 
-    <section class="rounded-2xl border border-gray-200 bg-white shadow-theme-xs">
-      <header class="border-b border-gray-100 px-5 py-4">
-        <h2 class="text-theme-sm font-semibold text-gray-800">Tạo tài khoản mới</h2>
-        <p class="mt-1 text-theme-xs text-gray-500">
-          Đặt tên đăng nhập + mật khẩu rồi gửi cho cô chú qua Zalo / SMS.
+  <div class="space-y-6">
+    <header>
+      <h1 class="text-xl font-semibold text-foreground">Người dùng admin</h1>
+      <p class="mt-0.5 text-sm text-muted-foreground">
+        Tạo tài khoản cho cô chú; gửi tên đăng nhập + mật khẩu qua Zalo / SMS.
+      </p>
+    </header>
+
+    <section class="rounded-2xl border border-border bg-card shadow-theme-xs">
+      <header class="border-b border-border px-5 py-4">
+        <h2 class="text-sm font-semibold text-foreground">Tạo tài khoản mới</h2>
+        <p class="mt-0.5 text-xs text-muted-foreground">
+          Tên đăng nhập viết liền không dấu, mật khẩu ≥ 6 ký tự.
         </p>
       </header>
       <form method="post" class="grid grid-cols-1 gap-4 p-5 md:grid-cols-2 lg:grid-cols-4">
         <input type="hidden" name="action" value="create" />
 
         <div class="md:col-span-2 lg:col-span-1">
-          <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          <label class="mb-1.5 block text-sm font-medium text-foreground">
             Tên đăng nhập
           </label>
           <input
@@ -167,28 +154,26 @@ function fmtDate(iso: string) {
             value={username}
             placeholder="vd: cohai"
             spellcheck="false" autocapitalize="off"
-            class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-theme-xs placeholder:text-muted-foreground focus-visible:border-primary/50 focus-visible:outline-hidden focus-visible:ring-3 focus-visible:ring-ring/20"
           />
         </div>
 
         <div class="md:col-span-2 lg:col-span-1">
-          <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
+          <label class="mb-1.5 block text-sm font-medium text-foreground">
             Mật khẩu
           </label>
           <input
             type="text" name="password" required minlength="6"
             placeholder="ít nhất 6 ký tự"
-            class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-theme-xs placeholder:text-muted-foreground focus-visible:border-primary/50 focus-visible:outline-hidden focus-visible:ring-3 focus-visible:ring-ring/20"
           />
         </div>
 
         <div>
-          <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
-            Vai trò
-          </label>
+          <label class="mb-1.5 block text-sm font-medium text-foreground">Vai trò</label>
           <select
             name="role"
-            class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-theme-xs focus-visible:border-primary/50 focus-visible:outline-hidden focus-visible:ring-3 focus-visible:ring-ring/20"
           >
             <option value="branch_editor" selected={role === "branch_editor"}>Biên tập theo nhánh</option>
             <option value="editor" selected={role === "editor"}>Biên tập viên</option>
@@ -197,12 +182,13 @@ function fmtDate(iso: string) {
         </div>
 
         <div>
-          <label class="mb-1.5 block text-theme-sm font-medium text-gray-700">
-            Nhánh (chỉ áp dụng cho biên tập theo nhánh)
+          <label class="mb-1.5 block text-sm font-medium text-foreground">
+            Nhánh
+            <span class="ml-1 font-normal text-muted-foreground text-xs">(chỉ branch_editor)</span>
           </label>
           <select
             name="branch"
-            class="h-11 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-theme-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10"
+            class="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm shadow-theme-xs focus-visible:border-primary/50 focus-visible:outline-hidden focus-visible:ring-3 focus-visible:ring-ring/20"
           >
             <option value="both" selected={branch === "both"}>Cả nội + ngoại</option>
             <option value="noi" selected={branch === "noi"}>Họ Nội</option>
@@ -213,7 +199,7 @@ function fmtDate(iso: string) {
         <div class="md:col-span-2 lg:col-span-4 flex justify-end">
           <button
             type="submit"
-            class="rounded-lg bg-brand-500 px-5 py-2.5 text-theme-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600"
+            class="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-theme-xs hover:bg-brand-600 focus-visible:outline-hidden focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             Tạo tài khoản
           </button>
@@ -221,70 +207,6 @@ function fmtDate(iso: string) {
       </form>
     </section>
 
-    <section class="rounded-2xl border border-gray-200 bg-white shadow-theme-xs">
-      <header class="border-b border-gray-100 px-5 py-4">
-        <h2 class="text-theme-sm font-semibold text-gray-800">
-          Danh sách người dùng ({rows.length})
-        </h2>
-      </header>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-theme-sm">
-          <thead class="bg-gray-50 text-theme-xs uppercase text-gray-500">
-            <tr>
-              <th class="px-5 py-3 font-medium">Tên đăng nhập</th>
-              <th class="px-5 py-3 font-medium">Vai trò</th>
-              <th class="px-5 py-3 font-medium">Nhánh</th>
-              <th class="px-5 py-3 font-medium">Trạng thái</th>
-              <th class="px-5 py-3 font-medium">Tạo lúc</th>
-              <th class="px-5 py-3 font-medium text-right">Hành động</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            {rows.map((u) => {
-              const isMe = u.id === me.id;
-              const sLabel = statusLabel[u.status];
-              return (
-                <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3 font-medium text-gray-800">
-                    {emailToUsername(u.email)}
-                    {isMe && (
-                      <span class="ml-2 rounded bg-brand-50 px-1.5 py-0.5 text-theme-xs font-medium text-brand-600">
-                        bạn
-                      </span>
-                    )}
-                  </td>
-                  <td class="px-5 py-3 text-gray-700">{roleLabel[u.role]}</td>
-                  <td class="px-5 py-3 text-gray-700">
-                    {u.role === "branch_editor" && u.branch ? branchLabel[u.branch] : "—"}
-                  </td>
-                  <td class="px-5 py-3">
-                    <span class={`inline-flex rounded-md border px-2 py-0.5 text-theme-xs font-medium ${sLabel.cls}`}>
-                      {sLabel.text}
-                    </span>
-                  </td>
-                  <td class="px-5 py-3 text-theme-xs text-gray-500">
-                    {fmtDate(u.created_at)}
-                  </td>
-                  <td class="px-5 py-3 text-right">
-                    {!isMe && (
-                      <form method="post" class="inline" onsubmit="return confirm('Xóa tài khoản này?');">
-                        <input type="hidden" name="action" value="delete" />
-                        <input type="hidden" name="user_id" value={u.id} />
-                        <button
-                          type="submit"
-                          class="rounded-md border border-error-100 px-3 py-1 text-theme-xs font-medium text-error-700 hover:bg-error-50"
-                        >
-                          Xóa
-                        </button>
-                      </form>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <UsersList client:load users={userItems} />
   </div>
 </AdminLayout>
