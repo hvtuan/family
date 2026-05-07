@@ -32,6 +32,10 @@ export type HeroSlide = {
   thumb: string | null;
   caption: string;
   altVi: string | null;
+  /** Mobile variant — used when viewport < 768px. */
+  mobileSrc: string | null;
+  mobilePoster: string | null;
+  mobileKind: "image" | "video" | null;
   headlineVi: string | null;
   headlineEn: string | null;
   ctaLabel: string | null;
@@ -152,13 +156,33 @@ export default function HeroSlideshow({ slides, height = "70vh" }: Props) {
   );
 }
 
+function useIsMobile(breakpoint = 768): boolean {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const update = () => setMobile(mql.matches);
+    update();
+    mql.addEventListener?.("change", update);
+    return () => mql.removeEventListener?.("change", update);
+  }, [breakpoint]);
+  return mobile;
+}
+
 function SlideView({ slide: s, active }: { slide: HeroSlide; active: boolean }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const isMobile = useIsMobile();
+
+  // Resolve which photo to show: mobile variant on small viewports,
+  // main photo otherwise. Falls back to main photo when no mobile set.
+  const useMobile = isMobile && s.mobileSrc;
+  const src = useMobile ? s.mobileSrc! : s.src;
+  const poster = useMobile ? s.mobilePoster : s.poster;
+  const kind = useMobile ? (s.mobileKind ?? "image") : s.kind;
 
   // Pause/play video as it becomes active so we don't have multiple
   // videos playing in the carousel at once.
   useEffect(() => {
-    if (s.kind !== "video" || !videoRef.current) return;
+    if (kind !== "video" || !videoRef.current) return;
     if (active) {
       videoRef.current.play().catch(() => {
         /* Autoplay may be blocked; user can click play manually. */
@@ -166,15 +190,20 @@ function SlideView({ slide: s, active }: { slide: HeroSlide; active: boolean }) 
     } else {
       videoRef.current.pause();
     }
-  }, [s.kind, active]);
+  }, [kind, active]);
+
+  // Ken Burns animation duration matches the slide's duration so the
+  // pan completes just as the next slide begins fading in. Falls back
+  // to 8s for static (duration_ms=0) slides.
+  const kbDuration = (s.durationMs > 0 ? s.durationMs : 8000) + 1500; // +1.5s slack
 
   return (
     <div className="relative h-full w-full shrink-0 grow-0 basis-full">
-      {s.kind === "video" ? (
+      {kind === "video" ? (
         <video
           ref={videoRef}
-          src={s.src}
-          poster={s.poster ?? undefined}
+          src={src}
+          poster={poster ?? undefined}
           autoPlay={active}
           muted
           loop
@@ -185,11 +214,12 @@ function SlideView({ slide: s, active }: { slide: HeroSlide; active: boolean }) 
         </video>
       ) : (
         <img
-          src={s.src}
+          src={src}
           alt={s.altVi ?? s.caption}
           loading="eager"
           decoding="async"
-          className="absolute inset-0 h-full w-full object-cover"
+          className={`absolute inset-0 h-full w-full object-cover ${active ? "hero-kb" : ""}`}
+          style={{ animationDuration: `${kbDuration}ms` }}
         />
       )}
     </div>

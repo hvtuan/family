@@ -44,26 +44,32 @@ import {
 import { toast } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
+type PhotoLite = {
+  id: string;
+  kind: "image" | "video";
+  src: string;
+  src_thumb: string | null;
+  src_medium: string | null;
+  alt_vi: string | null;
+  caption: string;
+  duration_seconds: number | null;
+};
+
 export type HeroSlideItem = {
   id: number;
   photo_id: string;
+  photo_id_mobile: string | null;
   sort_order: number;
   active: boolean;
+  active_from: string | null;
+  active_to: string | null;
   headline_vi: string | null;
   headline_en: string | null;
   cta_label: string | null;
   cta_href: string | null;
   duration_ms: number;
-  photo: {
-    id: string;
-    kind: "image" | "video";
-    src: string;
-    src_thumb: string | null;
-    src_medium: string | null;
-    alt_vi: string | null;
-    caption: string;
-    duration_seconds: number | null;
-  };
+  photo: PhotoLite;
+  photo_mobile: PhotoLite | null;
 };
 
 type LibraryPhoto = {
@@ -203,6 +209,9 @@ export default function HeroSlidesList({ initial }: Props) {
         cta_label: patch.cta_label ?? "",
         cta_href: patch.cta_href ?? "",
         duration_ms: patch.duration_ms ?? editing.duration_ms,
+        photo_id_mobile: patch.photo_id_mobile ?? "",
+        active_from: patch.active_from ?? "",
+        active_to: patch.active_to ?? "",
       });
       toast.success("Đã lưu");
       await reload();
@@ -395,10 +404,31 @@ function SortableSlideRow({
             </Badge>
           )}
         </div>
-        <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-          {s.duration_ms === 0 ? "tĩnh (không tự chuyển)" : `${s.duration_ms / 1000}s`}
-          {" · "}
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground tabular-nums">
+          <span>{s.duration_ms === 0 ? "tĩnh" : `${s.duration_ms / 1000}s`}</span>
+          <span>·</span>
           <span className="font-mono">{s.photo_id}</span>
+          {s.photo_id_mobile && (
+            <Badge variant="outline" className="text-[10px]">📱 {s.photo_id_mobile}</Badge>
+          )}
+          {(s.active_from || s.active_to) && (() => {
+            const now = Date.now();
+            const fromTs = s.active_from ? new Date(s.active_from).getTime() : null;
+            const toTs = s.active_to ? new Date(s.active_to).getTime() : null;
+            const status =
+              fromTs && fromTs > now ? { label: "Lên lịch", cls: "bg-warning-50 text-warning-700 border-warning-100" } :
+              toTs && toTs <= now ? { label: "Hết hạn", cls: "bg-error-50 text-error-700 border-error-100" } :
+              { label: "Đang chiếu", cls: "bg-success-50 text-success-700 border-success-100" };
+            const window = [
+              s.active_from && new Date(s.active_from).toLocaleDateString("vi-VN"),
+              s.active_to && new Date(s.active_to).toLocaleDateString("vi-VN"),
+            ].filter(Boolean).join(" – ");
+            return (
+              <Badge variant="outline" className={cn("text-[10px]", status.cls)}>
+                ⏱ {status.label}: {window}
+              </Badge>
+            );
+          })()}
         </p>
         {s.headline_en && (
           <p className="mt-0.5 truncate text-xs italic text-muted-foreground">
@@ -464,16 +494,24 @@ function PickerDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Tìm theo tên / caption / năm…"
-            className="h-10 pl-9"
-            autoFocus
-          />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-48">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Tìm theo tên / caption / năm…"
+              className="h-10 pl-9"
+              autoFocus
+            />
+          </div>
+          {/* Triggers the Uppy Dashboard mounted by MediaUploaderModal
+             on the parent page. Uppy itself handles drag-drop, webcam
+             capture, paste — exactly the same as on /admin/media. */}
+          <Button variant="outline" data-uppy-trigger title="Tải mới hoặc chụp webcam">
+            📸 Tải / chụp mới
+          </Button>
         </div>
 
         <div className="-mx-6 flex-1 overflow-y-auto px-6 py-2">
@@ -553,6 +591,26 @@ function EditDialog({
   const [ctaLabel, setCtaLabel] = useState(slide.cta_label ?? "");
   const [ctaHref, setCtaHref] = useState(slide.cta_href ?? "");
   const [durationMs, setDurationMs] = useState(slide.duration_ms);
+  // Mobile variant + schedule
+  const [photoIdMobile, setPhotoIdMobile] = useState(slide.photo_id_mobile ?? "");
+  const [activeFrom, setActiveFrom] = useState(toDatetimeLocal(slide.active_from));
+  const [activeTo, setActiveTo] = useState(toDatetimeLocal(slide.active_to));
+  const [mobilePickerOpen, setMobilePickerOpen] = useState(false);
+  // Cache the mobile preview photo metadata so the user can see what
+  // they picked. Pre-loaded via list.json on first need.
+  const [mobilePhoto, setMobilePhoto] = useState<LibraryPhoto | null>(null);
+
+  useEffect(() => {
+    if (!photoIdMobile || mobilePhoto?.id === photoIdMobile) return;
+    fetch("/admin/media/list.json", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.ok) return;
+        const found = (d.photos as LibraryPhoto[]).find((p) => p.id === photoIdMobile);
+        if (found) setMobilePhoto(found);
+      })
+      .catch(() => {});
+  }, [photoIdMobile, mobilePhoto]);
 
   // Preview values fall back to photo metadata when fields are blank,
   // matching the public renderer's resolution logic.
@@ -624,6 +682,81 @@ function EditDialog({
                 value={durationMs / 1000}
                 onChange={(e) => setDurationMs(Math.round(Number(e.target.value) * 1000))}
               />
+            </div>
+
+            {/* Schedule window */}
+            <div className="space-y-1.5 border-t border-border pt-3">
+              <Label className="flex items-center gap-1.5">
+                <span>⏱</span> Lịch chiếu (tùy chọn)
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="from" className="text-xs text-muted-foreground">Từ</Label>
+                  <Input
+                    id="from"
+                    type="datetime-local"
+                    value={activeFrom}
+                    onChange={(e) => setActiveFrom(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="to" className="text-xs text-muted-foreground">Đến</Label>
+                  <Input
+                    id="to"
+                    type="datetime-local"
+                    value={activeTo}
+                    onChange={(e) => setActiveTo(e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Để trống = chiếu mãi. Hữu ích cho slide Tết / giỗ / sự kiện.
+              </p>
+            </div>
+
+            {/* Mobile variant */}
+            <div className="space-y-1.5 border-t border-border pt-3">
+              <Label className="flex items-center gap-1.5">
+                <span>📱</span> Ảnh riêng cho điện thoại (tùy chọn)
+              </Label>
+              {photoIdMobile && mobilePhoto ? (
+                <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 p-2">
+                  <img
+                    src={mobilePhoto.src_thumb ?? mobilePhoto.src_medium ?? mobilePhoto.src}
+                    alt=""
+                    className="size-12 shrink-0 rounded object-cover"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-medium">{mobilePhoto.alt_vi ?? mobilePhoto.caption}</p>
+                    <p className="truncate font-mono text-[10px] text-muted-foreground">
+                      {mobilePhoto.id}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { setPhotoIdMobile(""); setMobilePhoto(null); }}
+                    title="Bỏ"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                </div>
+              ) : photoIdMobile ? (
+                <p className="text-xs text-muted-foreground">
+                  Đang tải metadata cho {photoIdMobile}…
+                </p>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setMobilePickerOpen(true)}
+                >
+                  <Plus className="size-4" /> Chọn ảnh dọc cho mobile
+                </Button>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Khi viewport hẹp (&lt;768px) trang chủ sẽ dùng ảnh này thay cho ảnh ngang.
+              </p>
             </div>
           </div>
 
@@ -701,6 +834,9 @@ function EditDialog({
                 cta_label: ctaLabel.trim() || null,
                 cta_href: ctaHref.trim() || null,
                 duration_ms: durationMs,
+                photo_id_mobile: photoIdMobile.trim() || null,
+                active_from: activeFrom ? new Date(activeFrom).toISOString() : null,
+                active_to: activeTo ? new Date(activeTo).toISOString() : null,
               })
             }
             disabled={busy}
@@ -709,6 +845,27 @@ function EditDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {mobilePickerOpen && (
+        <PickerDialog
+          open={mobilePickerOpen}
+          onClose={() => setMobilePickerOpen(false)}
+          onPick={(id) => {
+            setPhotoIdMobile(id);
+            setMobilePhoto(null); // force reload of preview metadata
+            setMobilePickerOpen(false);
+          }}
+        />
+      )}
     </Dialog>
   );
+}
+
+/** ISO timestamp → "YYYY-MM-DDTHH:mm" for <input type="datetime-local"> */
+function toDatetimeLocal(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }

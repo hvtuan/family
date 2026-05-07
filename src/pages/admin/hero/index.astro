@@ -1,6 +1,7 @@
 ---
 import AdminLayout from "@/layouts/AdminLayout.astro";
 import HeroSlidesList, { type HeroSlideItem } from "@/components/admin/HeroSlidesList.tsx";
+import MediaUploaderModal from "@/components/admin/MediaUploaderModal.tsx";
 import {
   listHeroSlides, createHeroSlide, updateHeroSlide,
   deleteHeroSlide, reorderHeroSlides,
@@ -28,12 +29,18 @@ if (Astro.request.method === "POST") {
       const cta_label = String(form.get("cta_label") ?? "").trim();
       const cta_href = String(form.get("cta_href") ?? "").trim();
       const duration_ms = Number(form.get("duration_ms"));
+      const photo_id_mobile = String(form.get("photo_id_mobile") ?? "").trim();
+      const active_from = String(form.get("active_from") ?? "").trim();
+      const active_to = String(form.get("active_to") ?? "").trim();
       await updateHeroSlide(id, {
         headline_vi: headline_vi || null,
         headline_en: headline_en || null,
         cta_label: cta_label || null,
         cta_href: cta_href || null,
         duration_ms: Number.isFinite(duration_ms) ? duration_ms : 6000,
+        photo_id_mobile: photo_id_mobile || null,
+        active_from: active_from || null,
+        active_to: active_to || null,
       });
     } else if (action === "toggle") {
       const id = Number(form.get("id"));
@@ -76,4 +83,9 @@ const items: HeroSlideItem[] = slides as unknown as HeroSlideItem[];
 
     <HeroSlidesList client:load initial={items} />
   </div>
+
+  <!-- Uppy modal so the picker dialog's "📸 Tải / chụp mới" button
+       can open the Dashboard with drag-drop + webcam + paste. After
+       upload the new media appears in the picker on next reload. -->
+  <MediaUploaderModal client:load />
 </AdminLayout>

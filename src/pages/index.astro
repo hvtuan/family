@@ -9,7 +9,7 @@ import QuoteCard from "@/components/astro/QuoteCard.astro";
 import { SITE } from "@/data/site";
 import { getMembers, getQuotes, getTimeline } from "@/lib/content";
 import { toClientMember } from "@/lib/members-client";
-import { listHeroSlides } from "@/lib/hero-admin";
+import { isInActiveWindow, listHeroSlides } from "@/lib/hero-admin";
 
 const allMembers = await getMembers((entry) => entry.data.status === "published");
 const clientMembers = allMembers.map(toClientMember);
@@ -17,8 +17,12 @@ const quotes = await getQuotes();
 const timeline = await getTimeline();
 
 // Active hero slides — when any exist the slideshow renders ABOVE the
-// static Lotus hero block. When 0, only the Lotus block shows.
-const heroSlideRows = await listHeroSlides(false);
+// static Lotus hero block. Filtered by schedule window so future /
+// expired event slides drop out automatically.
+const allHeroSlides = await listHeroSlides(false);
+const heroSlideRows = allHeroSlides.filter((s) =>
+  isInActiveWindow(s, new Date()),
+);
 const heroSlides: HeroSlide[] = heroSlideRows.map((s) => ({
   id: s.id,
   kind: s.photo.kind,
@@ -27,6 +31,10 @@ const heroSlides: HeroSlide[] = heroSlideRows.map((s) => ({
   thumb: s.photo.src_thumb,
   caption: s.photo.caption,
   altVi: s.photo.alt_vi,
+  // Mobile variant — when set, the React island swaps to it on viewports < 768.
+  mobileSrc: s.photo_mobile?.src ?? null,
+  mobilePoster: s.photo_mobile?.src_medium ?? s.photo_mobile?.src_thumb ?? null,
+  mobileKind: s.photo_mobile?.kind ?? null,
   headlineVi: s.headline_vi,
   headlineEn: s.headline_en,
   ctaLabel: s.cta_label,

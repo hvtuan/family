@@ -90,6 +90,34 @@
   }
 }
 
+/* ─── Hero Ken Burns animation ───────────────────────────────
+   Subtle pan + zoom on image slides while they're active.
+   Direction alternates per even/odd slide so adjacent slides
+   don't drift the same way. */
+@keyframes hero-ken-burns {
+  from { transform: scale(1.00) translate(0%, 0%); }
+  to   { transform: scale(1.08) translate(-1.5%, -1%); }
+}
+@keyframes hero-ken-burns-alt {
+  from { transform: scale(1.00) translate(0%, 0%); }
+  to   { transform: scale(1.08) translate(1.5%, 1%); }
+}
+
+@layer utilities {
+  .hero-kb {
+    animation-name: hero-ken-burns;
+    animation-timing-function: ease-out;
+    animation-fill-mode: forwards;
+    will-change: transform;
+  }
+  .embla__container > :nth-child(even) .hero-kb {
+    animation-name: hero-ken-burns-alt;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-kb { animation: none !important; }
+  }
+}
+
 /* ============================================================
    Theme variants via [data-theme] attribute on <html>
    ============================================================ */
