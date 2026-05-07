@@ -241,9 +241,14 @@ export default function SettingsForm({ initial }: Props) {
         );
       })}
 
+      {/*
+        Sticky save bar — sits BELOW the admin sidebar (which is w-[290px]
+        + z-50 + lg:static), so we shift the left edge on desktop so it
+        only spans the main content area. Mobile keeps full width.
+      */}
       {dirtyCount > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,.04)]">
-          <div className="mx-auto flex max-w-screen-2xl items-center justify-between px-6 py-3">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,.04)] lg:left-[290px]">
+          <div className="mx-auto flex max-w-screen-2xl items-center justify-between px-4 py-3 md:px-6">
             <div className="text-sm text-foreground">
               <span className="font-semibold">{dirtyCount}</span> thiết lập chưa lưu
             </div>
