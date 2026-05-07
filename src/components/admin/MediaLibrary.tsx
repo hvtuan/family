@@ -34,12 +34,18 @@ import "yet-another-react-lightbox/styles.css";
 import "yet-another-react-lightbox/plugins/captions.css";
 import "yet-another-react-lightbox/plugins/thumbnails.css";
 import {
-  Calendar, Heart, Image as ImageIcon, Map as MapIcon,
+  Calendar, Hash, Heart, Image as ImageIcon, Map as MapIcon,
   Search, Sparkles, Star, Trash2, Users, X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/sonner";
@@ -285,6 +291,37 @@ export default function MediaLibrary({
     }
   };
 
+  // ── bulk tag handler ──
+  const [tagDialogOpen, setTagDialogOpen] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+  const [tagMode, setTagMode] = useState<"add" | "remove">("add");
+  const bulkTag = async () => {
+    const tags = tagInput.split(",").map((t) => t.trim()).filter(Boolean);
+    if (selected.size === 0 || tags.length === 0) return;
+    setBulkBusy(true);
+    const fd = new FormData();
+    fd.set("action", "bulk-tag");
+    fd.set("mode", tagMode);
+    fd.set("tags", tags.join(","));
+    for (const id of selected) fd.append("ids", id);
+    try {
+      const res = await fetch("/admin/media", { method: "POST", body: fd });
+      if (res.ok) {
+        const verb = tagMode === "remove" ? "Đã gỡ" : "Đã thêm";
+        toast.success(`${verb} tag cho ${selected.size} ảnh.`);
+        setTagDialogOpen(false);
+        setTagInput("");
+        setTimeout(() => location.reload(), 600);
+      } else {
+        toast.error(`Gắn tag thất bại (${res.status}).`);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi mạng.");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   // ── update helpers ──
   const setQ = (q: string) => setFilters((f) => ({ ...f, q: q.toLowerCase() }));
   const toggleTag = (t: string) =>
@@ -428,15 +465,12 @@ export default function MediaLibrary({
       </TabsContent>
 
       <TabsContent value="map">
-        <EmptyState
-          icon={<MapIcon />}
-          title="Bản đồ kỷ niệm"
-          description="Sắp ra mắt — sẽ hiển thị các ảnh có địa điểm trên bản đồ Việt Nam."
-          action={
-            <Button variant="outline" onClick={() => setTabAndUrl("library")}>
-              Quay lại Thư viện
-            </Button>
-          }
+        <MapTab
+          items={items}
+          onSelectLocation={(loc) => {
+            setTabAndUrl("library");
+            setQ(loc.toLowerCase());
+          }}
         />
       </TabsContent>
 
@@ -452,6 +486,17 @@ export default function MediaLibrary({
                 <X className="size-4" /> Bỏ chọn
               </Button>
               <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setTagMode("add");
+                  setTagDialogOpen(true);
+                }}
+                disabled={bulkBusy}
+              >
+                <Hash className="size-4" /> Gắn tag
+              </Button>
+              <Button
                 variant="destructive"
                 size="sm"
                 onClick={bulkDelete}
@@ -463,6 +508,87 @@ export default function MediaLibrary({
           </div>
         </div>
       )}
+
+      {/* Bulk tag dialog */}
+      <Dialog open={tagDialogOpen} onOpenChange={setTagDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {tagMode === "add" ? "Thêm tag" : "Gỡ tag"} cho {selected.size} ảnh
+            </DialogTitle>
+            <DialogDescription>
+              Nhập một hoặc nhiều tag, cách nhau bằng dấu phẩy. Tag tự lowercase.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="bulk-tags">Tag</Label>
+              <Input
+                id="bulk-tags"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                placeholder="tết, đám-cưới, 2024"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && tagInput.trim()) {
+                    e.preventDefault();
+                    bulkTag();
+                  }
+                }}
+              />
+              {tagInput && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {tagInput.split(",").map((t) => t.trim()).filter(Boolean).map((t) => (
+                    <span
+                      key={t}
+                      className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
+                    >
+                      #{t}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 text-sm">
+              <button
+                type="button"
+                onClick={() => setTagMode("add")}
+                className={cn(
+                  "rounded-md border px-3 py-1.5 transition-colors",
+                  tagMode === "add"
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background hover:bg-accent",
+                )}
+              >
+                Thêm vào tag hiện có
+              </button>
+              <button
+                type="button"
+                onClick={() => setTagMode("remove")}
+                className={cn(
+                  "rounded-md border px-3 py-1.5 transition-colors",
+                  tagMode === "remove"
+                    ? "border-destructive bg-destructive text-destructive-foreground"
+                    : "border-border bg-background hover:bg-accent",
+                )}
+              >
+                Gỡ khỏi tag hiện có
+              </button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTagDialogOpen(false)} disabled={bulkBusy}>
+              Hủy
+            </Button>
+            <Button onClick={bulkTag} disabled={bulkBusy || !tagInput.trim()}>
+              {tagMode === "add" ? "Thêm tag" : "Gỡ tag"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Lightbox
         open={lightboxIndex !== null}
@@ -1106,5 +1232,160 @@ function MemoryRow({
         );
       })}
     </div>
+  );
+}
+
+// ─── Map tab ──────────────────────────────────────────────────────────────
+
+function MapTab({
+  items,
+  onSelectLocation,
+}: {
+  items: MediaItem[];
+  onSelectLocation: (location: string) => void;
+}) {
+  // Aggregate { location → { count, latestPhoto, kind } }.
+  // Match on the full string to avoid splitting "Quảng Ngãi, Việt Nam" into
+  // two pseudo-locations. Light normalization (trim, lowercase compare).
+  const locations = useMemo(() => {
+    const map = new Map<
+      string,
+      { name: string; count: number; latest: MediaItem | null; videoCount: number }
+    >();
+    for (const p of items) {
+      const loc = p.location?.trim();
+      if (!loc) continue;
+      const key = loc.toLowerCase();
+      let entry = map.get(key);
+      if (!entry) {
+        entry = { name: loc, count: 0, latest: null, videoCount: 0 };
+        map.set(key, entry);
+      }
+      entry.count++;
+      if (p.kind === "video") entry.videoCount++;
+      if (!entry.latest || (p.year ?? 0) > (entry.latest.year ?? 0)) {
+        entry.latest = p;
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [items]);
+
+  const totalWithLocation = locations.reduce((acc, l) => acc + l.count, 0);
+  const totalWithoutLocation = items.length - totalWithLocation;
+
+  if (locations.length === 0) {
+    return (
+      <EmptyState
+        icon={<MapIcon />}
+        title="Chưa có ảnh nào ghi địa điểm"
+        description="Khi bạn thêm địa điểm cho ảnh (ví dụ: Tịnh Khê, Quảng Ngãi), Bản đồ sẽ tự nhóm theo nơi chụp."
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Decorative Vietnam outline header card */}
+      <div className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-jade/5 via-cream to-paper-2/40 p-5">
+        <div className="flex items-center gap-4">
+          <VietnamOutline className="size-24 shrink-0 text-jade" />
+          <div className="flex-1 min-w-0">
+            <h3 class-name="text-base font-semibold text-foreground">
+              Kỷ niệm trên bản đồ
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              <span className="tabular-nums font-medium text-foreground">
+                {totalWithLocation}
+              </span>{" "}
+              ảnh ở{" "}
+              <span className="tabular-nums font-medium text-foreground">
+                {locations.length}
+              </span>{" "}
+              địa điểm
+              {totalWithoutLocation > 0 && (
+                <span className="text-muted-foreground/80">
+                  {" · "}
+                  {totalWithoutLocation} ảnh chưa ghi địa điểm
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Location grid */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {locations.map((loc) => {
+          const thumb = loc.latest
+            ? loc.latest.kind === "video"
+              ? (loc.latest.src_thumb || loc.latest.src_medium || "")
+              : (loc.latest.src_thumb || loc.latest.src_medium || loc.latest.src)
+            : "";
+          return (
+            <button
+              key={loc.name}
+              type="button"
+              onClick={() => onSelectLocation(loc.name)}
+              className="group flex items-stretch gap-3 overflow-hidden rounded-xl border border-border bg-card text-left transition-shadow hover:shadow-theme-md"
+            >
+              <div className="relative h-24 w-24 shrink-0 overflow-hidden bg-muted">
+                {thumb ? (
+                  <img
+                    src={thumb}
+                    alt=""
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.05]"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-2xl text-muted-foreground/50">
+                    <MapIcon />
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-1 flex-col justify-between p-3 min-w-0">
+                <div className="min-w-0">
+                  <h4 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                    <MapIcon className="size-3.5 shrink-0 text-jade" />
+                    <span className="truncate">{loc.name}</span>
+                  </h4>
+                  <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+                    {loc.count} ảnh
+                    {loc.videoCount > 0 && ` · ${loc.videoCount} video`}
+                  </p>
+                </div>
+                {loc.latest?.year && (
+                  <p className="text-xs text-muted-foreground">
+                    Mới nhất: <span className="text-foreground">{loc.latest.year}</span>
+                  </p>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Hand-drawn approximation of Vietnam's coastline. SVG, ~40 points,
+ *  inheritable color via currentColor. Decorative only. */
+function VietnamOutline({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 100 240"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M 32 8 L 38 18 L 50 22 L 58 30 L 64 40 L 60 50 L 52 58 L 48 70 L 54 78 L 60 88 L 56 100 L 52 110 L 56 120 L 64 130 L 72 142 L 76 156 L 70 168 L 60 178 L 50 188 L 38 196 L 28 200 L 22 196 L 26 184 L 36 174 L 44 160 L 38 148 L 30 138 L 26 124 L 32 110 L 38 96 L 36 82 L 30 70 L 26 58 L 24 44 L 22 28 L 26 16 Z" />
+      <circle cx="50" cy="60" r="1.5" fill="currentColor" />
+      <circle cx="40" cy="170" r="1.5" fill="currentColor" />
+      <circle cx="56" cy="115" r="1.5" fill="currentColor" />
+    </svg>
   );
 }

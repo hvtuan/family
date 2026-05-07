@@ -40,6 +40,41 @@ if (Astro.request.method === "POST") {
     banner = fail === 0
       ? { kind: "ok", text: `Đã xóa ${ok} ảnh.` }
       : { kind: "err", text: `Đã xóa ${ok} ảnh, ${fail} lỗi.` };
+  } else if (action === "bulk-tag") {
+    const ids = form.getAll("ids").map((v) => String(v)).filter(Boolean);
+    const rawTags = String(form.get("tags") ?? "").trim();
+    const newTags = rawTags
+      .split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
+    const mode = String(form.get("mode") ?? "add"); // 'add' | 'remove'
+
+    if (ids.length === 0 || newTags.length === 0) {
+      banner = { kind: "err", text: "Cần ít nhất 1 ảnh + 1 tag." };
+    } else {
+      let ok = 0, fail = 0;
+      for (const id of ids) {
+        try {
+          const { data: row } = await supabaseAdmin
+            .from("photos").select("tags").eq("id", id).maybeSingle();
+          const current: string[] = Array.isArray(row?.tags) ? row.tags : [];
+          let next: string[];
+          if (mode === "remove") {
+            next = current.filter((t) => !newTags.includes(t));
+          } else {
+            next = Array.from(new Set([...current, ...newTags]));
+          }
+          const { error } = await supabaseAdmin
+            .from("photos").update({ tags: next }).eq("id", id);
+          if (error) throw new Error(error.message);
+          ok++;
+        } catch {
+          fail++;
+        }
+      }
+      const verb = mode === "remove" ? "Đã gỡ" : "Đã thêm";
+      banner = fail === 0
+        ? { kind: "ok", text: `${verb} tag "${newTags.join(", ")}" cho ${ok} ảnh.` }
+        : { kind: "err", text: `${verb} cho ${ok} ảnh, ${fail} lỗi.` };
+    }
   }
 }
 
