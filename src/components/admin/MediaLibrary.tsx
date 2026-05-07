@@ -291,6 +291,29 @@ export default function MediaLibrary({
     }
   };
 
+  // ── bulk featured toggle ──
+  const bulkFeatured = async (value: boolean) => {
+    if (selected.size === 0) return;
+    setBulkBusy(true);
+    const fd = new FormData();
+    fd.set("action", "bulk-featured");
+    fd.set("value", value ? "1" : "0");
+    for (const id of selected) fd.append("ids", id);
+    try {
+      const res = await fetch("/admin/media", { method: "POST", body: fd });
+      if (res.ok) {
+        toast.success(`${value ? "Đã đánh dấu" : "Đã bỏ"} nổi bật cho ${selected.size} ảnh.`);
+        setTimeout(() => location.reload(), 600);
+      } else {
+        toast.error(`Cập nhật thất bại (${res.status}).`);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi mạng.");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   // ── bulk tag handler ──
   const [tagDialogOpen, setTagDialogOpen] = useState(false);
   const [tagInput, setTagInput] = useState("");
@@ -488,6 +511,15 @@ export default function MediaLibrary({
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => bulkFeatured(true)}
+                disabled={bulkBusy}
+                title="Đánh dấu nổi bật"
+              >
+                <Star className="size-4" /> Nổi bật
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   setTagMode("add");
                   setTagDialogOpen(true);
@@ -502,7 +534,7 @@ export default function MediaLibrary({
                 onClick={bulkDelete}
                 disabled={bulkBusy}
               >
-                <Trash2 className="size-4" /> Xóa đã chọn
+                <Trash2 className="size-4" /> Xóa
               </Button>
             </div>
           </div>

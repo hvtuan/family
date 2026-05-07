@@ -2,6 +2,7 @@
 import "@/styles/admin.css";
 import Sidebar from "@/components/admin/Sidebar.astro";
 import Topbar from "@/components/admin/Topbar.astro";
+import CommandPalette from "@/components/admin/CommandPalette.tsx";
 import { Toaster } from "@/components/ui/sonner";
 
 interface Props {
@@ -133,5 +134,8 @@ const pathname = Astro.url.pathname.replace(/\/$/, "") || "/";
 
     <!-- Sonner toast portal — mounts once globally for any admin page -->
     <Toaster client:load />
+
+    <!-- Cmd/Ctrl+K command palette mounted globally -->
+    <CommandPalette client:load />
   </body>
 </html>

@@ -40,6 +40,22 @@ if (Astro.request.method === "POST") {
     banner = fail === 0
       ? { kind: "ok", text: `Đã xóa ${ok} ảnh.` }
       : { kind: "err", text: `Đã xóa ${ok} ảnh, ${fail} lỗi.` };
+  } else if (action === "bulk-featured") {
+    const ids = form.getAll("ids").map((v) => String(v)).filter(Boolean);
+    const value = form.get("value") === "1";
+    let ok = 0, fail = 0;
+    for (const id of ids) {
+      try {
+        const { error } = await supabaseAdmin
+          .from("photos").update({ featured: value }).eq("id", id);
+        if (error) throw new Error(error.message);
+        ok++;
+      } catch { fail++; }
+    }
+    const verb = value ? "Đã đánh dấu" : "Đã bỏ";
+    banner = fail === 0
+      ? { kind: "ok", text: `${verb} nổi bật cho ${ok} ảnh.` }
+      : { kind: "err", text: `${verb} cho ${ok} ảnh, ${fail} lỗi.` };
   } else if (action === "bulk-tag") {
     const ids = form.getAll("ids").map((v) => String(v)).filter(Boolean);
     const rawTags = String(form.get("tags") ?? "").trim();
