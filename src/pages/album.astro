@@ -2,10 +2,29 @@
 export const prerender = false;
 import Base from "@/layouts/Base.astro";
 import PageHead from "@/components/astro/PageHead.astro";
-import PhotoCard from "@/components/astro/PhotoCard.astro";
+import PublicAlbum, { type AlbumPhoto } from "@/components/astro/PublicAlbum.tsx";
 import { getPhotos } from "@/lib/content";
 
 const photos = await getPhotos();
+
+// Shape into the React island's contract.
+const items: AlbumPhoto[] = photos.map((p) => ({
+  id: p.id,
+  kind: (p.data.kind ?? "image") as "image" | "video",
+  src: p.data.src,
+  thumb: p.data.thumb ?? null,
+  poster: p.data.poster ?? null,
+  alt: p.data.altVi ?? p.data.caption,
+  caption: p.data.caption,
+  captionEn: p.data.captionEn ?? "",
+  year: p.data.year ?? null,
+  location: p.data.location ?? null,
+  durationSeconds: p.data.durationSeconds ?? null,
+  // PhotoData doesn't carry width/height in the public type; supply 4:3
+  // defaults so the masonry layout still works for legacy rows.
+  width: 4,
+  height: 3,
+}));
 ---
 
 <Base title="Album" pageKey="album">
@@ -17,32 +36,26 @@ const photos = await getPhotos();
   />
 
   <section class="max-w-[1240px] mx-auto px-5 pt-4 pb-16">
-    {
-      photos.length === 0 ? (
-        <div class="flex flex-col items-center gap-4 py-16 text-center px-5">
-          <div class="relative w-[min(420px,90vw)] aspect-[4/3] [background:repeating-linear-gradient(135deg,var(--color-paper-3)_0,var(--color-paper-3)_8px,var(--color-paper-2)_8px,var(--color-paper-2)_16px)] border border-line rounded-xl flex items-center justify-center" aria-hidden="true">
-            <span class="absolute top-3 left-3 w-6 h-6 border-2 border-vermilion border-r-0 border-b-0 opacity-70"></span>
-            <span class="absolute top-3 right-3 w-6 h-6 border-2 border-vermilion border-l-0 border-b-0 opacity-70"></span>
-            <span class="absolute bottom-3 left-3 w-6 h-6 border-2 border-vermilion border-r-0 border-t-0 opacity-70"></span>
-            <span class="absolute bottom-3 right-3 w-6 h-6 border-2 border-vermilion border-l-0 border-t-0 opacity-70"></span>
-            <span class="text-5xl text-vermilion opacity-60">❀</span>
-          </div>
-          <h2 class="text-2xl">Album đang chờ những bức ảnh đầu tiên</h2>
-          <p lang="en" class="text-[0.78rem] tracking-[0.18em] uppercase text-ink-3">
-            The album is awaiting its first photographs.
-          </p>
-          <p class="max-w-[50ch] text-ink-2">
-            Khi có ảnh, bỏ vào{" "}
-            <code class="bg-paper-2 px-1.5 py-0.5 rounded font-mono text-[0.85em]">src/content/photos/</code>{" "}cùng metadata YAML và trang sẽ tự cập nhật.
-          </p>
+    {items.length === 0 ? (
+      <div class="flex flex-col items-center gap-4 py-16 text-center px-5">
+        <div class="relative w-[min(420px,90vw)] aspect-[4/3] [background:repeating-linear-gradient(135deg,var(--color-paper-3)_0,var(--color-paper-3)_8px,var(--color-paper-2)_8px,var(--color-paper-2)_16px)] border border-line rounded-xl flex items-center justify-center" aria-hidden="true">
+          <span class="absolute top-3 left-3 w-6 h-6 border-2 border-vermilion border-r-0 border-b-0 opacity-70"></span>
+          <span class="absolute top-3 right-3 w-6 h-6 border-2 border-vermilion border-l-0 border-b-0 opacity-70"></span>
+          <span class="absolute bottom-3 left-3 w-6 h-6 border-2 border-vermilion border-r-0 border-t-0 opacity-70"></span>
+          <span class="absolute bottom-3 right-3 w-6 h-6 border-2 border-vermilion border-l-0 border-t-0 opacity-70"></span>
+          <span class="text-5xl text-vermilion opacity-60">❀</span>
         </div>
-      ) : (
-        <ul class="list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-5">
-          {photos.map((p) => (
-            <PhotoCard photo={p.data} />
-          ))}
-        </ul>
-      )
-    }
+        <h2 class="text-2xl">Album đang chờ những bức ảnh đầu tiên</h2>
+        <p lang="en" class="text-[0.78rem] tracking-[0.18em] uppercase text-ink-3">
+          The album is awaiting its first photographs.
+        </p>
+        <p class="max-w-[50ch] text-ink-2">
+          Khi có ảnh, hãy thêm qua trang quản trị
+          <a href="/admin/media" class="text-vermilion hover:underline">/admin/media</a>.
+        </p>
+      </div>
+    ) : (
+      <PublicAlbum client:load photos={items} />
+    )}
   </section>
 </Base>
