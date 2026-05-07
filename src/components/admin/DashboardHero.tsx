@@ -3,6 +3,7 @@
  * greeting, a stats grid, recent activity feed (audit log), and a
  * latest-media row. Uses shadcn primitives + lucide icons.
  */
+import { useEffect, useState } from "react";
 import {
   Calendar, CalendarDays, ChevronRight, Clock, Image as ImageIcon,
   Map as MapIcon, MessageSquareQuote, Plus, ScrollText, Upload, Users,
@@ -92,15 +93,19 @@ const ACTION_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
   delete: "destructive",
 };
 
-function timeAgo(iso: string): string {
+function absoluteDate(iso: string): string {
+  // Stable across SSR/CSR — same input → same output regardless of clock.
+  return new Date(iso).toLocaleDateString("vi-VN");
+}
+
+function timeAgo(iso: string, now: number): string {
   const then = new Date(iso).getTime();
-  const now = Date.now();
   const diff = Math.max(0, Math.floor((now - then) / 1000));
   if (diff < 60) return "vừa xong";
   if (diff < 3600) return `${Math.floor(diff / 60)} phút trước`;
   if (diff < 86400) return `${Math.floor(diff / 3600)} giờ trước`;
   if (diff < 2592000) return `${Math.floor(diff / 86400)} ngày trước`;
-  return new Date(iso).toLocaleDateString("vi-VN");
+  return absoluteDate(iso);
 }
 
 export default function DashboardHero({
@@ -112,12 +117,16 @@ export default function DashboardHero({
   recentMedia,
 }: Props) {
   const isAdmin = userRole === "admin";
-  const greeting = (() => {
+  // Greeting + relative timestamps depend on the client's clock, so they
+  // can mismatch the SSR-rendered HTML. Defer them to post-mount to keep
+  // hydration deterministic.
+  const [now, setNow] = useState<number | null>(null);
+  const [greeting, setGreeting] = useState("Xin chào");
+  useEffect(() => {
+    setNow(Date.now());
     const h = new Date().getHours();
-    if (h < 12) return "Chào buổi sáng";
-    if (h < 18) return "Chào buổi chiều";
-    return "Chào buổi tối";
-  })();
+    setGreeting(h < 12 ? "Chào buổi sáng" : h < 18 ? "Chào buổi chiều" : "Chào buổi tối");
+  }, []);
   const initial = (userEmail[0] ?? "?").toUpperCase();
 
   return (
@@ -318,7 +327,7 @@ export default function DashboardHero({
                         </a>
                       </div>
                       <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                        {timeAgo(e.created_at)}
+                        {now === null ? absoluteDate(e.created_at) : timeAgo(e.created_at, now)}
                       </span>
                     </li>
                   );

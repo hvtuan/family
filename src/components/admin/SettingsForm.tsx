@@ -273,7 +273,8 @@ interface FieldWidgetProps {
 function FieldWidget({ row, value, onChange, revealed, onToggleReveal }: FieldWidgetProps) {
   const ft = row.field_type ?? "text";
 
-  // boolean switch
+  // boolean switch — admin uses shadcn tokens (no jade), so go with
+  // success-500 (clear green) for on, gray-300 for off.
   if (ft === "boolean") {
     const checked = value === "true" || value === "1" || value === "yes";
     return (
@@ -290,18 +291,20 @@ function FieldWidget({ row, value, onChange, revealed, onToggleReveal }: FieldWi
             }
           }}
           className={cn(
-            "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors",
-            checked ? "bg-jade" : "bg-muted",
+            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border transition-colors",
+            checked
+              ? "border-success-600 bg-success-500"
+              : "border-gray-300 bg-gray-200",
           )}
         >
           <span
             className={cn(
-              "inline-block size-5 rounded-full bg-white shadow transition-transform",
+              "inline-block size-5 rounded-full bg-white shadow ring-1 ring-black/5 transition-transform",
               checked ? "translate-x-5" : "translate-x-0.5",
             )}
           />
         </span>
-        <span className="text-sm text-foreground">
+        <span className={cn("text-sm font-medium", checked ? "text-success-700" : "text-gray-500")}>
           {checked ? "Bật" : "Tắt"}
         </span>
       </label>
