@@ -5,6 +5,7 @@ import FounderCard from "./family-tree-scroll/FounderCard";
 import CoupleUnit from "./family-tree-scroll/CoupleUnit";
 import Connectors from "./family-tree-scroll/Connectors";
 import HoverPanel from "./family-tree-scroll/HoverPanel";
+import GenerationBanner from "./family-tree-scroll/GenerationBanner";
 
 interface Props { members: ClientMember[]; }
 
@@ -28,18 +29,7 @@ export default function FamilyTreeScroll({ members }: Props) {
         const isFounderRow = idx === 0 && row.units.length === 1 && !row.units[0].spouse;
         return (
           <div key={row.gen} className="relative">
-            {idx > 0 && (
-              <div
-                className="my-10 flex items-center justify-center gap-3 text-gold-2/60"
-                aria-hidden="true"
-              >
-                <span className="h-px flex-1 max-w-[180px] bg-gold-2/40" />
-                <span className="text-base">❀</span>
-                <span className="font-display italic text-sm text-ink-3 px-2">Đời thứ {row.gen}</span>
-                <span className="text-base">❀</span>
-                <span className="h-px flex-1 max-w-[180px] bg-gold-2/40" />
-              </div>
-            )}
+            {idx > 0 && <GenerationBanner gen={row.gen} />}
 
             {isFounderRow ? (
               <div className="flex justify-center">
