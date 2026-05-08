@@ -25,8 +25,11 @@ export const emailAdapter: ChannelAdapter = {
   async send(notification: NotificationRow, user: AppUserRow) {
     const event = getEventDescriptor(notification.event_type);
     if (!event) return { ok: false, error: "unknown_event" };
-    const template = renderEventForChannel(event, "email", notification.payload, user);
-    if (!template) return { ok: false, error: "no_email_template" };
+    const rendered = renderEventForChannel(event, "email", notification.payload, user);
+    if (!rendered || typeof rendered === "string" || !("type" in rendered)) {
+      return { ok: false, error: "no_email_template" };
+    }
+    const template = rendered;
     const result = await sendEmail({
       to: { email: user.email, name: user.display_name ?? undefined, lang: user.preferred_lang },
       subject: event.subject(notification.payload, user.preferred_lang),

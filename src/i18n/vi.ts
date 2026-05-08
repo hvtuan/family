@@ -63,4 +63,16 @@ export const vi = {
       other: "Khác",
     },
   },
+
+  notifications: {
+    anniversaryT7Subject: "Còn 7 ngày tới giỗ {name}",
+    anniversaryT1Subject: "Ngày mai là giỗ {name}",
+    anniversaryTodaySubject: "Hôm nay là ngày giỗ {name}",
+    anniversaryT7InApp: "Còn 7 ngày tới giỗ {name}",
+    anniversaryT7Body: "Một tuần nữa là đến ngày giỗ {name}. Mở để xem trang tưởng niệm.",
+    anniversaryT1InApp: "Ngày mai là giỗ {name}",
+    anniversaryT1Body: "Mai là giỗ {name}. Đừng quên dâng nén tâm hương.",
+    anniversaryTodayInApp: "Hôm nay là ngày giỗ {name}",
+    anniversaryTodayBody: "Hôm nay là ngày giỗ {name}. Mở trang tưởng niệm để dâng tâm hương.",
+  },
 } as const;
