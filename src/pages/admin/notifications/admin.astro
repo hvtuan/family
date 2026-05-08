@@ -1,0 +1,116 @@
+---
+export const prerender = false;
+
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { Card } from "@/components/ui/card";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { EVENT_TYPES } from "@/lib/notifications/types";
+
+const me = Astro.locals.user;
+if (!me || me.role !== "admin") return Astro.redirect("/admin/notifications");
+
+const { data: usersData } = await supabaseAdmin
+  .from("app_users")
+  .select("id, email, display_name")
+  .eq("status", "approved")
+  .order("display_name", { ascending: true });
+
+const users = (usersData ?? []) as Array<{ id: string; email: string; display_name: string | null }>;
+
+// Last 30d delivery rate per channel — single aggregation query.
+const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+const { data: rows } = await supabaseAdmin
+  .from("notifications")
+  .select("status, channels_requested, channels_delivered, channels_failed")
+  .gte("created_at", since)
+  .limit(2000);
+
+const rates: Record<string, { requested: number; delivered: number; failed: number }> = {};
+for (const r of (rows ?? []) as Array<{
+  channels_requested: string[];
+  channels_delivered: string[];
+  channels_failed: string[];
+}>) {
+  for (const c of r.channels_requested ?? []) {
+    rates[c] = rates[c] ?? { requested: 0, delivered: 0, failed: 0 };
+    rates[c].requested++;
+  }
+  for (const c of r.channels_delivered ?? []) (rates[c] = rates[c] ?? { requested: 0, delivered: 0, failed: 0 }).delivered++;
+  for (const c of r.channels_failed ?? []) (rates[c] = rates[c] ?? { requested: 0, delivered: 0, failed: 0 }).failed++;
+}
+---
+
+<AdminLayout title="Quản lý thông báo" crumbs={[{ label: "Thông báo", href: "/admin/notifications" }, { label: "Quản lý" }]}>
+  <header class="mb-6">
+    <h1 class="text-title-md text-gray-800">Quản lý thông báo (Admin)</h1>
+    <p class="text-sm text-gray-500 mt-1">Test-send và xem tỉ lệ delivery theo kênh trong 30 ngày qua.</p>
+  </header>
+
+  <section class="mb-8">
+    <Card className="p-5">
+      <h2 class="text-base font-semibold mb-3">Tỉ lệ delivery 30 ngày qua</h2>
+      <table class="w-full text-sm">
+        <thead class="border-b">
+          <tr>
+            <th class="text-left p-2 font-medium text-gray-600">Kênh</th>
+            <th class="text-right p-2 font-medium text-gray-600">Yêu cầu</th>
+            <th class="text-right p-2 font-medium text-gray-600">Đã gửi</th>
+            <th class="text-right p-2 font-medium text-gray-600">Lỗi</th>
+            <th class="text-right p-2 font-medium text-gray-600">% gửi thành công</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(rates).sort(([a], [b]) => a.localeCompare(b)).map(([channel, r]) => (
+            <tr class="border-b last:border-0">
+              <td class="p-2 font-mono text-xs">{channel}</td>
+              <td class="p-2 text-right tabular-nums">{r.requested}</td>
+              <td class="p-2 text-right tabular-nums text-success-700">{r.delivered}</td>
+              <td class="p-2 text-right tabular-nums text-red-600">{r.failed}</td>
+              <td class="p-2 text-right tabular-nums">{r.requested > 0 ? Math.round((r.delivered / r.requested) * 100) : 0}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Card>
+  </section>
+
+  <section>
+    <Card className="p-5">
+      <h2 class="text-base font-semibold mb-3">Test send</h2>
+      <form method="post" action="/api/notifications/test-send" class="grid gap-3 max-w-lg" id="test-send-form">
+        <label class="grid gap-1 text-sm">
+          <span>Người nhận</span>
+          <select name="userId" required class="h-10 rounded border px-2">
+            {users.map((u) => (
+              <option value={u.id}>{u.display_name || u.email}</option>
+            ))}
+          </select>
+        </label>
+        <label class="grid gap-1 text-sm">
+          <span>Loại sự kiện</span>
+          <select name="eventType" required class="h-10 rounded border px-2">
+            {EVENT_TYPES.map((e) => (
+              <option value={e}>{e}</option>
+            ))}
+          </select>
+        </label>
+        <button type="submit" class="rounded bg-brand-500 text-white h-10 hover:bg-brand-600">Gửi test</button>
+        <p id="test-result" class="text-xs text-gray-500"></p>
+      </form>
+      <script is:inline>
+        document.getElementById("test-send-form").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const form = e.currentTarget;
+          const fd = new FormData(form);
+          const res = await fetch("/api/notifications/test-send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: fd.get("userId"), eventType: fd.get("eventType") }),
+          });
+          const out = document.getElementById("test-result");
+          out.textContent = res.ok ? "Đã gửi (" + (await res.text()) + ")" : "Lỗi: " + res.status;
+        });
+      </script>
+    </Card>
+  </section>
+</AdminLayout>
