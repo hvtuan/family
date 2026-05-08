@@ -23,7 +23,8 @@
     "admin:seed": "node --env-file=.env.local scripts/admin-seed.mjs",
     "db:migrate-embedded": "node --env-file=.env.local scripts/migrate-embedded-photos.mjs",
     "db:migrate-cover": "node --env-file=.env.local scripts/migrate-image-to-photo.mjs",
-    "notif:gen-vapid": "node scripts/notif-gen-vapid.mjs"
+    "notif:gen-vapid": "node scripts/notif-gen-vapid.mjs",
+    "smoke:notifications": "node scripts/smoke-notifications.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^10.0.6",
