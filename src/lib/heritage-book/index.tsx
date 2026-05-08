@@ -7,6 +7,7 @@ import { PhotoMosaic } from "./pages/PhotoMosaic";
 import { TraditionPage } from "./pages/TraditionPage";
 import { QuotesPage } from "./pages/QuotesPage";
 import { LineageChart } from "./pages/LineageChart";
+import { CalendarPage } from "./pages/CalendarPage";
 import { BackCover } from "./pages/BackCover";
 import type { BookData } from "./data";
 
@@ -25,6 +26,7 @@ export function HeritageBook({ data }: Props) {
       {data.photos.length > 0 && <PhotoMosaic photos={data.photos} />}
       {data.traditions.map((t) => <TraditionPage key={t.id} tradition={t} />)}
       {data.quotes.length > 0 && <QuotesPage quotes={data.quotes} members={data.members} />}
+      {data.deceasedMembers.length > 0 && <CalendarPage deceased={data.deceasedMembers} />}
       <BackCover data={data} />
     </Document>
   );
