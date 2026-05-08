@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 
-const insertSpy = vi.fn(async () => ({ error: null }));
-const updateSpy = vi.fn(async () => ({ error: null }));
+const insertSpy = vi.fn(async (_payload?: unknown) => ({ error: null }));
+const updateSpy = vi.fn(async (_payload?: unknown) => ({ error: null }));
 const selectSingleSpy = vi.fn();
 
 vi.mock("../supabase/admin", () => ({
