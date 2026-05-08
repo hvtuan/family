@@ -21,7 +21,8 @@ export type SettingCategory =
   | "analytics"
   | "smtp"
   | "hero"
-  | "memorial";
+  | "memorial"
+  | "notifications";
 
 export type SettingFieldType =
   | "text"

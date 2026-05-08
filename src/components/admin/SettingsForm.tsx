@@ -42,12 +42,15 @@ const CATEGORY_META: Record<string, { vi: string; emoji: string; tone: string; h
   hero:         { vi: "Hero / slideshow",     emoji: "🖼", tone: "border-vermilion/30 bg-vermilion/5" },
   appearance:   { vi: "Giao diện",            emoji: "🎨", tone: "border-line-strong bg-paper-2/40" },
   privacy:      { vi: "Riêng tư & UX",        emoji: "🔒", tone: "border-line-strong bg-paper-2/40" },
+  memorial:     { vi: "Tưởng niệm",           emoji: "🪷", tone: "border-gold-2/30 bg-gold-2/5", hint: "Master switch + lịch giỗ + sổ tang" },
+  notifications:{ vi: "Thông báo",            emoji: "🔔", tone: "border-vermilion/30 bg-vermilion/5", hint: "Master switch + VAPID + Telegram + Zalo" },
 };
 
 const CATEGORY_ORDER = [
   "site", "contact", "social", "seo",
   "integrations", "analytics", "smtp",
   "maps", "hero", "appearance", "privacy",
+  "memorial", "notifications",
 ];
 
 const LABEL_OVERRIDES: Record<string, string> = {
