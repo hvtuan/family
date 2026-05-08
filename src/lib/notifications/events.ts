@@ -225,6 +225,27 @@ export function renderEventForChannel(
     return null;
   }
 
-  // Chat channels (zalo, ...) — Phase 2/3 implementation.
+  if (channel === "zalo") {
+    const memberName = String(payload.memberName ?? "");
+    const memorialUrl = `${String(payload.publicUrl ?? "https://family.huynhvantuan.net").replace(/\/$/, "")}/memorial/${String(payload.memberId ?? "")}`;
+    if (event.id === "anniversary.t-7") {
+      return `🌸 Còn 7 ngày tới giỗ ${memberName}.\n\nXem trang tưởng niệm: ${memorialUrl}`;
+    }
+    if (event.id === "anniversary.t-1") {
+      return `🌸 Ngày mai là giỗ ${memberName}.\n\nMời gia đình cùng dâng nén tâm hương.\nXem: ${memorialUrl}`;
+    }
+    if (event.id === "anniversary.today") {
+      return `🌸 Hôm nay là ngày giỗ ${memberName}.\n\nKính mời gia đình cùng tưởng nhớ.\n${memorialUrl}`;
+    }
+    if (event.id === "condolence.pending") {
+      return `Có lời tưởng nhớ mới chờ duyệt. Mở admin để xem.`;
+    }
+    if (event.id === "member.added") {
+      return `Thành viên mới: ${memberName}`;
+    }
+    return null;
+  }
+
+  // Chat channels (messenger, ...) — Phase 3 implementation.
   return null;
 }

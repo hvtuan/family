@@ -14,7 +14,7 @@ const CHANNEL_META: Record<string, { name: string; icon: string; phaseHint: stri
   email:     { name: "Email",                            icon: "✉️", phaseHint: null, supportsLink: false },
   in_app:    { name: "Thông báo trong web (in-app)",     icon: "🔔", phaseHint: null, supportsLink: false },
   web_push:  { name: "Thông báo trình duyệt (web push)", icon: "📲", phaseHint: null, supportsLink: false },
-  zalo:      { name: "Zalo",                             icon: "💬", phaseHint: "Sắp ra mắt — Phase 2", supportsLink: true },
+  zalo:      { name: "Zalo",                             icon: "💬", phaseHint: null, supportsLink: true },
   telegram:  { name: "Telegram",                         icon: "✈️", phaseHint: null, supportsLink: true },
   messenger: { name: "Messenger",                        icon: "📨", phaseHint: "Sắp ra mắt — Phase 3", supportsLink: true },
   whatsapp:  { name: "WhatsApp",                         icon: "📱", phaseHint: "Sắp ra mắt — Phase 3", supportsLink: true },
