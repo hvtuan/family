@@ -2,6 +2,7 @@
 export const prerender = false;
 import Base from "@/layouts/Base.astro";
 import BlossomDivider from "@/components/astro/BlossomDivider.astro";
+import MemorialBanner from "@/components/astro/MemorialBanner.astro";
 import HeroSlideshow, { type HeroSlide } from "@/components/astro/HeroSlideshow.tsx";
 import Lotus from "@/components/astro/Lotus.astro";
 import MemberCard from "@/components/astro/MemberCard.astro";
@@ -63,6 +64,8 @@ const yearsSince = new Date().getFullYear() - SITE.established;
 ---
 
 <Base pageKey="home">
+  <MemorialBanner />
+
   {heroSlides.length > 0 && (
     <HeroSlideshow client:load slides={heroSlides} height={heroDefaults.height} />
   )}

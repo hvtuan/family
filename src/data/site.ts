@@ -8,6 +8,7 @@ export const NAV_LINKS = [
   { href: "/album", vi: "Album", en: "Album" },
   { href: "/traditions", vi: "Truyền thống", en: "Traditions" },
   { href: "/sayings", vi: "Lời nhắn", en: "Sayings" },
+  { href: "/altar", vi: "Tưởng niệm", en: "In Memoriam" },
   { href: "/map", vi: "Bản đồ", en: "Map" },
   { href: "/calendar", vi: "Lịch", en: "Calendar" },
 ] as const;

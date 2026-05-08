@@ -1,0 +1,41 @@
+---
+/**
+ * Slim homepage banner — appears when an upcoming giỗ falls within
+ * `memorial.banner_days_before` days. Shows the soonest one only.
+ *
+ * Tone: warm informative, gold-2 not vermilion. Dismissable via cookie
+ * keyed on member+year so it reappears for each new anniversary.
+ */
+import { getActiveBanner } from "@/lib/memorial";
+import MemorialBannerDismiss from "@/components/react/MemorialBannerDismiss";
+
+const banner = await getActiveBanner();
+
+// Only render when there IS an upcoming anniversary AND the visitor
+// hasn't already dismissed this specific (member, year) pair.
+const dismissCookieName = banner
+  ? `memorial_dismiss_${banner.member.id}_${banner.year}`
+  : null;
+const dismissed = dismissCookieName
+  ? Astro.cookies.get(dismissCookieName)?.value === "1"
+  : false;
+
+const show = banner && !dismissed;
+
+const daysLabel = banner
+  ? banner.daysUntil === 0
+    ? "Hôm nay là ngày giỗ"
+    : `Còn ${banner.daysUntil} ngày đến giỗ`
+  : null;
+---
+
+{show && banner && (
+  <MemorialBannerDismiss
+    client:idle
+    cookieName={dismissCookieName!}
+    memberId={banner.member.id}
+    href={`/memorial/${banner.member.id}`}
+    daysLabel={daysLabel!}
+    memberName={banner.member.name}
+  />
+)}

@@ -1,0 +1,42 @@
+---
+/**
+ * One generation tier on the altar — small label, divider, then the
+ * ancestor grid. Wrappers separate by a subtle wood-tone gradient.
+ */
+import AncestorTile from "./AncestorTile.astro";
+import type { MemorialMember } from "@/lib/memorial";
+
+interface Props {
+  gen: number;
+  members: MemorialMember[];
+  todayIds: Set<string>;
+  isLast?: boolean;
+}
+
+const { gen, members, todayIds, isLast = false } = Astro.props;
+---
+
+<div class="px-5 py-10">
+  <header class="text-center mb-7">
+    <p class="u-kicker">Đời thứ {gen}</p>
+  </header>
+
+  <ul
+    class="list-none p-0 m-0 grid gap-7 md:gap-9 justify-items-center"
+    style="grid-template-columns: repeat(auto-fit, minmax(140px, max-content));"
+  >
+    {members.map((m) => (
+      <li>
+        <AncestorTile member={m} isToday={todayIds.has(m.id)} />
+      </li>
+    ))}
+  </ul>
+</div>
+
+{!isLast && (
+  <div
+    class="h-3 mx-auto max-w-[88%] rounded-full opacity-50"
+    style="background: linear-gradient(180deg, transparent 0%, rgba(150, 110, 60, 0.18) 50%, transparent 100%);"
+    aria-hidden="true"
+  ></div>
+)}

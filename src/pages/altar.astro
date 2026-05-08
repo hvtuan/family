@@ -1,0 +1,95 @@
+---
+export const prerender = false;
+
+import Base from "@/layouts/Base.astro";
+import PageHead from "@/components/astro/PageHead.astro";
+import AltarTier from "@/components/astro/AltarTier.astro";
+import LotusSeal from "@/components/astro/LotusSeal.astro";
+import { getDeceasedMembers } from "@/lib/memorial";
+import { getUpcomingAnniversaries } from "@/lib/anniversary";
+import { getSiteIdentity } from "@/lib/settings";
+
+const SITE = await getSiteIdentity();
+const surname = SITE.surname || "Nguyễn";
+
+const allDeceased = (await getDeceasedMembers()).filter((m) => m.memorialEnabled);
+
+// Group by generation; tiers are gen ascending (oldest → most recent).
+const byGen = new Map<number, typeof allDeceased>();
+for (const m of allDeceased) {
+  const list = byGen.get(m.gen) ?? [];
+  list.push(m);
+  byGen.set(m.gen, list);
+}
+const tiers = Array.from(byGen.entries())
+  .sort(([a], [b]) => a - b)
+  .map(([gen, members]) => ({
+    gen,
+    members: members.sort((a, b) => (a.birthOrder ?? 99) - (b.birthOrder ?? 99)),
+  }));
+
+// "Hôm nay là ngày giỗ X" — collect IDs whose next anniversary is today (0).
+const upcoming = await getUpcomingAnniversaries({ withinDays: 0 });
+const todayIds = new Set(upcoming.filter((a) => a.daysUntil === 0).map((a) => a.member.id));
+const todayMembers = upcoming
+  .filter((a) => a.daysUntil === 0)
+  .map((a) => a.member);
+---
+
+<Base
+  title="Bàn thờ tổ tiên"
+  description={`Nơi gìn giữ và tưởng nhớ các bậc tiền nhân của gia phả họ ${surname}.`}
+  pageKey="altar"
+>
+  <PageHead
+    kicker="Altar"
+    title="Bàn thờ tổ tiên"
+    subtitle="Nơi gìn giữ và tưởng nhớ các bậc tiền nhân"
+    subtitleEn="A space to honour and remember our ancestors"
+  />
+
+  {todayMembers.length > 0 && (
+    <section class="max-w-[760px] mx-auto px-5 -mt-4 mb-6">
+      <div
+        class="rounded-md border border-gold-2/50 bg-cream/60 px-5 py-3 flex items-center gap-3 text-sm"
+        style="box-shadow: 0 0 24px -10px rgba(214, 160, 80, 0.35);"
+      >
+        <span aria-hidden="true">🌸</span>
+        <p class="m-0 text-ink leading-tight flex-1">
+          <span class="text-ink-2">Hôm nay là ngày giỗ</span>
+          {todayMembers.map((m, i) => (
+            <span class="font-semibold text-ink ml-1.5">
+              {m.name}{i < todayMembers.length - 1 ? "," : ""}
+            </span>
+          ))}
+        </p>
+      </div>
+    </section>
+  )}
+
+  <main class="max-w-[1240px] mx-auto pb-16 u-paper-texture">
+    {allDeceased.length === 0 ? (
+      <section class="px-5 py-16">
+        <div class="rounded-md border border-dashed border-line bg-cream/40 p-12 text-center max-w-prose mx-auto">
+          <p class="text-base text-ink-3 m-0">
+            Chưa có thông tin về tổ tiên đã khuất. Khi quản trị bổ sung ngày mất cho thành viên,
+            di ảnh và trang tưởng niệm sẽ tự xuất hiện ở đây.
+          </p>
+        </div>
+      </section>
+    ) : (
+      tiers.map((tier, i) => (
+        <AltarTier
+          gen={tier.gen}
+          members={tier.members}
+          todayIds={todayIds}
+          isLast={i === tiers.length - 1}
+        />
+      ))
+    )}
+  </main>
+
+  <div class="flex justify-center pb-12 opacity-60">
+    <LotusSeal surname={surname} size="md" />
+  </div>
+</Base>
