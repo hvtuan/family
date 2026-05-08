@@ -6,6 +6,7 @@ import { MemberSpread } from "./pages/MemberSpread";
 import { PhotoMosaic } from "./pages/PhotoMosaic";
 import { TraditionPage } from "./pages/TraditionPage";
 import { QuotesPage } from "./pages/QuotesPage";
+import { LineageChart } from "./pages/LineageChart";
 import { BackCover } from "./pages/BackCover";
 import type { BookData } from "./data";
 
@@ -17,6 +18,7 @@ export function HeritageBook({ data }: Props) {
       <Cover data={data} />
       <Foreword data={data} />
       <TableOfContents data={data} />
+      <LineageChart members={data.members} />
       {data.members.map((m) => (
         <MemberSpread key={m.id} member={m} quotes={data.quotes} />
       ))}
