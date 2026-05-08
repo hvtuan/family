@@ -4,13 +4,13 @@ import { computeLayout } from "./family-tree-scroll/layout";
 import FounderCard from "./family-tree-scroll/FounderCard";
 import CoupleUnit from "./family-tree-scroll/CoupleUnit";
 import Connectors from "./family-tree-scroll/Connectors";
+import HoverPanel from "./family-tree-scroll/HoverPanel";
 
 interface Props { members: ClientMember[]; }
 
 export default function FamilyTreeScroll({ members }: Props) {
   const rows = computeLayout(members);
-  // hover state surfaced for HoverPanel (T6 wires it)
-  const [, setHovered] = useState<ClientMember | null>(null);
+  const [hovered, setHovered] = useState<ClientMember | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   if (rows.length === 0) {
@@ -60,6 +60,7 @@ export default function FamilyTreeScroll({ members }: Props) {
           </div>
         );
       })}
+      <HoverPanel member={hovered} members={members} />
     </div>
   );
 }
