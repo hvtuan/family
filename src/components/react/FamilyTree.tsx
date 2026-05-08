@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { $modalMember } from "@/stores/ui";
 import type { ClientMember } from "@/lib/members-client";
+import MemberHoverPanel from "./MemberHoverPanel";
 
 type Props = { members: ClientMember[] };
 
@@ -360,6 +361,8 @@ export default function FamilyTree({ members }: Props) {
     [members],
   );
 
+  const [hoveredMember, setHoveredMember] = useState<ClientMember | null>(null);
+
   return (
     <div className="flex flex-col gap-2.5">
       <div
@@ -518,6 +521,10 @@ export default function FamilyTree({ members }: Props) {
                   height: p.h,
                 }}
                 onClick={(e) => onCardClick(id, e)}
+                onMouseEnter={() => setHoveredMember(m)}
+                onMouseLeave={() => setHoveredMember(null)}
+                onFocus={() => setHoveredMember(m)}
+                onBlur={() => setHoveredMember(null)}
               >
                 <span
                   className="flex-none w-9 h-9 flex items-center justify-center border-2 border-vermilion rounded-lg bg-vermilion/[0.04] text-vermilion font-display font-bold text-base"
@@ -540,6 +547,8 @@ export default function FamilyTree({ members }: Props) {
           })}
         </div>
       </div>
+
+      <MemberHoverPanel member={hoveredMember} members={members} />
     </div>
   );
 }
