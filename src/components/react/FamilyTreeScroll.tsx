@@ -46,7 +46,7 @@ export default function FamilyTreeScroll({ members }: Props) {
                 <FounderCard member={row.units[0].anchor} />
               </div>
             ) : (
-              <div className="flex flex-wrap justify-center gap-x-4 gap-y-6">
+              <div className="flex flex-wrap justify-center gap-x-2 sm:gap-x-4 gap-y-6">
                 {row.units.map((u) => (
                   <CoupleUnit
                     key={u.anchor.id}

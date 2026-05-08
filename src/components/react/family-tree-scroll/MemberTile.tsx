@@ -20,7 +20,7 @@ export default function MemberTile({ member, onHover }: Props) {
       onMouseLeave={() => onHover?.(null)}
       onFocus={() => onHover?.(member)}
       onBlur={() => onHover?.(null)}
-      className="group flex flex-col items-center gap-2 w-[120px] py-2 px-1 rounded-md hover:bg-cream/60 transition-colors text-center"
+      className="group flex flex-col items-center gap-2 w-[100px] sm:w-[120px] py-2 px-1 rounded-md hover:bg-cream/60 transition-colors text-center"
       aria-label={`Xem chi tiết ${member.name}`}
     >
       <span
