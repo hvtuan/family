@@ -46,6 +46,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.8",
+    "@react-pdf/renderer": "^4.5.1",
     "@resvg/resvg-js": "^2.6.2",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.3",
