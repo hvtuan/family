@@ -207,32 +207,111 @@ Cập nhật `SUPABASE_DB_URL` trong `.env.local` (file này gitignored, không 
 
 ---
 
-## 6. Liên kết kênh chat (Phase 2 — chưa active)
+## 6. Liên kết kênh chat
 
-Phase 2 sẽ kích hoạt Zalo + Telegram. Khi đến lúc:
+### 6.1 Telegram (Phase 2 — đã active)
 
-### Telegram
+#### Bước 1 — Tạo bot
 
-1. Tạo bot qua [@BotFather](https://t.me/BotFather) → lấy token + username
-2. Vào /admin/settings → mục Tưởng niệm:
-   - `notifications.telegram_bot_token` = token từ BotFather
-   - `notifications.telegram_bot_username` = `@your_bot_username`
-3. Set webhook (Phase 2 task — implementation chưa làm):
+1. Mở Telegram → tìm [@BotFather](https://t.me/BotFather) → bấm Start
+2. Gửi `/newbot` → đặt tên bot (vd "Gia Phả Nguyễn") → đặt username (kết thúc bằng `bot`, vd `@nguyenfamily_bot`)
+3. BotFather trả về **HTTP API token** dạng `123456789:ABCdef...` — copy
+
+#### Bước 2 — Generate webhook secret
+
+```bash
+openssl rand -hex 32
+```
+
+Copy chuỗi 64 ký tự.
+
+#### Bước 3 — Paste vào /admin/settings (mục Tưởng niệm)
+
+- `notifications.telegram_bot_token` = HTTP API token từ BotFather
+- `notifications.telegram_bot_username` = `@nguyenfamily_bot` (có hoặc không có `@` đều OK)
+- `notifications.telegram_webhook_secret` = chuỗi 64 ký tự vừa generate
+
+Bấm **Lưu**.
+
+#### Bước 4 — Set webhook trên Telegram
+
+```bash
+TOKEN="<paste-token>"
+SECRET="<paste-secret>"
+curl "https://api.telegram.org/bot${TOKEN}/setWebhook?url=https://family.huynhvantuan.net/api/notifications/channels/telegram/webhook&secret_token=${SECRET}&allowed_updates=[\"message\"]"
+```
+
+Trả `{"ok":true,"result":true,"description":"Webhook was set"}` là OK.
+
+Verify webhook config:
+
+```bash
+curl "https://api.telegram.org/bot${TOKEN}/getWebhookInfo"
+```
+
+#### Bước 5 — User flow
+
+1. User mở `/admin/profile` → tab Thông báo → tìm Telegram → bấm "Liên kết tài khoản"
+2. Modal hiện QR code + nút "Mở Telegram ↗"
+3. User quét QR (hoặc bấm nút trên cùng máy) → Telegram mở chat với bot, tự động gửi `/start <token>`
+4. Webhook nhận `/start` → validate token → flip `prefs.channels.telegram.{enabled, chat_id, username}` → user thấy modal tự đóng + thông báo "Đã liên kết"
+5. Từ giờ mọi notification có Telegram channel sẽ gửi tới chat đó
+
+Test: vào `/admin/notifications/admin` → form Test send → chọn user vừa link Telegram → chọn `system.welcome` → bấm Gửi → user nhận tin nhắn Markdown trong Telegram chat.
+
+### 6.2 Zalo OA (Phase 2)
+
+#### Bước 1 — Đăng ký OA
+
+1. Truy cập [https://oa.zalo.me](https://oa.zalo.me) → tạo Official Account
+2. Verify business (CMND/CCCD chủ tài khoản + giấy tờ đi kèm)
+3. Sau khi verified, vào [https://developers.zalo.me](https://developers.zalo.me) → tạo app mới (loại OA) → liên kết với OA vừa tạo
+
+#### Bước 2 — Lấy access token + OA ID
+
+1. Trong Zalo Developer Console → App → tab OA Connections → bấm Get Access Token
+2. Authorize → Zalo redirect về với `code` query param → đổi thành long-lived access token qua API:
    ```bash
-   curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://family.huynhvantuan.net/api/notifications/channels/telegram/webhook"
+   curl -X POST "https://oauth.zaloapp.com/v4/oa/access_token" \
+     -d "code=<code>" \
+     -d "app_id=<app_id>" \
+     -H "secret_key: <app_secret>"
    ```
+3. Response trả `access_token` (90 ngày) + `refresh_token` (10 năm)
+4. OA ID hiển thị ở trang OA settings
 
-### Zalo OA
+#### Bước 3 — Paste vào /admin/settings
 
-1. Đăng ký Zalo OA tại [https://oa.zalo.me](https://oa.zalo.me)
-2. Verify business
-3. Tạo OA app → lấy `access_token` + `oa_id`
-4. Vào /admin/settings:
-   - `notifications.zalo_oa_token` = access token
-   - `notifications.zalo_oa_id` = OA ID
-5. Set callback URL trong Zalo console: `https://family.huynhvantuan.net/api/notifications/channels/zalo/webhook`
+- `notifications.zalo_oa_token` = access token (90 ngày)
+- `notifications.zalo_oa_id` = OA ID
+- `notifications.zalo_webhook_secret` = `app_secret` từ Zalo Developer Console
 
-Token Zalo expire mỗi 90 ngày → có script refresh tự động (Phase 2 task).
+#### Bước 4 — Set callback URL
+
+Trong Zalo Developer Console → App → tab Webhook:
+- Callback URL: `https://family.huynhvantuan.net/api/notifications/channels/zalo/webhook`
+- Subscribe events: `follow`, `unfollow`, `user_send_text`
+
+#### Bước 5 — Token refresh (90 ngày)
+
+⚠ **Quan trọng**: Zalo access token expire sau 90 ngày. Phải refresh trước hạn.
+
+```bash
+curl -X POST "https://oauth.zaloapp.com/v4/oa/access_token" \
+  -d "refresh_token=<refresh_token>" \
+  -d "app_id=<app_id>" \
+  -H "secret_key: <app_secret>"
+```
+
+Cập nhật `notifications.zalo_oa_token` mới vào /admin/settings.
+
+(Phase 2 chưa có cron tự refresh; admin set reminder Calendar 60 ngày sau mỗi lần refresh để check trước khi expire.)
+
+#### Bước 6 — User flow
+
+Tương tự Telegram: user bấm "Liên kết tài khoản" → modal hiện QR + URL follow OA → user follow + nhắn `link <token>` → webhook nhận event + token → flip prefs.
+
+**Status hiện tại của Zalo adapter**: real implementation đang trong P2 T8 (chưa ship — chờ task tiếp).
 
 ---
 
