@@ -33,12 +33,12 @@ const URL_FOR_EVENT = (eventType: string, payload: Record<string, unknown>): str
 
 const TITLE_FOR_EVENT = (eventType: string, payload: Record<string, unknown>): string => {
   const name = String(payload.memberName ?? "");
-  if (eventType === "anniversary.t-7") return `Con 7 ngay toi gio ${name}`;
-  if (eventType === "anniversary.t-1") return `Ngay mai la gio ${name}`;
-  if (eventType === "anniversary.today") return `Hom nay la gio ${name}`;
-  if (eventType === "condolence.pending") return "Loi tuong nho moi cho duyet";
-  if (eventType === "member.added") return "Co thanh vien moi";
-  if (eventType === "system.welcome") return "Chao mung den voi gia pha";
+  if (eventType === "anniversary.t-7") return `Còn 7 ngày tới giỗ ${name}`;
+  if (eventType === "anniversary.t-1") return `Ngày mai là giỗ ${name}`;
+  if (eventType === "anniversary.today") return `Hôm nay là giỗ ${name}`;
+  if (eventType === "condolence.pending") return "Lời tưởng nhớ mới chờ duyệt";
+  if (eventType === "member.added") return "Có thành viên mới";
+  if (eventType === "system.welcome") return "Chào mừng đến với gia phả";
   return eventType;
 };
 
@@ -78,10 +78,10 @@ export default function NotificationBell() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="relative inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100">
-        <span aria-hidden="true">&#128276;</span>
+        <span aria-hidden="true">🔔</span>
         {count > 0 && (
           <span
-            aria-label={`${count} thong bao chua doc`}
+            aria-label={`${count} thông báo chưa đọc`}
             className="absolute -top-1 -right-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white"
           >
             {count > 99 ? "99+" : count}
@@ -90,20 +90,20 @@ export default function NotificationBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 p-0">
         <DropdownMenuLabel className="flex items-center justify-between px-3 py-2">
-          <span>Thong bao</span>
+          <span>Thông báo</span>
           {count > 0 && (
             <button
               type="button"
               onClick={markAllSeen}
               className="text-xs text-brand-500 hover:underline"
             >
-              Danh dau da doc
+              Đánh dấu đã đọc
             </button>
           )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {items.length === 0 ? (
-          <p className="px-3 py-6 text-center text-sm text-gray-500">Khong co thong bao.</p>
+          <p className="px-3 py-6 text-center text-sm text-gray-500">Không có thông báo.</p>
         ) : (
           <ul aria-live="polite" className="list-none m-0 p-0 max-h-[60vh] overflow-y-auto">
             {items.map((item) => (
@@ -124,7 +124,7 @@ export default function NotificationBell() {
           href="/admin/notifications"
           className="block text-center text-xs text-brand-500 px-3 py-2 hover:underline"
         >
-          Xem tat ca &rarr;
+          Xem tất cả →
         </a>
       </DropdownMenuContent>
     </DropdownMenu>
