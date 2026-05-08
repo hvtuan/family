@@ -1,35 +1,42 @@
 ---
 export const prerender = false;
 import Base from "@/layouts/Base.astro";
-import PageHead from "@/components/astro/PageHead.astro";
 import FamilyTreeScroll from "@/components/react/FamilyTreeScroll";
 import { getMembers } from "@/lib/content";
 import { toClientMember } from "@/lib/members-client";
+import { getSiteIdentity } from "@/lib/settings";
 
 const all = await getMembers((entry) => entry.data.status === "published");
 const clientMembers = all.map(toClientMember);
+const SITE = await getSiteIdentity();
+const generationsCount = new Set(clientMembers.map((m) => m.gen)).size;
 ---
 
 <Base title="Cây gia phả" pageKey="family-tree">
-  <PageHead
-    kicker="Family Tree"
-    title="Cây gia phả"
-    subtitle="Cuộn từ trên xuống — bấm vào ai đó để xem chi tiết."
-    subtitleEn="Scroll from founder down · click to open"
-  />
-  <section class="relative max-w-[1240px] mx-auto px-4 sm:px-8 pt-2 pb-24 u-paper-texture">
-    <!-- Side mây triện borders (decorative) -->
+  <section
+    class="relative max-w-[1240px] mx-auto px-4 sm:px-12 pt-12 sm:pt-16 pb-24 u-paper-texture"
+  >
+    <!-- Subtle ink wash patches (4 random soft circles at low opacity for organic feel) -->
     <div
       aria-hidden="true"
-      class="hidden md:block absolute left-0 top-12 bottom-12 w-3 opacity-25"
-      style="background: repeating-linear-gradient(180deg, var(--color-gold-3) 0 8px, transparent 8px 24px);"
-    ></div>
-    <div
-      aria-hidden="true"
-      class="hidden md:block absolute right-0 top-12 bottom-12 w-3 opacity-25"
-      style="background: repeating-linear-gradient(180deg, var(--color-gold-3) 0 8px, transparent 8px 24px);"
+      class="absolute inset-0 pointer-events-none overflow-hidden"
+      style="background-image:
+        radial-gradient(circle at 12% 8%, rgba(168, 133, 63, 0.06) 0%, transparent 18%),
+        radial-gradient(circle at 88% 22%, rgba(168, 133, 63, 0.05) 0%, transparent 22%),
+        radial-gradient(circle at 18% 70%, rgba(168, 133, 63, 0.05) 0%, transparent 24%),
+        radial-gradient(circle at 82% 88%, rgba(168, 133, 63, 0.04) 0%, transparent 18%);"
     ></div>
 
-    <FamilyTreeScroll members={clientMembers} client:load />
+    <FamilyTreeScroll
+      members={clientMembers}
+      site={{
+        surname: SITE.surname,
+        hometown: SITE.hometown,
+        motto: SITE.motto,
+        established: SITE.established ?? null,
+      }}
+      generationsCount={generationsCount}
+      client:load
+    />
   </section>
 </Base>
