@@ -1,29 +1,35 @@
 ---
 export const prerender = false;
 import Base from "@/layouts/Base.astro";
+import PageHead from "@/components/astro/PageHead.astro";
 import FamilyTreeScroll from "@/components/react/FamilyTreeScroll";
 import { getMembers } from "@/lib/content";
 import { toClientMember } from "@/lib/members-client";
-import { getSiteIdentity } from "@/lib/settings";
 
 const all = await getMembers((entry) => entry.data.status === "published");
 const clientMembers = all.map(toClientMember);
-const SITE = await getSiteIdentity();
-const generationsCount = new Set(clientMembers.map((m) => m.gen)).size;
 ---
 
 <Base title="Cây gia phả" pageKey="family-tree">
-  <section class="relative max-w-[1280px] mx-auto px-4 sm:px-8 pt-12 sm:pt-16 pb-24">
-    <FamilyTreeScroll
-      members={clientMembers}
-      site={{
-        surname: SITE.surname,
-        hometown: SITE.hometown,
-        motto: SITE.motto,
-        established: SITE.established ?? null,
-      }}
-      generationsCount={generationsCount}
-      client:load
-    />
+  <PageHead
+    kicker="Family Tree"
+    title="Cây gia phả"
+    subtitle="Cuộn từ trên xuống — bấm vào ai đó để xem chi tiết."
+    subtitleEn="Scroll from founder down · click to open"
+  />
+  <section class="relative max-w-[1240px] mx-auto px-4 sm:px-8 pt-2 pb-24 u-paper-texture">
+    <!-- Side mây triện borders (decorative) -->
+    <div
+      aria-hidden="true"
+      class="hidden md:block absolute left-0 top-12 bottom-12 w-3 opacity-25"
+      style="background: repeating-linear-gradient(180deg, var(--color-gold-3) 0 8px, transparent 8px 24px);"
+    ></div>
+    <div
+      aria-hidden="true"
+      class="hidden md:block absolute right-0 top-12 bottom-12 w-3 opacity-25"
+      style="background: repeating-linear-gradient(180deg, var(--color-gold-3) 0 8px, transparent 8px 24px);"
+    ></div>
+
+    <FamilyTreeScroll members={clientMembers} client:load />
   </section>
 </Base>

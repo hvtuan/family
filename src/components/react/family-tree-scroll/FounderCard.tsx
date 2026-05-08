@@ -3,60 +3,44 @@ import type { ClientMember } from "@/lib/members-client";
 
 interface Props { member: ClientMember; }
 
-const FOUNDER_BLOB = "rgba(220, 190, 127, 0.65)"; // warm gold halo
+function years(m: ClientMember): string {
+  const b = m.born ? new Date(m.born).getFullYear() : null;
+  const d = m.died ? new Date(m.died).getFullYear() : null;
+  if (b && d) return `${b} — ${d}`;
+  if (b) return `${b} — nay`;
+  return "—";
+}
 
-/**
- * Founder card — same watercolor portrait language as MemberTile but
- * larger, with an extra year line. Acts as the visual anchor at the top
- * of the tree without ornate framing.
- */
 export default function FounderCard({ member }: Props) {
-  const initial = member.name.trim().slice(0, 1);
-  const b = member.born ? new Date(member.born).getFullYear() : null;
-  const d = member.died ? new Date(member.died).getFullYear() : null;
-  const dates = b && d ? `${b} — ${d}` : b ? `${b} — nay` : "";
-
   return (
     <button
       type="button"
       onClick={() => $modalMember.set(member.id)}
-      className="group block w-[180px] sm:w-[200px] text-center px-3 py-4 rounded-md hover:bg-cream/40 transition-colors"
-      aria-label={`Xem chi tiết ${member.name}`}
+      className="group relative block w-[320px] rounded-md border border-gold-2/40 bg-cream/70 p-8 shadow-[0_24px_60px_-30px_rgba(120,80,40,0.35)] hover:shadow-[0_24px_60px_-20px_rgba(120,80,40,0.5)] transition-all text-left"
+      aria-label={`Mở chi tiết về ${member.name}`}
     >
-      <span className="relative inline-block">
-        <span
-          aria-hidden="true"
-          className="absolute -inset-3 rounded-full blur-lg"
-          style={{ background: FOUNDER_BLOB }}
-        />
-        <span className="relative block size-[110px] sm:size-[120px] overflow-hidden rounded-full border-2 border-cream shadow-paper-2 group-hover:scale-[1.03] transition-transform">
-          {member.photo ? (
-            <img
-              src={member.photo}
-              alt=""
-              className="w-full h-full object-cover"
-              loading="eager"
-            />
-          ) : (
-            <span className="flex w-full h-full items-center justify-center bg-cream text-gold-2/55 font-display italic text-4xl">
-              {initial}
-            </span>
-          )}
-        </span>
-      </span>
+      {/* Lotus seal accent top-right */}
+      <span aria-hidden="true" className="absolute right-4 top-4 text-2xl text-gold-2/40">🪷</span>
 
-      <span className="block mt-4 font-semibold text-ink text-base leading-tight">
+      <p className="u-kicker mb-3">Tổ tiên</p>
+      <h3
+        className="font-display italic text-ink m-0"
+        style={{ fontSize: "var(--text-3xl)", lineHeight: 1.1 }}
+      >
         {member.name}
-      </span>
+      </h3>
+
       {member.role && (
-        <span className="block mt-1 text-xs text-ink-3 leading-tight">
-          {member.role}{member.isFamilyHead ? " · Tộc trưởng" : ""}
-        </span>
+        <p className="mt-2 text-sm text-ink-2 m-0">{member.role}{member.isFamilyHead ? " · Tộc trưởng" : ""}</p>
       )}
-      {dates && (
-        <span className="block mt-1 text-[10px] text-ink-3 tabular-nums tracking-wide">
-          {dates}
-        </span>
+
+      <p className="mt-3 text-sm text-ink-3 tabular-nums m-0">{years(member)}</p>
+      {member.birthPlace && (
+        <p className="mt-1 text-xs italic text-ink-3 m-0">{member.birthPlace}</p>
+      )}
+
+      {member.isFamilyHead && (
+        <span className="absolute right-6 bottom-6 text-vermilion text-2xl opacity-70" aria-hidden="true">⊛</span>
       )}
     </button>
   );

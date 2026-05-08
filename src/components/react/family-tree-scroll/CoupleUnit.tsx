@@ -7,13 +7,6 @@ interface Props {
   onHover?: (m: ClientMember | null) => void;
 }
 
-/**
- * Anchor + optional spouse. Spouse pairs are placed side-by-side; the
- * connector logic in Connectors.tsx handles linking the couple's
- * descendants from the midpoint between the two tiles via the unit's
- * data-unit-id wrapper. No visible glyph between spouses — keeps the
- * layout clean per modern Western tree templates.
- */
 export default function CoupleUnit({ anchor, spouse, onHover }: Props) {
   if (!spouse) {
     return (
@@ -23,8 +16,9 @@ export default function CoupleUnit({ anchor, spouse, onHover }: Props) {
     );
   }
   return (
-    <div data-unit-id={anchor.id} className="flex items-start gap-1">
+    <div data-unit-id={anchor.id} className="flex items-center gap-1 px-2">
       <MemberTile member={anchor} onHover={onHover} />
+      <span aria-hidden="true" className="text-gold-2/60 self-center text-base">♡</span>
       <MemberTile member={spouse} onHover={onHover} />
     </div>
   );
