@@ -3,6 +3,7 @@ import { Cover } from "./pages/Cover";
 import { Foreword } from "./pages/Foreword";
 import { TableOfContents } from "./pages/TableOfContents";
 import { MemberSpread } from "./pages/MemberSpread";
+import { PhotoMosaic } from "./pages/PhotoMosaic";
 import { BackCover } from "./pages/BackCover";
 import type { BookData } from "./data";
 
@@ -17,6 +18,7 @@ export function HeritageBook({ data }: Props) {
       {data.members.map((m) => (
         <MemberSpread key={m.id} member={m} quotes={data.quotes} />
       ))}
+      {data.photos.length > 0 && <PhotoMosaic photos={data.photos} />}
       <BackCover data={data} />
     </Document>
   );
