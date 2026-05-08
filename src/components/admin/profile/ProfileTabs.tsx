@@ -18,9 +18,10 @@ export interface ProfileSummary {
 interface Props {
   profile: ProfileSummary;
   preferences: NotificationPreferences;
+  vapidPublicKey: string;
 }
 
-export default function ProfileTabs({ profile, preferences }: Props) {
+export default function ProfileTabs({ profile, preferences, vapidPublicKey }: Props) {
   return (
     <Tabs defaultValue="profile" className="w-full">
       <TabsList>
@@ -32,7 +33,7 @@ export default function ProfileTabs({ profile, preferences }: Props) {
         <ProfileForm profile={profile} />
       </TabsContent>
       <TabsContent value="notifications" className="space-y-6">
-        <NotificationChannels profile={profile} initialPreferences={preferences} />
+        <NotificationChannels profile={profile} initialPreferences={preferences} vapidPublicKey={vapidPublicKey} />
         <NotificationEventsMatrix initialPreferences={preferences} />
         <NotificationQuietHours initialPreferences={preferences} timezone={profile.timezone} />
       </TabsContent>

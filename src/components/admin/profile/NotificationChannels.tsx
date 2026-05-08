@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import type { NotificationPreferences } from "@/lib/notifications/types";
 import { CHANNEL_IDS } from "@/lib/notifications/types";
 import type { ProfileSummary } from "./ProfileTabs";
+import WebPushPermission from "./WebPushPermission";
 
 const CHANNEL_META: Record<string, { name: string; icon: string; phaseHint: string | null }> = {
   email:     { name: "Email",                                       icon: "✉️", phaseHint: null },
@@ -20,9 +21,10 @@ const CHANNEL_META: Record<string, { name: string; icon: string; phaseHint: stri
 interface Props {
   profile: ProfileSummary;
   initialPreferences: NotificationPreferences;
+  vapidPublicKey: string;
 }
 
-export default function NotificationChannels({ profile, initialPreferences }: Props) {
+export default function NotificationChannels({ profile, initialPreferences, vapidPublicKey }: Props) {
   const [prefs, setPrefs] = useState<NotificationPreferences>(initialPreferences);
 
   async function toggleChannel(channel: string, enabled: boolean) {
@@ -75,13 +77,17 @@ export default function NotificationChannels({ profile, initialPreferences }: Pr
                 {isComingSoon && (
                   <Badge variant="secondary" className="mr-2">Sắp ra mắt</Badge>
                 )}
-                <input
-                  type="checkbox"
-                  className="h-5 w-5"
-                  disabled={isComingSoon}
-                  checked={channel?.enabled ?? false}
-                  onChange={(e) => toggleChannel(id, e.target.checked)}
-                />
+                {id === "web_push" ? (
+                  <WebPushPermission vapidPublicKey={vapidPublicKey} />
+                ) : (
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5"
+                    disabled={isComingSoon}
+                    checked={channel?.enabled ?? false}
+                    onChange={(e) => toggleChannel(id, e.target.checked)}
+                  />
+                )}
               </li>
             );
           })}
