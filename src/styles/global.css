@@ -77,6 +77,38 @@
   --radius-sm: 0.5rem;     /* 8px — pills, small chips */
   --radius-md: 0.875rem;   /* 14px — cards (matches existing u-card) */
   --radius-lg: 1.25rem;    /* 20px — large feature cards */
+
+  /* ============================================================
+     shadcn semantic tokens — bridged onto the public palette so
+     Dialog / Sheet / Select / Card etc render correctly on memorial
+     pages (admin.css owns these for /admin/* routes).
+     ============================================================ */
+  --color-background: var(--color-paper);
+  --color-foreground: var(--color-ink);
+  --color-card: #fffdf6;                    /* slightly warmer than cream for elevation */
+  --color-card-foreground: var(--color-ink);
+  --color-popover: #fffdf6;
+  --color-popover-foreground: var(--color-ink);
+  --color-primary: var(--color-vermilion);
+  --color-primary-foreground: #fffdf6;
+  --color-secondary: var(--color-paper-2);
+  --color-secondary-foreground: var(--color-ink);
+  --color-muted: var(--color-paper-2);
+  --color-muted-foreground: var(--color-ink-3);
+  --color-accent: var(--color-cream);
+  --color-accent-foreground: var(--color-ink);
+  --color-destructive: var(--color-vermilion-2);
+  --color-destructive-foreground: #fffdf6;
+  --color-border: var(--color-line-strong);
+  --color-input: var(--color-line-strong);
+  --color-ring: var(--color-gold-2);
+
+  /* shadcn shadow tokens — same scale as admin.css for consistency */
+  --shadow-theme-xs: 0 1px 2px 0 rgba(26, 18, 10, 0.05);
+  --shadow-theme-sm: 0 1px 3px 0 rgba(26, 18, 10, 0.10), 0 1px 2px 0 rgba(26, 18, 10, 0.06);
+  --shadow-theme-md: 0 4px 8px -2px rgba(26, 18, 10, 0.10), 0 2px 4px -2px rgba(26, 18, 10, 0.06);
+  --shadow-theme-lg: 0 12px 16px -4px rgba(26, 18, 10, 0.08), 0 4px 6px -2px rgba(26, 18, 10, 0.04);
+  --shadow-theme-xl: 0 20px 24px -4px rgba(26, 18, 10, 0.08), 0 8px 8px -4px rgba(26, 18, 10, 0.04);
 }
 
 @keyframes mm-fade-in {

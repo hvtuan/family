@@ -15,6 +15,7 @@ import { getAnniversariesForMember } from "@/lib/anniversary";
 import { listApprovedFor } from "@/lib/condolences";
 import { getLocale } from "@/i18n";
 import { getSiteIdentity } from "@/lib/settings";
+import { solarToLunar, ganZhiOfYearVi, formatLunarVi } from "@/lib/lunar";
 
 const id = Astro.params.id!;
 const member = await getMemorialMember(id);
@@ -103,20 +104,40 @@ const pageDescription = member.bio?.slice(0, 160) ?? `Trang tưởng niệm ${me
   {anniversaries.length > 0 && (
     <section class="max-w-[760px] mx-auto px-5 pb-16">
       <div class="rounded-md border border-gold-2/30 bg-cream/40 p-6">
-        <p class="u-kicker text-center">Những ngày giỗ sắp tới</p>
-        <ul class="list-none m-0 p-0 mt-4 grid gap-2 text-sm text-ink-2">
+        <header class="text-center mb-4">
+          <p class="u-kicker">Những ngày giỗ sắp tới</p>
+          <p class="mt-2 font-display italic text-ink m-0" style="font-size: var(--text-xl);">
+            của {member.name}
+          </p>
+          <p class="mt-1 text-xs text-ink-3 italic m-0">
+            Mất {(() => {
+              const d = member.deathDate;
+              return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+            })()}
+            <span class="mx-1.5">·</span>
+            {formatLunarVi(member.deathDateLunar)}
+          </p>
+        </header>
+        <ul class="list-none m-0 p-0 grid gap-2.5 text-sm text-ink-2">
           {anniversaries.slice(0, 5).map((a) => {
             const dd = String(a.date.getDate()).padStart(2, "0");
             const mm = String(a.date.getMonth() + 1).padStart(2, "0");
             const yy = a.date.getFullYear();
             const typeLabel = a.type === "lunar" ? "Âm lịch" : "Dương lịch";
+            const lunarOfOcc = solarToLunar(a.date);
+            const ganZhi = ganZhiOfYearVi(lunarOfOcc.year);
             return (
-              <li class="flex justify-between border-b border-line/50 pb-1.5 last:border-0">
-                <span>
-                  <span class="font-semibold text-ink">{`${dd}/${mm}/${yy}`}</span>
-                  <span class="ml-2 text-xs text-ink-3">({typeLabel})</span>
-                </span>
-                <span class="text-ink-3">
+              <li class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-line/50 pb-2 last:border-0">
+                <div class="flex flex-col">
+                  <span>
+                    <span class="font-semibold text-ink tabular-nums">{`${dd}/${mm}/${yy}`}</span>
+                    <span class="ml-2 text-xs text-ink-3">({typeLabel})</span>
+                  </span>
+                  <span class="text-xs text-ink-3 italic">
+                    Năm {ganZhi}
+                  </span>
+                </div>
+                <span class="text-ink-3 text-sm shrink-0">
                   {a.daysUntil === 0
                     ? "hôm nay"
                     : `còn ${a.daysUntil} ngày`}
