@@ -170,6 +170,10 @@ function isActive(href: string) {
   </nav>
 
   <div class="border-t border-gray-100 py-4">
+    <a href="/admin/profile" class="menu-item menu-item-inactive">
+      <span class="menu-item-icon-inactive shrink-0" set:html={ICONS.user} />
+      <span class="menu-item-text">Hồ sơ của tôi</span>
+    </a>
     <a href="/" class="menu-item menu-item-inactive">
       <span class="menu-item-icon-inactive shrink-0" set:html={ICONS.home} />
       <span class="menu-item-text">Xem trang công khai</span>
