@@ -20,7 +20,8 @@ export type SettingCategory =
   | "social"
   | "analytics"
   | "smtp"
-  | "hero";
+  | "hero"
+  | "memorial";
 
 export type SettingFieldType =
   | "text"

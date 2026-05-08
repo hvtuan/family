@@ -8,12 +8,15 @@ import { supabaseAdmin } from "./supabase/admin";
 
 export type AuditAction =
   | "create" | "update" | "delete"
-  | "approve" | "revoke"
-  | "login" | "logout";
+  | "approve" | "revoke" | "reject"
+  | "anonymize"
+  | "login" | "logout"
+  | "cron_run";
 
 export type AuditEntity =
   | "members" | "timeline" | "traditions" | "photos" | "quotes"
-  | "dates" | "locations" | "app_users" | "allowed_emails";
+  | "dates" | "locations" | "app_users" | "allowed_emails"
+  | "condolences" | "incense_events" | "anniversary_alerts";
 
 export async function logAudit(args: {
   actorId: string;
