@@ -6,7 +6,7 @@
  * filter, paper background, gold-2 accents. Vermilion reserved.
  */
 import LotusSeal from "./LotusSeal.astro";
-import { formatLunarVi } from "@/lib/lunar";
+import { formatLunarVi, solarToLunar } from "@/lib/lunar";
 import type { MemorialMember } from "@/lib/memorial";
 import { getSiteIdentity } from "@/lib/settings";
 
@@ -23,9 +23,19 @@ function formatDate(iso: string): string {
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
 }
 
+// Solar dates
 const bornStr = member.born ? formatDate(member.born) : null;
 const diedStr = formatDate(member.died as string);
+
+// Lunar — died is precomputed; born is derived on the fly when present.
 const lunarDiedStr = formatLunarVi(member.deathDateLunar);
+let lunarBornStr: string | null = null;
+if (member.born) {
+  const bornDate = new Date(member.born);
+  if (!Number.isNaN(bornDate.getTime())) {
+    lunarBornStr = formatLunarVi(solarToLunar(bornDate));
+  }
+}
 ---
 
 <section class="relative max-w-[960px] mx-auto px-5 pt-16 pb-10 text-center u-paper-texture">
@@ -71,15 +81,32 @@ const lunarDiedStr = formatLunarVi(member.deathDateLunar);
     <p class="mt-1 text-sm text-ink-3 m-0">Tự: {member.birthName}</p>
   )}
 
-  <p class="mt-3 text-sm tracking-wider text-ink-2 m-0">
-    {bornStr ? `Sinh ${bornStr}` : "Sinh"}
-    <span class="text-ink-3 mx-2">·</span>
-    {`Mất ${diedStr}`}
-  </p>
+  <!-- Born / Died: full date with both solar + lunar lines.
+       Two-column on tablet+ for symmetry; stacked on mobile. -->
+  <div class="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:gap-6 sm:items-start text-sm">
+    <!-- Sinh -->
+    <div class="text-center sm:text-right">
+      <p class="m-0 tracking-wider text-ink-3 text-xs uppercase">Sinh</p>
+      <p class="m-0 mt-0.5 font-semibold text-ink tabular-nums">
+        {bornStr ?? "—"}
+      </p>
+      {lunarBornStr && (
+        <p class="m-0 mt-0.5 text-xs italic text-ink-3">{lunarBornStr}</p>
+      )}
+    </div>
 
-  <p class="mt-1 text-xs tracking-wide text-ink-3 italic m-0">
-    {lunarDiedStr}
-  </p>
+    <!-- Vertical separator (desktop) / horizontal (mobile) -->
+    <div class="hidden sm:flex flex-col items-center pt-2" aria-hidden="true">
+      <span class="block w-px flex-1 bg-gold-2/30 min-h-[40px]"></span>
+    </div>
+
+    <!-- Mất -->
+    <div class="text-center sm:text-left">
+      <p class="m-0 tracking-wider text-ink-3 text-xs uppercase">Mất</p>
+      <p class="m-0 mt-0.5 font-semibold text-ink tabular-nums">{diedStr}</p>
+      <p class="m-0 mt-0.5 text-xs italic text-ink-3">{lunarDiedStr}</p>
+    </div>
+  </div>
 
   {member.deathPlace && (
     <p class="mt-2 text-sm text-ink-3 m-0">tại {member.deathPlace}</p>

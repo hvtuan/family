@@ -11,11 +11,11 @@ import IncenseButton from "@/components/react/IncenseButton";
 import CondolenceForm from "@/components/react/CondolenceForm";
 import CondolenceBook from "@/components/react/CondolenceBook";
 import { getMemorialMember } from "@/lib/memorial";
-import { getAnniversariesForMember } from "@/lib/anniversary";
+import { getAnniversariesForMember, getUpcomingAnniversaries } from "@/lib/anniversary";
 import { listApprovedFor } from "@/lib/condolences";
 import { getLocale } from "@/i18n";
 import { getSiteIdentity } from "@/lib/settings";
-import { solarToLunar, ganZhiOfYearVi, formatLunarVi } from "@/lib/lunar";
+import { solarToLunar, ganZhiOfYearVi } from "@/lib/lunar";
 
 const id = Astro.params.id!;
 const member = await getMemorialMember(id);
@@ -31,10 +31,19 @@ const lang = getLocale(Astro);
 const SITE = await getSiteIdentity();
 const surname = SITE.surname || "Nguyễn";
 
-const [anniversaries, condolences] = await Promise.all([
-  getAnniversariesForMember(id, 5),
+const [ownNext, familyUpcoming, condolences] = await Promise.all([
+  getAnniversariesForMember(id, 1),
+  getUpcomingAnniversaries({ withinDays: 365 }),
   listApprovedFor(id, { limit: 20 }),
 ]);
+
+// Closest upcoming giỗ for THIS member (1-line callout above the list).
+const ownNextAnniversary = ownNext[0] ?? null;
+
+// Upcoming giỗ of OTHER deceased members in the family (Facebook-style).
+const otherUpcoming = familyUpcoming
+  .filter((a) => a.member.id !== id)
+  .slice(0, 6);
 
 const currentYear = new Date().getFullYear();
 const ogUrl = `/og/memorial/${id}.png?lang=${lang}`;
@@ -100,52 +109,107 @@ const pageDescription = member.bio?.slice(0, 160) ?? `Trang tưởng niệm ${me
     />
   </section>
 
-  <!-- Anniversary lookahead — small footer card -->
-  {anniversaries.length > 0 && (
-    <section class="max-w-[760px] mx-auto px-5 pb-16">
-      <div class="rounded-md border border-gold-2/30 bg-cream/40 p-6">
-        <header class="text-center mb-4">
-          <p class="u-kicker">Những ngày giỗ sắp tới</p>
-          <p class="mt-2 font-display italic text-ink m-0" style="font-size: var(--text-xl);">
-            của {member.name}
-          </p>
-          <p class="mt-1 text-xs text-ink-3 italic m-0">
-            Mất {(() => {
-              const d = member.deathDate;
+  <!-- "Giỗ tiếp theo" 1-line callout for THIS member -->
+  {ownNextAnniversary && (
+    <section class="max-w-[760px] mx-auto px-5 pb-6">
+      <div class="rounded-md border border-gold-2/40 bg-cream/60 px-5 py-3 flex items-center gap-3 text-sm">
+        <span aria-hidden="true">🌸</span>
+        <p class="m-0 leading-tight flex-1 text-ink">
+          <span class="text-ink-2">Giỗ tiếp theo của {member.name}:</span>
+          <span class="font-semibold text-ink tabular-nums ml-1.5">
+            {(() => {
+              const d = ownNextAnniversary.date;
               return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
             })()}
-            <span class="mx-1.5">·</span>
-            {formatLunarVi(member.deathDateLunar)}
+          </span>
+          <span class="text-ink-3 text-xs ml-1.5">
+            (Năm {ganZhiOfYearVi(solarToLunar(ownNextAnniversary.date).year)})
+          </span>
+        </p>
+        <span class="text-ink-3 text-xs whitespace-nowrap">
+          {ownNextAnniversary.daysUntil === 0
+            ? "hôm nay"
+            : `còn ${ownNextAnniversary.daysUntil} ngày`}
+        </span>
+      </div>
+    </section>
+  )}
+
+  <!-- Family-wide upcoming anniversaries — Facebook-style "ngày giỗ
+       của các thành viên khác". Helps visitors see the next people to
+       honour. Hidden when the family has only one deceased. -->
+  {otherUpcoming.length > 0 && (
+    <section class="max-w-[760px] mx-auto px-5 pb-16">
+      <div class="rounded-md border border-gold-2/30 bg-cream/40 p-6">
+        <header class="text-center mb-5">
+          <p class="u-kicker">Ngày giỗ sắp tới trong gia đình</p>
+          <p class="mt-1 text-xs text-ink-3 m-0">
+            Của các thành viên khác đã khuất
           </p>
         </header>
-        <ul class="list-none m-0 p-0 grid gap-2.5 text-sm text-ink-2">
-          {anniversaries.slice(0, 5).map((a) => {
+        <ul class="list-none m-0 p-0 grid gap-3">
+          {otherUpcoming.map((a) => {
             const dd = String(a.date.getDate()).padStart(2, "0");
             const mm = String(a.date.getMonth() + 1).padStart(2, "0");
             const yy = a.date.getFullYear();
-            const typeLabel = a.type === "lunar" ? "Âm lịch" : "Dương lịch";
-            const lunarOfOcc = solarToLunar(a.date);
-            const ganZhi = ganZhiOfYearVi(lunarOfOcc.year);
+            const ganZhi = ganZhiOfYearVi(solarToLunar(a.date).year);
+            const m = a.member;
+            const memberHref = `/memorial/${m.id}`;
             return (
-              <li class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-line/50 pb-2 last:border-0">
-                <div class="flex flex-col">
-                  <span>
-                    <span class="font-semibold text-ink tabular-nums">{`${dd}/${mm}/${yy}`}</span>
-                    <span class="ml-2 text-xs text-ink-3">({typeLabel})</span>
+              <li>
+                <a
+                  href={memberHref}
+                  class="group flex items-center gap-4 rounded-md border border-transparent hover:border-gold-2/30 hover:bg-paper/40 px-3 py-2 transition-colors"
+                >
+                  <!-- Mini sepia portrait -->
+                  <span
+                    class="block shrink-0 overflow-hidden rounded-md border border-gold-2/40"
+                    style="width: 48px; height: 60px;"
+                  >
+                    {m.photoUrl ? (
+                      <img
+                        src={m.photoUrl}
+                        alt={m.name}
+                        class="w-full h-full object-cover"
+                        style="filter: sepia(0.18) saturate(0.9);"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span class="flex w-full h-full items-center justify-center bg-paper-2/50 text-gold-2/40 font-display italic text-lg">
+                        {m.name.slice(0, 1)}
+                      </span>
+                    )}
                   </span>
-                  <span class="text-xs text-ink-3 italic">
-                    Năm {ganZhi}
+
+                  <div class="flex-1 min-w-0">
+                    <p class="m-0 font-display italic text-ink text-base group-hover:text-vermilion transition-colors truncate">
+                      {m.name}
+                    </p>
+                    <p class="m-0 text-xs text-ink-3 mt-0.5 tabular-nums">
+                      <span class="font-semibold text-ink-2">{`${dd}/${mm}/${yy}`}</span>
+                      <span class="mx-1.5 opacity-50">·</span>
+                      Năm {ganZhi}
+                    </p>
+                  </div>
+
+                  <span class="text-ink-3 text-xs shrink-0 whitespace-nowrap">
+                    {a.daysUntil === 0
+                      ? "hôm nay"
+                      : a.daysUntil === 1
+                        ? "ngày mai"
+                        : `còn ${a.daysUntil} ngày`}
                   </span>
-                </div>
-                <span class="text-ink-3 text-sm shrink-0">
-                  {a.daysUntil === 0
-                    ? "hôm nay"
-                    : `còn ${a.daysUntil} ngày`}
-                </span>
+                </a>
               </li>
             );
           })}
         </ul>
+
+        <div class="mt-5 text-center">
+          <a class="text-sm text-jade hover:text-vermilion transition-colors" href="/altar">
+            Xem toàn bộ bàn thờ tổ tiên →
+          </a>
+        </div>
       </div>
     </section>
   )}
