@@ -1,0 +1,43 @@
+---
+/**
+ * "Nếp nhà" — small section pulling member.hobbies (and a link to the
+ * traditions page). Schema doesn't yet have a tradition→member M2M,
+ * so this is a lightweight stand-in. Deferred: explicit linkage.
+ */
+import type { MemorialMember } from "@/lib/memorial";
+
+interface Props {
+  member: MemorialMember;
+}
+
+const { member } = Astro.props;
+const hobbies = member.hobbies ?? [];
+---
+
+{hobbies.length > 0 && (
+  <section class="max-w-[860px] mx-auto px-5 pt-4 pb-12">
+    <header class="text-center mb-6">
+      <p class="u-kicker">Nếp nhà</p>
+      <h2
+        class="font-display italic text-ink m-0 mt-2"
+        style="font-size: var(--text-2xl);"
+      >
+        {member.name} thường gìn giữ
+      </h2>
+    </header>
+
+    <ul class="list-none p-0 m-0 flex flex-wrap gap-2 justify-center">
+      {hobbies.map((h) => (
+        <li class="px-4 py-2 rounded-full border border-gold-2/40 bg-cream/40 text-sm text-ink-2">
+          {h}
+        </li>
+      ))}
+    </ul>
+
+    <p class="text-center mt-6 text-sm">
+      <a class="text-jade hover:text-vermilion transition-colors" href="/traditions">
+        Xem nếp nhà của gia đình →
+      </a>
+    </p>
+  </section>
+)}

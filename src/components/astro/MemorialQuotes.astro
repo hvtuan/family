@@ -1,0 +1,58 @@
+---
+/**
+ * "Lời dặn" — pulls quotes whose author matches the deceased member.
+ * Empty-state hides the section entirely.
+ */
+import { getQuotes } from "@/lib/content";
+import BlossomDivider from "./BlossomDivider.astro";
+
+interface Props {
+  memberId: string;
+  memberName: string;
+}
+
+const { memberId, memberName } = Astro.props;
+
+const all = await getQuotes();
+const quotes = all.filter((q) => q.data.authorRef?.id === memberId);
+
+if (quotes.length === 0) {
+  // Nothing to show; render nothing.
+}
+---
+
+{quotes.length > 0 && (
+  <section class="max-w-[860px] mx-auto px-5 pt-4 pb-12">
+    <header class="text-center mb-8">
+      <p class="u-kicker">Lời dặn</p>
+      <h2
+        class="font-display italic text-ink m-0 mt-2"
+        style="font-size: var(--text-2xl);"
+      >
+        Những lời {memberName} thường nhắc
+      </h2>
+    </header>
+
+    <ul class="list-none p-0 m-0 grid gap-8">
+      {quotes.map((q) => (
+        <li class="text-center">
+          <blockquote class="m-0">
+            <p
+              class="font-display italic text-ink leading-snug m-0 max-w-prose mx-auto"
+              style="font-size: var(--text-xl);"
+            >
+              "{q.data.text}"
+            </p>
+            {q.data.context && (
+              <p class="mt-2 text-sm text-ink-3 m-0">{q.data.context}</p>
+            )}
+          </blockquote>
+        </li>
+      ))}
+    </ul>
+
+    <div class="mt-10 flex justify-center" aria-hidden="true">
+      <BlossomDivider />
+    </div>
+  </section>
+)}

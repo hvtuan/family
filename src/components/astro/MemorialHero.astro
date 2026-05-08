@@ -1,0 +1,99 @@
+---
+/**
+ * Memorial page hero — di ảnh + name + dates lockup.
+ *
+ * Tone: warm × tradition (see feedback `family_memorial_tone`). Sepia
+ * filter, paper background, gold-2 accents. Vermilion reserved.
+ */
+import LotusSeal from "./LotusSeal.astro";
+import { formatLunarVi } from "@/lib/lunar";
+import type { MemorialMember } from "@/lib/memorial";
+import { getSiteIdentity } from "@/lib/settings";
+
+interface Props {
+  member: MemorialMember;
+}
+
+const { member } = Astro.props;
+const SITE = await getSiteIdentity();
+const surname = SITE.surname || "Nguyễn";
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
+const bornStr = member.born ? formatDate(member.born) : null;
+const diedStr = formatDate(member.died as string);
+const lunarDiedStr = formatLunarVi(member.deathDateLunar);
+---
+
+<section class="relative max-w-[960px] mx-auto px-5 pt-16 pb-10 text-center u-paper-texture">
+  <p class="u-kicker mb-6">Tưởng niệm</p>
+
+  <!-- Portrait frame: ratio 4:5 + paper-dó border + warm sepia filter -->
+  <figure class="relative inline-block mx-auto">
+    <div
+      class="relative overflow-hidden rounded-md border border-gold-2/40 shadow-[0_24px_60px_-30px_rgba(120,80,40,0.35)]"
+      style="width: clamp(220px, 38vw, 360px); aspect-ratio: 4 / 5;"
+    >
+      {member.photoUrl ? (
+        <img
+          src={member.photoUrl}
+          alt={`Chân dung ${member.name}`}
+          class="w-full h-full object-cover"
+          style="filter: sepia(0.18) saturate(0.9) contrast(1.02);"
+          loading="eager"
+        />
+      ) : (
+        <div class="w-full h-full flex items-center justify-center bg-cream/50 text-gold-2/40">
+          <svg viewBox="0 0 24 24" width="80" height="80" fill="currentColor" aria-hidden="true">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4Zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4Z" />
+          </svg>
+        </div>
+      )}
+      <!-- Subtle inner frame for paper-dó vibe -->
+      <span
+        class="absolute inset-0 pointer-events-none rounded-md"
+        style="box-shadow: inset 0 0 0 1px rgba(200, 160, 90, 0.22);"
+      ></span>
+    </div>
+  </figure>
+
+  <h1
+    class="font-display font-semibold leading-[1.05] text-ink m-0 mt-8 italic"
+    style="font-size: var(--text-5xl);"
+  >
+    {member.name}
+  </h1>
+
+  {(member.birthName && member.birthName !== member.name) && (
+    <p class="mt-1 text-sm text-ink-3 m-0">Tự: {member.birthName}</p>
+  )}
+
+  <p class="mt-3 text-sm tracking-wider text-ink-2 m-0">
+    {bornStr ? `Sinh ${bornStr}` : "Sinh"}
+    <span class="text-ink-3 mx-2">·</span>
+    {`Mất ${diedStr}`}
+  </p>
+
+  <p class="mt-1 text-xs tracking-wide text-ink-3 italic m-0">
+    {lunarDiedStr}
+  </p>
+
+  {member.deathPlace && (
+    <p class="mt-2 text-sm text-ink-3 m-0">tại {member.deathPlace}</p>
+  )}
+
+  <!-- Decorative under-rule + blossom (consistent with PageHead motif) -->
+  <div class="mt-6 flex items-center justify-center gap-2.5" aria-hidden="true">
+    <span class="h-px w-12 bg-gold-2/60"></span>
+    <span class="text-gold-2 text-base">❀</span>
+    <span class="h-px w-12 bg-gold-2/60"></span>
+  </div>
+
+  <!-- Subtle seal in the corner -->
+  <div class="absolute right-6 bottom-2 opacity-50 hidden md:block">
+    <LotusSeal surname={surname} size="sm" align="right" />
+  </div>
+</section>

@@ -1,0 +1,59 @@
+---
+/**
+ * Memorial page bio — long-form serif treatment with a gold-2 drop cap
+ * (vermilion reserved). Renders plain-text bio paragraphs OR markdown
+ * via the existing renderer.
+ */
+import BlossomDivider from "./BlossomDivider.astro";
+import { renderMarkdown } from "@/lib/markdown";
+
+interface Props {
+  bio: string;
+  bodyMd?: string | null;
+}
+
+const { bio, bodyMd } = Astro.props;
+const html = bodyMd ? await renderMarkdown(bodyMd) : null;
+const paragraphs = html ? null : bio.split(/\n\n+/).filter((p) => p.trim().length > 0);
+---
+
+<section class="max-w-prose mx-auto px-5 pt-8 pb-12">
+  {html ? (
+    <div class="memorial-prose font-display text-ink leading-relaxed" set:html={html}></div>
+  ) : (
+    paragraphs?.map((p, i) => (
+      <p
+        class:list={[
+          "font-display text-ink leading-relaxed mb-6",
+          i === 0 && "first-letter:font-semibold first-letter:text-gold-2 first-letter:text-6xl first-letter:float-left first-letter:leading-[0.85] first-letter:mr-2 first-letter:mt-1",
+        ]}
+        style="font-size: var(--text-lg);"
+      >
+        {p}
+      </p>
+    ))
+  )}
+
+  <div class="mt-10 flex justify-center" aria-hidden="true">
+    <BlossomDivider />
+  </div>
+</section>
+
+<style is:global>
+  .memorial-prose p { font-size: var(--text-lg); margin-bottom: 1.5rem; }
+  .memorial-prose p:first-of-type::first-letter {
+    color: var(--color-gold-2);
+    font-size: 4rem;
+    font-weight: 600;
+    float: left;
+    line-height: 0.85;
+    margin: 0.25rem 0.5rem 0 0;
+  }
+  .memorial-prose blockquote {
+    border-left: 3px solid var(--color-gold-2);
+    padding-left: 1.25rem;
+    font-style: italic;
+    color: var(--color-ink-2);
+    margin: 1.5rem 0;
+  }
+</style>
