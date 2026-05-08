@@ -1,0 +1,62 @@
+---
+export const prerender = false;
+
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import NotificationsList, { type NotificationItem } from "@/components/admin/NotificationsList.tsx";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+const me = Astro.locals.user;
+if (!me) return Astro.redirect("/admin/login");
+
+const { data, error } = await supabaseAdmin
+  .from("notifications")
+  .select("id, event_type, status, channels_requested, channels_delivered, channels_failed, payload, created_at, sent_at, seen_at")
+  .eq("user_id", me.id)
+  .order("created_at", { ascending: false })
+  .limit(200);
+
+if (error) console.error("[notifications]", error);
+
+function urlFor(eventType: string, payload: Record<string, unknown>): string {
+  if (eventType.startsWith("anniversary.")) {
+    const memberId = String(payload.memberId ?? "");
+    return memberId ? `/memorial/${memberId}` : "/altar";
+  }
+  if (eventType === "condolence.pending") return "/admin/condolences";
+  if (eventType === "member.added") return "/admin/members";
+  return "/admin/notifications";
+}
+
+function titleFor(eventType: string, payload: Record<string, unknown>): string {
+  const name = String(payload.memberName ?? "");
+  if (eventType === "anniversary.t-7") return `Còn 7 ngày tới giỗ ${name}`;
+  if (eventType === "anniversary.t-1") return `Ngày mai là giỗ ${name}`;
+  if (eventType === "anniversary.today") return `Hôm nay là giỗ ${name}`;
+  if (eventType === "condolence.pending") return "Lời tưởng nhớ mới chờ duyệt";
+  if (eventType === "member.added") return "Có thành viên mới";
+  if (eventType === "system.welcome") return "Chào mừng đến với gia phả";
+  return eventType;
+}
+
+const initial: NotificationItem[] = (data ?? []).map((row) => ({
+  id: row.id as number,
+  eventType: row.event_type as string,
+  status: row.status as string,
+  channelsRequested: (row.channels_requested as string[]) ?? [],
+  channelsDelivered: (row.channels_delivered as string[]) ?? [],
+  channelsFailed: (row.channels_failed as string[]) ?? [],
+  createdAt: row.created_at as string,
+  sentAt: (row.sent_at as string | null) ?? null,
+  seenAt: (row.seen_at as string | null) ?? null,
+  title: titleFor(row.event_type as string, (row.payload as Record<string, unknown>) ?? {}),
+  url: urlFor(row.event_type as string, (row.payload as Record<string, unknown>) ?? {}),
+}));
+---
+
+<AdminLayout title="Thông báo" crumbs={[{ label: "Thông báo" }]}>
+  <header class="mb-6">
+    <h1 class="text-title-md text-gray-800">Thông báo của bạn</h1>
+    <p class="text-sm text-gray-500 mt-1">200 thông báo gần nhất. Lọc theo tab bên dưới.</p>
+  </header>
+  <NotificationsList client:load initial={initial} />
+</AdminLayout>
