@@ -86,3 +86,17 @@ since the task config never lands in the repo).
   fire (no trigger), but T-1 and today still will. Admin can manually
   trigger via `/admin/memorial/anniversaries` once that page wires the
   manual button (not yet — defer).
+
+## Notifications cron tasks
+
+- `notifications-retry` — `*/15 * * * *` — re-attempts pending/partial/failed notification rows (max 3 attempts, exp backoff 15m → 1h → 4h)
+- `notifications-purge` — `0 3 * * 0` weekly — deletes `status='sent'` rows older than `notifications.retention_days` (default 90), plus expired link tokens. Failed rows kept indefinitely for debug.
+
+Both endpoints share the same `CRON_SECRET` bearer auth as `anniversary-alerts`. Manual trigger:
+
+```bash
+curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" \
+  https://family.huynhvantuan.net/admin/cron/notifications-retry
+```
+
+Coolify scheduled tasks created via API (uuids: `qjs9s00pxkzkr9s01nazaja7` retry, `yjxuaptjlipku45m2mnnwuv8` purge).
