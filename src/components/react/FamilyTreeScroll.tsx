@@ -7,7 +7,6 @@ import Connectors from "./family-tree-scroll/Connectors";
 import HoverPanel from "./family-tree-scroll/HoverPanel";
 import GenerationBanner from "./family-tree-scroll/GenerationBanner";
 import Frontispiece from "./family-tree-scroll/Frontispiece";
-import MayTrien from "./family-tree-scroll/MayTrien";
 
 interface SiteInfo {
   surname: string;
@@ -30,15 +29,9 @@ export default function FamilyTreeScroll({ members, site, generationsCount }: Pr
 
   return (
     <div className="relative">
-      {/* Mây triện cloud-scroll borders on left/right (desktop only) */}
-      <MayTrien side="left" />
-      <MayTrien side="right" />
-
-      {/* Frontispiece header */}
       <Frontispiece
         surname={site.surname}
         hometown={site.hometown}
-        motto={site.motto}
         established={site.established}
         publicationYear={publicationYear}
         generationsCount={generationsCount}
@@ -65,7 +58,7 @@ export default function FamilyTreeScroll({ members, site, generationsCount }: Pr
                     <FounderCard member={row.units[0].anchor} />
                   </div>
                 ) : (
-                  <div className="flex flex-wrap justify-center gap-x-3 sm:gap-x-5 gap-y-8">
+                  <div className="flex flex-wrap justify-center gap-x-4 sm:gap-x-8 gap-y-8">
                     {row.units.map((u) => (
                       <CoupleUnit
                         key={u.anchor.id}

@@ -9,18 +9,22 @@ interface Props {
 interface PathSpec { d: string; }
 
 /**
- * Watercolor brush connectors. Each parent→child relationship is drawn
- * as 3 stacked cubic bezier paths with varying stroke widths and
- * opacities, simulating a sumi-e brush stroke (broad base, tapered toward
- * the leaf). End points get small ink dots to soften the joints.
+ * Orthogonal flow-chart connectors — modern minimal style.
  *
- * DOM-measure approach: read [data-unit-id] elements after mount, recompute
- * on resize via ResizeObserver so flex-wrap on viewport change stays
- * accurate.
+ * For each parent unit with children:
+ *   1. Vertical drop from parent center-bottom to a horizontal "trunk"
+ *      placed midway between gen rows.
+ *   2. Horizontal trunk spanning all that parent's children's x positions.
+ *   3. Short verticals from trunk up to each child center-top.
+ *
+ * Stroke: 1px solid muted ink. No curves, no jitter — clean and
+ * scannable, matching the Western family-tree template aesthetic.
+ *
+ * DOM measure approach: read [data-unit-id] elements, recompute on
+ * resize via ResizeObserver to handle flex-wrap.
  */
 export default function Connectors({ rows, containerRef }: Props) {
   const [paths, setPaths] = useState<PathSpec[]>([]);
-  const [dots, setDots] = useState<Array<{ x: number; y: number }>>([]);
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
 
   useEffect(() => {
@@ -45,26 +49,46 @@ export default function Connectors({ rows, containerRef }: Props) {
       }
 
       const out: PathSpec[] = [];
-      const dotOut: Array<{ x: number; y: number }> = [];
       for (const row of rows) {
         for (const u of row.units) {
+          if (u.childIds.length === 0) continue;
           const parentPos = positions.get(u.anchor.id);
           if (!parentPos) continue;
-          if (u.childIds.length > 0) {
-            dotOut.push({ x: parentPos.x, y: parentPos.yBottom });
-          }
+
+          // Resolve all child positions
+          const childPositions: Array<{ x: number; yTop: number }> = [];
           for (const childMemberId of u.childIds) {
             const childUnitId = findUnitIdForMember(rows, row.gen + 1, childMemberId);
             if (!childUnitId) continue;
             const childPos = positions.get(childUnitId);
-            if (!childPos) continue;
-            out.push({ d: bezierPath(parentPos.x, parentPos.yBottom, childPos.x, childPos.yTop) });
-            dotOut.push({ x: childPos.x, y: childPos.yTop });
+            if (childPos) childPositions.push(childPos);
+          }
+          if (childPositions.length === 0) continue;
+
+          // Trunk Y = halfway between parent bottom and minimum child top
+          const minChildTop = Math.min(...childPositions.map((p) => p.yTop));
+          const trunkY = parentPos.yBottom + (minChildTop - parentPos.yBottom) * 0.55;
+
+          // Path 1: parent vertical drop to trunk
+          out.push({ d: `M ${parentPos.x} ${parentPos.yBottom} L ${parentPos.x} ${trunkY}` });
+
+          if (childPositions.length === 1) {
+            // Single child: skip horizontal trunk, just connect direct
+            const child = childPositions[0];
+            out.push({ d: `M ${parentPos.x} ${trunkY} L ${child.x} ${trunkY} L ${child.x} ${child.yTop}` });
+          } else {
+            // Horizontal trunk spanning all children x-range
+            const minX = Math.min(parentPos.x, ...childPositions.map((p) => p.x));
+            const maxX = Math.max(parentPos.x, ...childPositions.map((p) => p.x));
+            out.push({ d: `M ${minX} ${trunkY} L ${maxX} ${trunkY}` });
+            // Verticals from trunk to each child
+            for (const child of childPositions) {
+              out.push({ d: `M ${child.x} ${trunkY} L ${child.x} ${child.yTop}` });
+            }
           }
         }
       }
       setPaths(out);
-      setDots(dotOut);
     }
 
     compute();
@@ -87,81 +111,19 @@ export default function Connectors({ rows, containerRef }: Props) {
       style={{ overflow: "visible" }}
       aria-hidden="true"
     >
-      <defs>
-        <linearGradient id="tree-brush-gold" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--color-gold-2)" stopOpacity="0.95" />
-          <stop offset="100%" stopColor="var(--color-gold-3)" stopOpacity="0.55" />
-        </linearGradient>
-        <linearGradient id="tree-brush-ink" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--color-gold-2)" stopOpacity="0.45" />
-          <stop offset="100%" stopColor="var(--color-ink)" stopOpacity="0.18" />
-        </linearGradient>
-      </defs>
-
-      {/* Wide soft underlay — ink wash */}
       {paths.map((p, i) => (
         <path
-          key={`u-${i}`}
+          key={i}
           d={p.d}
-          stroke="url(#tree-brush-ink)"
-          strokeWidth={5}
+          stroke="rgba(60, 50, 35, 0.5)"
+          strokeWidth={1}
           fill="none"
           strokeLinecap="round"
-          opacity={0.35}
-        />
-      ))}
-      {/* Mid layer — brush body */}
-      {paths.map((p, i) => (
-        <path
-          key={`m-${i}`}
-          d={p.d}
-          stroke="url(#tree-brush-gold)"
-          strokeWidth={2.2}
-          fill="none"
-          strokeLinecap="round"
-          opacity={0.8}
-        />
-      ))}
-      {/* Top hair stroke — crisp accent */}
-      {paths.map((p, i) => (
-        <path
-          key={`t-${i}`}
-          d={p.d}
-          stroke="var(--color-gold-2)"
-          strokeWidth={0.7}
-          fill="none"
-          strokeLinecap="round"
-          opacity={0.65}
-        />
-      ))}
-
-      {/* Ink dots at junction points (soft brush starts/ends) */}
-      {dots.map((d, i) => (
-        <circle
-          key={`d-${i}`}
-          cx={d.x}
-          cy={d.y}
-          r={2.4}
-          fill="var(--color-gold-2)"
-          opacity={0.55}
+          shapeRendering="geometricPrecision"
         />
       ))}
     </svg>
   );
-}
-
-function bezierPath(x1: number, y1: number, x2: number, y2: number): string {
-  // Cubic bezier — gentler curve than before (control points pulled
-  // closer to vertical to avoid balloon shapes), with deterministic
-  // jitter for hand-drawn feel.
-  const dy = y2 - y1;
-  const midY = y1 + dy * 0.5;
-  const jitter = ((x1 + x2) % 7) - 3;
-  const cp1x = x1 + jitter * 0.6;
-  const cp1y = y1 + dy * 0.45;
-  const cp2x = x2 - jitter * 0.6;
-  const cp2y = midY + dy * 0.05;
-  return `M ${x1} ${y1} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x2} ${y2}`;
 }
 
 function findUnitIdForMember(rows: LayoutRow[], gen: number, memberId: string): string | null {
