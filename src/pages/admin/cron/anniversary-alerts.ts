@@ -13,18 +13,19 @@
  * Returns a JSON summary so cron logs are useful.
  */
 import type { APIRoute } from "astro";
-import React from "react";
 import { requireCronSecret } from "@/lib/cron-auth";
 import { getDeceasedMembers } from "@/lib/memorial";
 import { getAnniversariesForMember, type Anniversary } from "@/lib/anniversary";
 import { formatLunarVi } from "@/lib/lunar";
 import { getSetting } from "@/lib/settings";
-import { sendEmail, type EmailRecipient } from "@/lib/email";
+import { dispatch } from "@/lib/notifications/dispatcher";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
-import AnniversaryAlert, { type AnniversaryAlertVariant } from "@/emails/AnniversaryAlert";
+import type { AnniversaryAlertVariant } from "@/emails/AnniversaryAlert";
 
 export const prerender = false;
+
+type EmailRecipient = { userId: string; email: string; lang: "vi" | "en" };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -78,26 +79,43 @@ export const POST: APIRoute = async ({ request }) => {
 
       processed++;
 
+      const eventType =
+        variant === "t-7" ? "anniversary.t-7" :
+        variant === "t-1" ? "anniversary.t-1" : "anniversary.today";
+
+      // Build the email-ready payload once per (member, anniversary) so each
+      // recipient's email render can read all required fields without DB
+      // round-trips inside the adapter.
+      const dd = String(anniversary.date.getDate()).padStart(2, "0");
+      const mm = String(anniversary.date.getMonth() + 1).padStart(2, "0");
+      const yyyy = String(anniversary.date.getFullYear());
+
       try {
-        const emailHtml = renderAlertEmail({
-          variant,
-          member,
-          anniversary,
-          surname,
-          publicUrl,
+        const result = await dispatch({
+          eventType,
+          recipientIds: recipients.map((r) => r.userId),
+          payload: {
+            memberId: member.id,
+            memberName: member.name,
+            anniversaryDate: anniversary.date.toISOString(),
+            variant,
+            // Fields consumed by AnniversaryAlert email render via renderEventForChannel("email")
+            photoUrl: member.photoUrl,
+            bornYear: member.born ? String(new Date(member.born).getFullYear()) : null,
+            diedYear: member.died ? String(new Date(member.died).getFullYear()) : "",
+            solarDate: `${dd}/${mm}/${yyyy}`,
+            lunarLabel: formatLunarVi(member.deathDateLunar),
+            bioPreview: (member.bio ?? "").trim().slice(0, 280),
+            publicUrl,
+            surname,
+          },
         });
 
-        const result = await sendEmail({
-          to: recipients,
-          subject: alertSubject(variant, member.name),
-          template: emailHtml,
-        });
-
-        if (result.ok) {
+        if (result.sentInline + result.enqueued > 0) {
           await recordAlert(member.id, variant, anniversary, recipients);
           sent++;
         } else {
-          errors.push(`${member.id}/${variant}: ${result.reason}`);
+          errors.push(`${member.id}/${variant}: no_recipients_dispatched`);
         }
       } catch (err) {
         errors.push(`${member.id}/${variant}: ${err instanceof Error ? err.message : "unknown"}`);
@@ -128,56 +146,16 @@ function parseAlertDays(raw: string | null): number[] {
     .filter((n) => Number.isFinite(n));
 }
 
-function alertSubject(variant: AnniversaryAlertVariant, name: string): string {
-  if (variant === "t-7") return `Còn 7 ngày tới giỗ ${name}`;
-  if (variant === "t-1") return `Ngày mai là giỗ ${name}`;
-  return `Hôm nay là ngày giỗ ${name}`;
-}
-
-function renderAlertEmail(opts: {
-  variant: AnniversaryAlertVariant;
-  member: Awaited<ReturnType<typeof getDeceasedMembers>>[number];
-  anniversary: Anniversary;
-  surname: string;
-  publicUrl: string;
-}) {
-  const { variant, member, anniversary, surname, publicUrl } = opts;
-  const memorialUrl = `${publicUrl.replace(/\/$/, "")}/memorial/${member.id}`;
-
-  const dd = String(anniversary.date.getDate()).padStart(2, "0");
-  const mm = String(anniversary.date.getMonth() + 1).padStart(2, "0");
-  const solarDate = `${dd}/${mm}/${anniversary.date.getFullYear()}`;
-
-  const lunarLabel = formatLunarVi(member.deathDateLunar);
-
-  const bornYear = member.born ? new Date(member.born).getFullYear().toString() : null;
-  const diedYear = member.died ? new Date(member.died).getFullYear().toString() : "";
-  const bioPreview = (member.bio ?? "").trim().slice(0, 280);
-
-  return React.createElement(AnniversaryAlert, {
-    variant,
-    memberName: member.name,
-    memorialUrl,
-    publicUrl,
-    surname,
-    photoUrl: member.photoUrl,
-    bornYear,
-    diedYear,
-    solarDate,
-    lunarLabel,
-    bioPreview,
-  });
-}
-
 async function fetchRecipients(): Promise<EmailRecipient[]> {
   const { data, error } = await supabaseAdmin
     .from("app_users")
-    .select("email, role, status, preferred_lang")
+    .select("id, email, role, status, preferred_lang")
     .eq("status", "approved")
     .in("role", ["admin", "branch_editor"]);
   if (error) throw error;
 
   return (data ?? []).map((row) => ({
+    userId: row.id as string,
     email: row.email as string,
     lang: ((row.preferred_lang as "vi" | "en" | undefined) ?? "vi"),
   }));
