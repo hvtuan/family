@@ -1,0 +1,115 @@
+---
+export const prerender = false;
+
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { Card } from "@/components/ui/card";
+import { getMembers, getQuotes, getTraditions, getPhotos } from "@/lib/content";
+import { getDeceasedMembers } from "@/lib/memorial";
+
+const me = Astro.locals.user;
+if (!me || (me.role !== "admin" && me.role !== "branch_editor")) {
+  return Astro.redirect("/admin");
+}
+
+const [allMembers, quotes, traditions, photos, deceased] = await Promise.all([
+  getMembers(),
+  getQuotes(),
+  getTraditions(),
+  getPhotos(),
+  getDeceasedMembers(),
+]);
+
+const publishedMembers = allMembers.filter((m) => m.data.status === "published");
+const featuredPhotos = photos.filter((p) => p.data.featured);
+---
+
+<AdminLayout title="Heritage Book" crumbs={[{ label: "Heritage Book" }]}>
+  <header class="mb-6">
+    <h1 class="text-title-md text-gray-800">📕 Heritage Book — Gia phả PDF</h1>
+    <p class="text-sm text-gray-500 mt-1 max-w-prose">
+      Tạo cuốn gia phả PDF in được, ~30-50 trang A4. Leverage 100% data hiện có:
+      thành viên, ảnh, lời dặn, truyền thống, lịch giỗ.
+    </p>
+  </header>
+
+  <section class="grid gap-6 lg:grid-cols-2">
+    <Card className="p-5">
+      <h2 class="text-base font-semibold mb-3">Thống kê</h2>
+      <ul class="text-sm text-gray-700 space-y-1.5">
+        <li>Thành viên đã xuất bản: <strong>{publishedMembers.length}</strong></li>
+        <li>Thành viên nháp: <strong>{allMembers.length - publishedMembers.length}</strong></li>
+        <li>Đã khuất (lịch giỗ): <strong>{deceased.length}</strong></li>
+        <li>Ảnh featured: <strong>{featuredPhotos.length}</strong> / tổng {photos.length}</li>
+        <li>Truyền thống: <strong>{traditions.length}</strong></li>
+        <li>Lời dặn: <strong>{quotes.length}</strong></li>
+      </ul>
+      <p class="text-xs text-gray-500 mt-4">
+        Ước tính: ~{4 + publishedMembers.length * 2 + Math.ceil(featuredPhotos.length / 6) + traditions.length + Math.ceil(quotes.length / 4) + 2} trang
+      </p>
+    </Card>
+
+    <Card className="p-5">
+      <h2 class="text-base font-semibold mb-3">Tuỳ chọn nội dung</h2>
+      <form id="hb-form" class="space-y-3 text-sm">
+        <label class="flex items-center gap-2">
+          <input type="checkbox" name="include_drafts" value="true" />
+          Bao gồm thành viên nháp
+        </label>
+        <label class="flex items-center gap-2">
+          <input type="checkbox" name="include_album" value="true" checked />
+          Bao gồm Album ảnh
+        </label>
+        <label class="flex items-center gap-2">
+          <input type="checkbox" name="include_traditions" value="true" checked />
+          Bao gồm Truyền thống
+        </label>
+        <div class="flex items-center gap-2">
+          <span>Ngôn ngữ:</span>
+          <select name="lang" class="rounded border px-2 py-1">
+            <option value="vi" selected>Tiếng Việt</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+        <div class="pt-3 flex gap-2">
+          <button type="submit" class="rounded bg-brand-500 text-white px-4 py-2 text-sm font-medium hover:bg-brand-600">
+            📕 Tải PDF
+          </button>
+          <button type="button" id="hb-preview" class="rounded border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50">
+            🔍 Xem trước
+          </button>
+        </div>
+      </form>
+
+      <div id="hb-preview-frame" class="hidden mt-4 border border-gray-200 rounded">
+        <iframe id="hb-iframe" class="w-full" style="height: 600px;"></iframe>
+      </div>
+    </Card>
+  </section>
+
+  <script is:inline>
+    const form = document.getElementById("hb-form");
+    const previewBtn = document.getElementById("hb-preview");
+    const previewFrame = document.getElementById("hb-preview-frame");
+    const iframe = document.getElementById("hb-iframe");
+
+    function buildUrl() {
+      const fd = new FormData(form);
+      const params = new URLSearchParams();
+      params.set("include_drafts", fd.get("include_drafts") ? "true" : "false");
+      params.set("include_album", fd.get("include_album") ? "true" : "false");
+      params.set("include_traditions", fd.get("include_traditions") ? "true" : "false");
+      params.set("lang", String(fd.get("lang") || "vi"));
+      return "/admin/heritage-book.pdf?" + params.toString();
+    }
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      window.location.href = buildUrl();
+    });
+
+    previewBtn.addEventListener("click", () => {
+      iframe.src = buildUrl();
+      previewFrame.classList.remove("hidden");
+    });
+  </script>
+</AdminLayout>
