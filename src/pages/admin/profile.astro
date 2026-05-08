@@ -1,0 +1,34 @@
+---
+export const prerender = false;
+
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import ProfileTabs from "@/components/admin/profile/ProfileTabs.tsx";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { parsePreferences } from "@/lib/notifications/preferences";
+
+const me = Astro.locals.user;
+if (!me) return Astro.redirect("/admin/login");
+
+const { data, error } = await supabaseAdmin
+  .from("app_users")
+  .select("id, email, display_name, role, branch, preferred_lang, avatar_url, timezone, notification_preferences")
+  .eq("id", me.id)
+  .maybeSingle();
+
+if (error || !data) return Astro.redirect("/admin");
+
+const prefs = parsePreferences(data.notification_preferences);
+const profile = {
+  id: data.id as string,
+  email: data.email as string,
+  displayName: (data.display_name as string | null) ?? "",
+  role: data.role as "admin" | "editor" | "branch_editor",
+  preferredLang: (data.preferred_lang as "vi" | "en" | null) ?? "vi",
+  avatarUrl: (data.avatar_url as string | null) ?? null,
+  timezone: (data.timezone as string | null) ?? "Asia/Ho_Chi_Minh",
+};
+---
+
+<AdminLayout title="Hồ sơ của tôi" crumbs={[{ label: "Hồ sơ" }]}>
+  <ProfileTabs client:load profile={profile} preferences={prefs} />
+</AdminLayout>
