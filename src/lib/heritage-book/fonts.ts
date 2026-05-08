@@ -14,8 +14,9 @@ export async function ensureFonts(): Promise<void> {
   Font.register({
     family: "BeVietnamPro",
     fonts: [
-      { src: "https://fonts.gstatic.com/s/bevietnampro/v11/QdVPSTAyLFyeg_IDWvOJmVES_HRUBX8YYbAjbHaXE2QyOL5W.ttf", fontWeight: 400 },
-      { src: "https://fonts.gstatic.com/s/bevietnampro/v11/QdVPSTAyLFyeg_IDWvOJmVES_HRUBX8YxbsjbHaXE2QyOL5W.ttf", fontWeight: 600 },
+      { src: "https://fonts.gstatic.com/s/bevietnampro/v12/QdVPSTAyLFyeg_IDWvOJmVES_Eww.ttf", fontWeight: 400 },
+      { src: "https://fonts.gstatic.com/s/bevietnampro/v12/QdVMSTAyLFyeg_IDWvOJmVES_HToIV8y.ttf", fontWeight: 600 },
+      { src: "https://fonts.gstatic.com/s/bevietnampro/v12/QdVNSTAyLFyeg_IDWvOJmVES_HwyBX8.ttf", fontWeight: 400, fontStyle: "italic" },
     ],
   });
   Font.register({
