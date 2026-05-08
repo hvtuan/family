@@ -23,7 +23,7 @@ alter table family.settings drop constraint if exists settings_category_check;
 alter table family.settings add constraint settings_category_check
   check (category in (
     'site', 'contact', 'integrations', 'appearance',
-    'seo', 'maps', 'privacy', 'social', 'analytics', 'smtp', 'hero'
+    'seo', 'maps', 'privacy', 'social', 'analytics', 'smtp', 'hero', 'memorial'
   ));
 
 -- ─── Update existing rows with field_type + ordering ───────────────────
