@@ -2,7 +2,7 @@
 export const prerender = false;
 import Base from "@/layouts/Base.astro";
 import PageHead from "@/components/astro/PageHead.astro";
-import FamilyTree from "@/components/react/FamilyTree";
+import FamilyTreeScroll from "@/components/react/FamilyTreeScroll";
 import { getMembers } from "@/lib/content";
 import { toClientMember } from "@/lib/members-client";
 
@@ -13,11 +13,23 @@ const clientMembers = all.map(toClientMember);
 <Base title="Cây gia phả" pageKey="family-tree">
   <PageHead
     kicker="Family Tree"
-    title="Bốn thế hệ họ Nguyễn"
-    subtitle="Kéo để di chuyển · phóng to/thu nhỏ bằng nút hoặc hai ngón tay · bấm vào mỗi người để xem chi tiết."
-    subtitleEn="Drag to pan, pinch or +/− to zoom, click to open"
+    title="Cây gia phả"
+    subtitle="Cuộn từ trên xuống — bấm vào ai đó để xem chi tiết."
+    subtitleEn="Scroll from founder down · click to open"
   />
-  <section class="max-w-[1240px] mx-auto px-5 pt-2 pb-20">
-    <FamilyTree members={clientMembers} client:load />
+  <section class="relative max-w-[1240px] mx-auto px-4 sm:px-8 pt-2 pb-24 u-paper-texture">
+    <!-- Side mây triện borders (decorative) -->
+    <div
+      aria-hidden="true"
+      class="hidden md:block absolute left-0 top-12 bottom-12 w-3 opacity-25"
+      style="background: repeating-linear-gradient(180deg, var(--color-gold-3) 0 8px, transparent 8px 24px);"
+    ></div>
+    <div
+      aria-hidden="true"
+      class="hidden md:block absolute right-0 top-12 bottom-12 w-3 opacity-25"
+      style="background: repeating-linear-gradient(180deg, var(--color-gold-3) 0 8px, transparent 8px 24px);"
+    ></div>
+
+    <FamilyTreeScroll members={clientMembers} client:load />
   </section>
 </Base>
