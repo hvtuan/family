@@ -91,7 +91,35 @@ export function parseMemberForm(form: FormData): {
     status,
     tags: parseCsv(get("tags")),
     hobbies: parseCsv(get("hobbies")),
+    // Memorial layer fields — only meaningful when died is set; the
+    // MemberForm fieldset is hidden otherwise so all values come back null.
+    memorial_enabled: getOpt("died") ? form.get("memorial_enabled") !== null : null,
+    anniversary_calendar: (() => {
+      const v = getOpt("anniversary_calendar");
+      if (v === "lunar" || v === "solar" || v === "both") return v;
+      return getOpt("died") ? "lunar" : null;
+    })(),
+    death_date_lunar: parseLunarOverride(
+      getOpt("death_date_lunar_year"),
+      getOpt("death_date_lunar_month"),
+      getOpt("death_date_lunar_day"),
+      form.get("death_date_lunar_leap") !== null
+    ),
   };
 
   return { input, errors };
+}
+
+function parseLunarOverride(
+  yRaw: string | null,
+  mRaw: string | null,
+  dRaw: string | null,
+  isLeap: boolean
+): { year: number; month: number; day: number; isLeap: boolean } | null {
+  const y = yRaw ? Number(yRaw) : NaN;
+  const m = mRaw ? Number(mRaw) : NaN;
+  const d = dRaw ? Number(dRaw) : NaN;
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
+  if (m < 1 || m > 12 || d < 1 || d > 30) return null;
+  return { year: Math.floor(y), month: Math.floor(m), day: Math.floor(d), isLeap };
 }

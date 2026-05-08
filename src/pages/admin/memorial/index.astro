@@ -1,0 +1,113 @@
+---
+export const prerender = false;
+
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { Card } from "@/components/ui/card";
+import { getDeceasedMembers } from "@/lib/memorial";
+import { getUpcomingAnniversaries } from "@/lib/anniversary";
+import { countPending, listByStatus } from "@/lib/condolences";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { formatLunarVi } from "@/lib/lunar";
+
+const me = Astro.locals.user;
+if (!me) return Astro.redirect("/admin/login");
+
+const [deceased, upcoming, pending, approvedRows, incenseTotal] = await Promise.all([
+  getDeceasedMembers(),
+  getUpcomingAnniversaries({ withinDays: 30 }),
+  countPending(),
+  listByStatus("approved"),
+  supabaseAdmin.from("incense_events").select("id", { count: "exact", head: true }),
+]);
+
+const incenseAllTime = incenseTotal.count ?? 0;
+const stats = [
+  { label: "Tổ tiên trên bàn thờ", value: deceased.length },
+  { label: "Lời chờ duyệt", value: pending },
+  { label: "Lời đã duyệt", value: approvedRows.length },
+  { label: "Tâm hương đã dâng", value: incenseAllTime },
+];
+
+function fmtDate(d: Date): string {
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+---
+
+<AdminLayout title="Tưởng niệm — Tổng quan" crumbs={[{ label: "Tưởng niệm" }]}>
+  <header class="mb-6">
+    <h1 class="text-title-md text-gray-800">Tưởng niệm</h1>
+    <p class="text-sm text-gray-500 mt-1">
+      Bàn thờ tổ tiên · Lời tưởng nhớ · Lịch giỗ · Tâm hương
+    </p>
+  </header>
+
+  <!-- Stat cards -->
+  <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    {stats.map((s) => (
+      <Card className="p-5 text-center">
+        <p class="text-3xl font-bold text-gray-800 tabular-nums">{s.value}</p>
+        <p class="text-xs text-gray-500 mt-1">{s.label}</p>
+      </Card>
+    ))}
+  </section>
+
+  <!-- Upcoming anniversaries -->
+  <section class="mb-8">
+    <header class="mb-3 flex items-baseline justify-between">
+      <h2 class="text-title-sm text-gray-800">Giỗ sắp tới (≤30 ngày)</h2>
+      <a class="text-sm text-brand-500 hover:underline" href="/admin/memorial/anniversaries">
+        Xem toàn bộ →
+      </a>
+    </header>
+    {upcoming.length === 0 ? (
+      <Card className="p-6 text-center text-sm text-gray-500">
+        Không có giỗ nào trong 30 ngày tới.
+      </Card>
+    ) : (
+      <ul class="grid gap-3 list-none p-0 m-0">
+        {upcoming.slice(0, 8).map((a) => (
+          <li>
+            <Card className="p-4 flex items-center gap-4">
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-gray-800 m-0 truncate">{a.member.name}</p>
+                <p class="text-xs text-gray-500 m-0 mt-0.5">
+                  {fmtDate(a.date)}
+                  <span class="mx-1.5">·</span>
+                  {a.type === "lunar" ? formatLunarVi(a.member.deathDateLunar) : "Dương lịch"}
+                </p>
+              </div>
+              <div class="text-right shrink-0">
+                <p class="text-lg font-bold text-gray-800 tabular-nums m-0">
+                  {a.daysUntil === 0 ? "Hôm nay" : `${a.daysUntil}d`}
+                </p>
+              </div>
+              <a
+                class="text-sm text-brand-500 hover:underline shrink-0"
+                href={`/memorial/${a.member.id}`}
+                target="_blank"
+              >
+                Xem ↗
+              </a>
+            </Card>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+
+  <!-- Pending condolences callout -->
+  {pending > 0 && (
+    <section class="mb-8">
+      <Card className="p-5 border-orange-200 bg-orange-50">
+        <p class="text-sm text-orange-800 m-0">
+          Có <strong>{pending}</strong> lời tưởng nhớ đang chờ duyệt.
+          <a class="text-orange-700 underline ml-2" href="/admin/condolences">
+            Xem moderation queue →
+          </a>
+        </p>
+      </Card>
+    </section>
+  )}
+</AdminLayout>

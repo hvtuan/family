@@ -1,8 +1,10 @@
 ---
+import { countPending } from "@/lib/condolences";
+
 type IconKey =
   | "dashboard" | "user" | "users" | "calendar" | "bowl" | "image"
   | "chat" | "date" | "map" | "envelope" | "log" | "home" | "help"
-  | "settings" | "palette";
+  | "settings" | "palette" | "lotus";
 
 interface Props {
   pathname: string;
@@ -27,11 +29,27 @@ const ICONS: Record<IconKey, string> = {
   help: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="fill-current"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Zm10-4.25a2 2 0 0 0-1.732 1 .75.75 0 1 1-1.299-.75A3.5 3.5 0 1 1 12.75 13.197V14a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75A2 2 0 1 0 12 7.75ZM12 17.25a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" fill=""/></svg>`,
   settings: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="fill-current"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.5 4.42a.75.75 0 0 1 .73-.92h3.54a.75.75 0 0 1 .73.92l-.34 1.4a7.4 7.4 0 0 1 1.62.94l1.36-.5a.75.75 0 0 1 .9.34l1.77 3.06a.75.75 0 0 1-.16.96l-1.07.94a7.5 7.5 0 0 1 0 1.88l1.07.94a.75.75 0 0 1 .16.96l-1.77 3.06a.75.75 0 0 1-.9.34l-1.36-.5a7.4 7.4 0 0 1-1.62.94l.34 1.4a.75.75 0 0 1-.73.92h-3.54a.75.75 0 0 1-.73-.92l.34-1.4a7.4 7.4 0 0 1-1.62-.94l-1.36.5a.75.75 0 0 1-.9-.34L3.42 14.6a.75.75 0 0 1 .16-.96l1.07-.94a7.5 7.5 0 0 1 0-1.88L3.58 9.88a.75.75 0 0 1-.16-.96l1.77-3.06a.75.75 0 0 1 .9-.34l1.36.5a7.4 7.4 0 0 1 1.62-.94l-.34-1.4ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" fill=""/></svg>`,
   palette: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="fill-current"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 3.5a8.5 8.5 0 0 0-8.5 8.5c0 2.485 1.514 4.207 3.793 4.207h.974c.793 0 1.435.643 1.435 1.435 0 .386.005.776.16 1.097.156.32.42.547.812.62l.058.011.058.005c2.31.119 4.59-.787 6.276-2.49 1.687-1.703 2.625-4.005 2.625-6.385 0-3.728-3.022-6.75-6.75-6.75H12Zm-1.043-1.484A10 10 0 0 1 12 2c4.556 0 8.25 3.694 8.25 8.25 0 2.737-1.085 5.428-3.064 7.43-1.974 1.998-4.673 3.073-7.43 2.929-.794-.131-1.518-.658-1.86-1.36-.342-.704-.328-1.49-.328-2.07 0-.022.013-.064-.005-.058-.018.005-.05 0-.107 0H7.293c-3.025 0-5.293-2.314-5.293-5.707A10 10 0 0 1 10.957 2.016ZM7.5 9.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Zm10 1.5a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5ZM6.5 13.5a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5ZM12.5 8a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Z" fill=""/></svg>`,
+  lotus: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="fill-current"><path d="M12 3.5c-.4 1.5-.6 3-.6 4.4 0 .9.1 1.7.3 2.5C9.7 9 8 7.5 6.7 5.6c-.4 1.7-.4 3.4.1 5 .4 1.5 1.2 2.7 2.3 3.7-1.7-.3-3.3-1-4.6-2.1-.1 1.7.3 3.3 1.2 4.6 1 1.4 2.4 2.3 3.9 2.7-1.4.5-2.9.6-4.4.4 1 1.4 2.4 2.4 4 2.8 1.6.5 3.3.4 4.8-.3 1.5.7 3.2.8 4.8.3 1.6-.4 3-1.4 4-2.8-1.5.2-3 .1-4.4-.4 1.5-.4 2.9-1.3 3.9-2.7.9-1.3 1.3-2.9 1.2-4.6-1.3 1.1-2.9 1.8-4.6 2.1 1.1-1 1.9-2.2 2.3-3.7.5-1.6.5-3.3.1-5-1.3 1.9-3 3.4-5 4.4.2-.8.3-1.6.3-2.5 0-1.4-.2-2.9-.6-4.4z" fill=""/></svg>`,
 };
+
+// Pending condolence count for the badge on /admin/condolences. Resilient
+// to DB errors during early dev / fresh installs.
+let pendingCondolences = 0;
+try {
+  pendingCondolences = await countPending();
+} catch {
+  pendingCondolences = 0;
+}
 
 const sections: {
   heading: string;
-  items: { href: string; label: string; iconKey: IconKey; adminOnly?: boolean }[];
+  items: {
+    href: string;
+    label: string;
+    iconKey: IconKey;
+    adminOnly?: boolean;
+    badge?: number | null;
+  }[];
 }[] = [
   {
     heading: "MENU",
@@ -44,6 +62,20 @@ const sections: {
       { href: "/admin/quotes", label: "Câu nói", iconKey: "chat" },
       { href: "/admin/dates", label: "Ngày lễ", iconKey: "date" },
       { href: "/admin/locations", label: "Địa điểm", iconKey: "map" },
+    ],
+  },
+  {
+    heading: "TƯỞNG NIỆM",
+    items: [
+      { href: "/admin/memorial", label: "Tổng quan", iconKey: "lotus" },
+      { href: "/admin/memorial/anniversaries", label: "Lịch giỗ", iconKey: "calendar" },
+      {
+        href: "/admin/condolences",
+        label: "Lời tưởng nhớ",
+        iconKey: "chat",
+        badge: pendingCondolences > 0 ? pendingCondolences : null,
+      },
+      { href: "/admin/memorial/alerts-log", label: "Log gửi alert", iconKey: "envelope", adminOnly: true },
     ],
   },
   {
@@ -123,6 +155,11 @@ function isActive(href: string) {
                     set:html={ICONS[item.iconKey]}
                   />
                   <span class="menu-item-text">{item.label}</span>
+                  {item.badge != null && item.badge > 0 && (
+                    <span class="menu-item-badge ml-auto inline-flex items-center justify-center rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-semibold leading-none text-white min-w-[20px]">
+                      {item.badge}
+                    </span>
+                  )}
                 </a>
               </li>
             ))}

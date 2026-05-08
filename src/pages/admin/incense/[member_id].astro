@@ -1,0 +1,90 @@
+---
+export const prerender = false;
+
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { Card } from "@/components/ui/card";
+import { listIncenseForMember } from "@/lib/incense";
+import { getMemorialMember } from "@/lib/memorial";
+
+const me = Astro.locals.user;
+if (!me) return Astro.redirect("/admin/login");
+
+const memberId = Astro.params.member_id!;
+const yearRaw = Astro.url.searchParams.get("year");
+const year = yearRaw ? Number(yearRaw) : new Date().getFullYear();
+
+const [member, entries] = await Promise.all([
+  getMemorialMember(memberId),
+  listIncenseForMember(memberId, year, { limit: 200 }),
+]);
+
+if (!member) {
+  return Astro.redirect("/admin/memorial");
+}
+
+const yearOptions: number[] = [];
+const thisYear = new Date().getFullYear();
+for (let y = thisYear; y >= thisYear - 5; y--) yearOptions.push(y);
+---
+
+<AdminLayout
+  title={`Tâm hương — ${member.name}`}
+  crumbs={[
+    { label: "Tưởng niệm", href: "/admin/memorial" },
+    { label: member.name },
+  ]}
+>
+  <header class="mb-6 flex items-end gap-4 flex-wrap">
+    <div class="flex-1 min-w-0">
+      <h1 class="text-title-md text-gray-800">Log thắp tâm hương — {member.name}</h1>
+      <p class="text-sm text-gray-500 mt-1">
+        Tổng năm {year}: <strong>{entries.length}</strong> lượt
+      </p>
+    </div>
+    <form method="get" class="flex items-center gap-2">
+      <label class="text-sm text-gray-600">Năm</label>
+      <select
+        name="year"
+        onchange="this.form.submit()"
+        class="h-9 rounded-lg border border-gray-300 px-3 text-sm"
+      >
+        {yearOptions.map((y) => (
+          <option value={y} selected={y === year}>{y}</option>
+        ))}
+      </select>
+    </form>
+  </header>
+
+  {entries.length === 0 ? (
+    <Card className="p-6 text-center text-sm text-gray-500">
+      Chưa có ai thắp tâm hương trong năm {year}.
+    </Card>
+  ) : (
+    <Card className="overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-100">
+          <tr>
+            <th class="text-left p-3 font-medium text-gray-600">Người thắp</th>
+            <th class="text-left p-3 font-medium text-gray-600">Lời nhắn</th>
+            <th class="text-left p-3 font-medium text-gray-600">Thời điểm</th>
+            <th class="text-left p-3 font-medium text-gray-600">IP hash</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((e) => (
+            <tr class="border-b border-gray-50">
+              <td class="p-3 font-semibold text-gray-800">{e.visitorName}</td>
+              <td class="p-3 text-gray-600 max-w-md">
+                {e.message ? (e.message.vi ?? e.message.en ?? "") : <span class="text-gray-300">—</span>}
+              </td>
+              <td class="p-3 text-xs text-gray-500 tabular-nums">
+                {new Date(e.createdAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}
+              </td>
+              <td class="p-3 text-xs font-mono text-gray-400">…</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Card>
+  )}
+</AdminLayout>

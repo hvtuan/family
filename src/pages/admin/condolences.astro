@@ -1,0 +1,55 @@
+---
+export const prerender = false;
+
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import CondolenceList, { type AdminCondolence } from "@/components/admin/CondolenceList.tsx";
+import { listByStatus } from "@/lib/condolences";
+import { getDeceasedMembers } from "@/lib/memorial";
+
+const me = Astro.locals.user;
+if (!me) return Astro.redirect("/admin/login");
+
+const [pending, approved, rejected, members] = await Promise.all([
+  listByStatus("pending"),
+  listByStatus("approved"),
+  listByStatus("rejected"),
+  getDeceasedMembers(),
+]);
+
+const memberNames = new Map(members.map((m) => [m.id, m.name]));
+
+function toAdmin(c: typeof pending[number]): AdminCondolence {
+  return {
+    id: c.id,
+    memberId: c.memberId,
+    memberName: memberNames.get(c.memberId) ?? c.memberId,
+    visitorName: c.visitorName,
+    visitorRelation: c.visitorRelation,
+    body: c.body,
+    status: c.status,
+    createdAt: c.createdAt.toISOString(),
+    reviewedAt: c.reviewedAt ? c.reviewedAt.toISOString() : null,
+  };
+}
+---
+
+<AdminLayout
+  title="Lời tưởng nhớ"
+  crumbs={[{ label: "Tưởng niệm", href: "/admin/memorial" }, { label: "Lời tưởng nhớ" }]}
+>
+  <header class="mb-6">
+    <h1 class="text-title-md text-gray-800">Lời tưởng nhớ — Duyệt</h1>
+    <p class="text-sm text-gray-500 mt-1">
+      Lời gửi từ public form trên /memorial/[id]. Duyệt để hiển thị, từ chối để ẩn.
+    </p>
+  </header>
+
+  <CondolenceList
+    client:load
+    initial={{
+      pending: pending.map(toAdmin),
+      approved: approved.map(toAdmin),
+      rejected: rejected.map(toAdmin),
+    }}
+  />
+</AdminLayout>

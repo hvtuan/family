@@ -38,6 +38,10 @@ export type MemberRow = {
   status: "draft" | "published";
   tags: string[];
   hobbies: string[];
+  // Memorial layer (0017_memorial.sql) — only meaningful when died is set.
+  memorial_enabled?: boolean | null;
+  anniversary_calendar?: "lunar" | "solar" | "both" | null;
+  death_date_lunar?: { year: number; month: number; day: number; isLeap: boolean } | null;
   created_at: string;
   updated_at: string;
 };

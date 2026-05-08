@@ -1,0 +1,87 @@
+---
+export const prerender = false;
+
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { Card } from "@/components/ui/card";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+const me = Astro.locals.user;
+if (!me || me.role !== "admin") return Astro.redirect("/admin");
+
+const { data, error } = await supabaseAdmin
+  .from("anniversary_alerts")
+  .select("id, member_id, alert_type, anniversary_year, anniversary_solar, sent_at, recipients")
+  .order("sent_at", { ascending: false })
+  .limit(200);
+
+const rows = (data ?? []) as Array<{
+  id: number;
+  member_id: string;
+  alert_type: "t-7" | "t-1" | "today";
+  anniversary_year: number;
+  anniversary_solar: string;
+  sent_at: string;
+  recipients: Array<{ email: string; role?: string; lang?: string }>;
+}>;
+
+function fmtDateTime(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" });
+}
+
+function alertLabel(t: string): string {
+  if (t === "t-7") return "Còn 7 ngày";
+  if (t === "t-1") return "Còn 1 ngày";
+  if (t === "today") return "Hôm nay";
+  return t;
+}
+---
+
+<AdminLayout
+  title="Log gửi alert"
+  crumbs={[{ label: "Tưởng niệm", href: "/admin/memorial" }, { label: "Log gửi alert" }]}
+>
+  <header class="mb-6">
+    <h1 class="text-title-md text-gray-800">Log gửi alert giỗ</h1>
+    <p class="text-sm text-gray-500 mt-1">
+      Mỗi dòng = một email cảnh báo cron đã gửi. Bảng UNIQUE đảm bảo mỗi (member, type, year) chỉ gửi 1 lần.
+    </p>
+  </header>
+
+  {rows.length === 0 ? (
+    <Card className="p-6 text-center text-sm text-gray-500">
+      Chưa có alert nào được gửi. Cron sẽ chạy tự động vào 06:00 mỗi sáng (Asia/Ho_Chi_Minh).
+    </Card>
+  ) : (
+    <Card className="overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-100">
+          <tr>
+            <th class="text-left p-3 font-medium text-gray-600">Thời gian gửi</th>
+            <th class="text-left p-3 font-medium text-gray-600">Member</th>
+            <th class="text-left p-3 font-medium text-gray-600">Loại</th>
+            <th class="text-left p-3 font-medium text-gray-600">Ngày giỗ</th>
+            <th class="text-left p-3 font-medium text-gray-600">Người nhận</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr class="border-b border-gray-50">
+              <td class="p-3 text-xs text-gray-700 tabular-nums">{fmtDateTime(r.sent_at)}</td>
+              <td class="p-3 text-gray-800 font-mono text-xs">{r.member_id}</td>
+              <td class="p-3">
+                <span class="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700">
+                  {alertLabel(r.alert_type)}
+                </span>
+              </td>
+              <td class="p-3 text-gray-600 tabular-nums">{r.anniversary_solar}</td>
+              <td class="p-3 text-xs text-gray-500">
+                {Array.isArray(r.recipients) ? r.recipients.length : 0} email
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Card>
+  )}
+</AdminLayout>

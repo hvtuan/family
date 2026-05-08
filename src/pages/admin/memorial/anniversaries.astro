@@ -1,0 +1,128 @@
+---
+export const prerender = false;
+
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import { Card } from "@/components/ui/card";
+import { getDeceasedMembers } from "@/lib/memorial";
+import { getAnniversariesForMember } from "@/lib/anniversary";
+import { formatLunarVi } from "@/lib/lunar";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+
+const me = Astro.locals.user;
+if (!me) return Astro.redirect("/admin/login");
+
+// Build a flat list of every member's next 12 months of anniversaries.
+const deceased = await getDeceasedMembers();
+
+const allAnniversaries: Array<{
+  memberId: string;
+  memberName: string;
+  date: Date;
+  type: "lunar" | "solar";
+  daysUntil: number;
+  lunarLabel: string;
+}> = [];
+
+for (const m of deceased) {
+  if (!m.memorialEnabled) continue;
+  const occ = await getAnniversariesForMember(m.id, 1);
+  for (const a of occ) {
+    allAnniversaries.push({
+      memberId: m.id,
+      memberName: m.name,
+      date: a.date,
+      type: a.type,
+      daysUntil: a.daysUntil,
+      lunarLabel: formatLunarVi(m.deathDateLunar),
+    });
+  }
+}
+
+allAnniversaries.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+// Pull alert log to mark which alerts have already been sent for the
+// upcoming year — admin can see at-a-glance which giỗ has been emailed.
+const thisYear = new Date().getFullYear();
+const { data: alertRows } = await supabaseAdmin
+  .from("anniversary_alerts")
+  .select("member_id, alert_type, anniversary_year")
+  .gte("anniversary_year", thisYear);
+const alertMap = new Map<string, Set<string>>();
+for (const r of (alertRows ?? []) as Array<{ member_id: string; alert_type: string; anniversary_year: number }>) {
+  const key = `${r.member_id}:${r.anniversary_year}`;
+  if (!alertMap.has(key)) alertMap.set(key, new Set());
+  alertMap.get(key)!.add(r.alert_type);
+}
+
+function fmtDate(d: Date): string {
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+---
+
+<AdminLayout title="Lịch giỗ" crumbs={[{ label: "Tưởng niệm", href: "/admin/memorial" }, { label: "Lịch giỗ" }]}>
+  <header class="mb-6">
+    <h1 class="text-title-md text-gray-800">Lịch giỗ 12 tháng tới</h1>
+    <p class="text-sm text-gray-500 mt-1">
+      Tự động sinh từ {deceased.length} thành viên đã khuất. Cron tự gửi email cảnh báo trước 7/1/0 ngày.
+    </p>
+  </header>
+
+  {allAnniversaries.length === 0 ? (
+    <Card className="p-6 text-center text-sm text-gray-500">
+      Chưa có giỗ nào trong dữ liệu hiện tại.
+    </Card>
+  ) : (
+    <Card className="overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-100">
+          <tr>
+            <th class="text-left p-3 font-medium text-gray-600">Thành viên</th>
+            <th class="text-left p-3 font-medium text-gray-600">Ngày dương</th>
+            <th class="text-left p-3 font-medium text-gray-600">Ngày âm</th>
+            <th class="text-left p-3 font-medium text-gray-600">Còn</th>
+            <th class="text-left p-3 font-medium text-gray-600">Email đã gửi</th>
+            <th class="text-right p-3 font-medium text-gray-600">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          {allAnniversaries.map((a) => {
+            const sent = alertMap.get(`${a.memberId}:${a.date.getFullYear()}`) ?? new Set();
+            return (
+              <tr class="border-b border-gray-50 hover:bg-gray-50">
+                <td class="p-3 font-semibold text-gray-800">{a.memberName}</td>
+                <td class="p-3 tabular-nums text-gray-700">{fmtDate(a.date)}</td>
+                <td class="p-3 text-gray-600">{a.lunarLabel}</td>
+                <td class="p-3 tabular-nums text-gray-700">
+                  {a.daysUntil === 0 ? "hôm nay" : `${a.daysUntil} ngày`}
+                </td>
+                <td class="p-3 text-xs text-gray-500">
+                  {["t-7", "t-1", "today"].map((t) => (
+                    <span
+                      class:list={[
+                        "inline-block px-1.5 py-0.5 rounded mr-1",
+                        sent.has(t) ? "bg-success-50 text-success-700" : "bg-gray-100 text-gray-400",
+                      ]}
+                    >
+                      {t === "t-7" ? "T-7" : t === "t-1" ? "T-1" : "0d"}
+                    </span>
+                  ))}
+                </td>
+                <td class="p-3 text-right">
+                  <a
+                    href={`/memorial/${a.memberId}`}
+                    target="_blank"
+                    class="text-brand-500 hover:underline text-xs"
+                  >
+                    Xem ↗
+                  </a>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </Card>
+  )}
+</AdminLayout>

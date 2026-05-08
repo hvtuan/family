@@ -48,6 +48,9 @@ const submitLabel = mode === "create" ? "Tạo thành viên" : "Lưu thay đổi
     <a href="#section-personal"  class="form-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">Cá nhân</a>
     <a href="#section-contact"   class="form-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">Liên hệ</a>
     <a href="#section-status"    class="form-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">Trạng thái</a>
+    {v.died && (
+      <a href="#section-memorial" class="form-toc-link rounded px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent">Tưởng niệm</a>
+    )}
   </nav>
 
   <!-- ─── Identity ─────────────────────────────────────────────── -->
@@ -422,6 +425,110 @@ const submitLabel = mode === "create" ? "Tạo thành viên" : "Lưu thay đổi
       </label>
     </div>
   </fieldset>
+
+  {v.died && (
+    <fieldset id="section-memorial" class="scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-theme-xs">
+      <legend class="px-2 text-theme-sm font-semibold text-gray-800">Tưởng niệm</legend>
+      <p class="mb-4 text-xs text-gray-500">
+        Trang tưởng niệm tự xuất hiện khi thành viên có ngày mất. Tắt nếu muốn ẩn (giữ data).
+      </p>
+
+      <label class="flex items-start gap-3 mb-4">
+        <input
+          type="checkbox"
+          name="memorial_enabled"
+          checked={v.memorial_enabled !== false}
+          class="mt-1 h-4 w-4 border-gray-300 rounded text-brand-500"
+        />
+        <span class="text-theme-sm text-gray-700">
+          <strong class="text-gray-800">Bật trang tưởng niệm</strong>
+          <span class="block text-xs text-gray-500 mt-0.5">/memorial/{v.id ?? "[id]"}</span>
+        </span>
+      </label>
+
+      <div class="mb-4">
+        <p class="mb-2 text-theme-sm text-gray-700">Lịch tính ngày giỗ</p>
+        <div class="flex flex-wrap gap-4">
+          {[
+            { value: "lunar", label: "Âm lịch (truyền thống)" },
+            { value: "solar", label: "Dương lịch" },
+            { value: "both",  label: "Cả hai (gửi alert 2 lần)" },
+          ].map((opt) => (
+            <label class="flex items-center gap-2 text-theme-sm text-gray-700">
+              <input
+                type="radio"
+                name="anniversary_calendar"
+                value={opt.value}
+                checked={(v.anniversary_calendar ?? "lunar") === opt.value}
+                class="h-4 w-4 border-gray-300 text-brand-500"
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p class="mb-1 text-theme-sm text-gray-700">Ngày âm lịch (tuỳ chỉnh, để trống = tự tính)</p>
+        <p class="mb-2 text-xs text-gray-500">
+          Bỏ trống nếu muốn tự động chuyển từ ngày dương. Điền nếu lib chuyển sai năm nhuận.
+        </p>
+        <div class="grid grid-cols-3 gap-3 max-w-md">
+          <input
+            type="number"
+            name="death_date_lunar_year"
+            value={v.death_date_lunar?.year ?? ""}
+            placeholder="Năm âm"
+            min="1900" max="2200"
+            class="h-11 rounded-lg border border-gray-300 px-3 text-theme-sm"
+          />
+          <input
+            type="number"
+            name="death_date_lunar_month"
+            value={v.death_date_lunar?.month ?? ""}
+            placeholder="Tháng (1-12)"
+            min="1" max="12"
+            class="h-11 rounded-lg border border-gray-300 px-3 text-theme-sm"
+          />
+          <input
+            type="number"
+            name="death_date_lunar_day"
+            value={v.death_date_lunar?.day ?? ""}
+            placeholder="Ngày (1-30)"
+            min="1" max="30"
+            class="h-11 rounded-lg border border-gray-300 px-3 text-theme-sm"
+          />
+        </div>
+        <label class="mt-2 flex items-center gap-2 text-xs text-gray-600">
+          <input
+            type="checkbox"
+            name="death_date_lunar_leap"
+            checked={v.death_date_lunar?.isLeap === true}
+            class="h-3.5 w-3.5 border-gray-300 rounded"
+          />
+          Tháng nhuận
+        </label>
+      </div>
+
+      {mode === "edit" && v.id && (
+        <div class="mt-5 flex flex-wrap gap-3 border-t border-border pt-4">
+          <a
+            href={`/memorial/${v.id}`}
+            target="_blank"
+            class="rounded-lg border border-border px-4 py-2 text-xs font-medium text-foreground hover:bg-accent"
+          >
+            Xem trang tưởng niệm ↗
+          </a>
+          <a
+            href={`/admin/incense/${v.id}`}
+            class="rounded-lg border border-border px-4 py-2 text-xs font-medium text-foreground hover:bg-accent"
+          >
+            Xem log thắp hương
+          </a>
+        </div>
+      )}
+    </fieldset>
+  )}
 
   <div class="flex items-center justify-between gap-3">
     <a
